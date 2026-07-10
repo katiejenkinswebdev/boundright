@@ -1,0 +1,85 @@
+import { createServerSupabase } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { buildReportPdf, type ReportFinding } from "@/lib/report-pdf";
+
+/** Exports the reviewed check as a branded PDF. RLS scopes access. */
+export async function GET(
+  _request: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const { id } = await params;
+  const supabase = await createServerSupabase();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return new Response("Sign in to export reports.", { status: 401 });
+
+  const { data: check } = await supabase
+    .from("checks")
+    .select("*")
+    .eq("id", id)
+    .maybeSingle();
+  if (!check) return new Response("Not found", { status: 404 });
+  if (check.status !== "reviewed") {
+    return new Response("Mark the check reviewed before exporting.", { status: 409 });
+  }
+
+  const [{ data: agency }, { data: findings }, { data: reviewer }] =
+    await Promise.all([
+      supabase.from("agencies").select("name").eq("id", check.agency_id).single(),
+      supabase
+        .from("findings")
+        .select("*")
+        .eq("check_id", id)
+        .order("created_at", { ascending: true }),
+      supabase
+        .from("profiles")
+        .select("full_name")
+        .eq("user_id", check.reviewed_by)
+        .maybeSingle(),
+    ]);
+
+  const fmt = (d: string) =>
+    new Date(d).toLocaleDateString("en-US", {
+      month: "long",
+      day: "numeric",
+      year: "numeric",
+    });
+
+  const pdf = await buildReportPdf({
+    agencyName: agency?.name ?? "Agency",
+    label: check.label,
+    policyType: check.policy_type,
+    runDate: fmt(check.created_at),
+    reviewerName: reviewer?.full_name ?? "Licensed agent",
+    reviewedDate: check.reviewed_at ? fmt(check.reviewed_at) : "—",
+    modelVersion: check.model_version ?? "—",
+    promptVersion: check.prompt_version ?? "—",
+    scanned: check.doc_a_scanned || check.doc_b_scanned,
+    findings: (findings ?? []) as ReportFinding[],
+  });
+
+  // Audit trail: record the export (service role; not user-updatable columns).
+  const admin = createAdminClient();
+  if (admin) {
+    await admin
+      .from("checks")
+      .update({ exported_at: new Date().toISOString() })
+      .eq("id", id);
+    await admin.from("events").insert({
+      agency_id: check.agency_id,
+      user_id: user.id,
+      event_name: "report_exported",
+      metadata: { check_id: id },
+    });
+  }
+
+  const safeLabel = check.label.replace(/[^a-zA-Z0-9 _-]/g, "").slice(0, 60).trim() || "check";
+  return new Response(Buffer.from(pdf), {
+    headers: {
+      "Content-Type": "application/pdf",
+      "Content-Disposition": `attachment; filename="BoundRight Report - ${safeLabel}.pdf"`,
+    },
+  });
+}

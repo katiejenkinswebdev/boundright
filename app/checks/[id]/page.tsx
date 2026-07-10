@@ -2,6 +2,8 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requireProfile } from "@/lib/auth";
 import { CheckProgress } from "./CheckProgress";
+import { FindingCard, Stamp, type FindingRow } from "./FindingCard";
+import { ReviewFooter } from "./ReviewFooter";
 
 const SEVERITY_ORDER = { critical: 0, moderate: 1, minor: 2 } as const;
 
@@ -11,7 +13,7 @@ export default async function CheckPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const { supabase } = await requireProfile();
+  const { supabase, agency } = await requireProfile();
 
   const { data: check } = await supabase
     .from("checks")
@@ -21,6 +23,7 @@ export default async function CheckPage({
   if (!check) notFound();
 
   const inProgress = ["queued", "extracting", "comparing"].includes(check.status);
+  const scanned = check.doc_a_scanned || check.doc_b_scanned;
 
   return (
     <main className="mx-auto w-full max-w-[1100px] flex-1 px-6 py-8">
@@ -34,14 +37,25 @@ export default async function CheckPage({
       </header>
 
       <div className="mx-auto max-w-2xl">
+        {/* Report header (spec 4.3.1) */}
         <h1 className="mb-1 text-2xl font-semibold">{check.label}</h1>
-        <p className="mb-8 text-sm text-ink/60">
+        <p className="text-sm text-ink/60">
           {check.policy_type} ·{" "}
           {new Date(check.created_at).toLocaleDateString("en-US", {
             month: "short",
             day: "numeric",
             year: "numeric",
           })}
+          {check.model_version && (
+            <span className="ml-2 font-mono text-xs text-ink/40">
+              {check.model_version} · {check.prompt_version}
+            </span>
+          )}
+        </p>
+        <p className="mb-6 mt-2 text-xs text-ink/50">
+          BoundRight is a review assistant. It does not provide insurance
+          advice, and final determination of coverage accuracy is the
+          responsibility of the licensed agent.
         </p>
 
         {inProgress || check.status === "failed" ? (
@@ -54,122 +68,111 @@ export default async function CheckPage({
             }}
           />
         ) : (
-          <ReadyView checkId={check.id} />
+          <>
+            {scanned && (
+              <div className="mb-6 rounded-lg border border-caution/50 bg-caution/10 p-4 text-sm">
+                One or more documents were scanned images. Extraction
+                confidence is reduced. Verify findings against the source
+                documents.
+              </div>
+            )}
+            <ReportBody checkId={check.id} status={check.status} agencyName={agency.name} />
+          </>
         )}
       </div>
     </main>
   );
 }
 
-/**
- * Minimal findings summary — the full report review screen (confirm/dismiss,
- * matches collapse, export) lands in Phase 3.
- */
-async function ReadyView({ checkId }: { checkId: string }) {
+async function ReportBody({
+  checkId,
+  status,
+}: {
+  checkId: string;
+  status: string;
+  agencyName: string;
+}) {
   const { supabase } = await requireProfile();
-  const { data: findings } = await supabase
+  const { data } = await supabase
     .from("findings")
     .select("*")
-    .eq("check_id", checkId);
+    .eq("check_id", checkId)
+    .order("created_at", { ascending: true });
 
-  const rows = findings ?? [];
-  const matches = rows.filter((f) => f.status === "match");
-  const issues = rows
+  const findings = (data ?? []) as FindingRow[];
+  const matches = findings.filter((f) => f.status === "match");
+  const issues = findings
     .filter((f) => f.status !== "match")
     .sort(
       (a, b) =>
         (SEVERITY_ORDER[a.severity as keyof typeof SEVERITY_ORDER] ?? 3) -
         (SEVERITY_ORDER[b.severity as keyof typeof SEVERITY_ORDER] ?? 3)
     );
-  const count = (sev: string) => issues.filter((f) => f.severity === sev).length;
+
+  const bySeverity = (sev: string) => issues.filter((f) => f.severity === sev);
+  const criticalsRemaining = bySeverity("critical").filter(
+    (f) => !f.reviewer_action
+  ).length;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8 pb-24">
+      {/* Summary strip (spec 4.3.2) */}
       <div className="flex flex-wrap gap-2">
-        <SummaryChip tone="flag" label={`${count("critical")} Critical`} />
-        <SummaryChip tone="caution" label={`${count("moderate")} Moderate`} />
-        <SummaryChip tone="ink" label={`${count("minor")} Minor`} />
-        <SummaryChip tone="verify" label={`${matches.length} Matches`} />
+        <Stamp tone="flag">{bySeverity("critical").length} Critical</Stamp>
+        <Stamp tone="caution">{bySeverity("moderate").length} Moderate</Stamp>
+        <Stamp tone="muted">{bySeverity("minor").length} Minor</Stamp>
+        <Stamp tone="verify">{matches.length} Matches</Stamp>
       </div>
 
-      <ul className="space-y-3">
-        {issues.map((f) => (
-          <li key={f.id} className="rounded-lg border border-line bg-card p-4">
-            <div className="flex items-center justify-between gap-2">
-              <span className="font-semibold">{f.field_name}</span>
-              <span
-                className={`inline-block -rotate-2 rounded border-2 px-2 py-0.5 font-mono text-xs font-medium uppercase tracking-wider ${
-                  f.severity === "critical"
-                    ? "border-flag text-flag"
-                    : f.severity === "moderate"
-                      ? "border-caution text-caution"
-                      : "border-line text-ink/60"
-                }`}
-              >
-                {f.severity}
-              </span>
-            </div>
-            <div className="mt-3 grid gap-3 sm:grid-cols-2">
-              <div>
-                <p className="text-xs uppercase tracking-wide text-ink/50">Proposal says</p>
-                <p className="font-mono text-sm">{f.expected_value ?? "Not found"}</p>
-                {f.doc_a_page && (
-                  <p className="mt-1 font-mono text-xs text-ink/50">Proposal p. {f.doc_a_page}</p>
-                )}
-              </div>
-              <div>
-                <p className="text-xs uppercase tracking-wide text-ink/50">Policy says</p>
-                <p className="font-mono text-sm">{f.found_value ?? "Not found"}</p>
-                {f.doc_b_page && (
-                  <p className="mt-1 font-mono text-xs text-ink/50">Policy p. {f.doc_b_page}</p>
-                )}
-              </div>
-            </div>
-            {f.confidence === "low" && (
-              <p className="mt-2 text-xs text-caution">
-                Low extraction confidence — verify against source.
-              </p>
-            )}
-          </li>
-        ))}
-      </ul>
+      {/* Findings grouped by severity (spec 4.3.3) */}
+      {(["critical", "moderate", "minor"] as const).map((sev) => {
+        const group = bySeverity(sev);
+        if (group.length === 0) return null;
+        return (
+          <section key={sev}>
+            <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-ink/60">
+              {sev} findings
+            </h2>
+            <ul className="space-y-4">
+              {group.map((f) => (
+                <FindingCard key={f.id} finding={f} />
+              ))}
+            </ul>
+          </section>
+        );
+      })}
 
+      {issues.length === 0 && (
+        <div className="rounded-lg border border-verify/40 bg-card p-8 text-center">
+          <Stamp tone="verify">No discrepancies</Stamp>
+          <p className="mt-4 text-ink/80">
+            Every extracted field matched. Skim the matches below, then mark
+            the check reviewed for your file.
+          </p>
+        </div>
+      )}
+
+      {/* Matches, collapsed by default (spec 4.3.4) */}
       <details className="rounded-lg border border-line bg-card p-4">
         <summary className="cursor-pointer font-semibold">
           {matches.length} fields matched — show all
         </summary>
-        <ul className="mt-3 space-y-1">
+        <ul className="mt-3 divide-y divide-line/60">
           {matches.map((f) => (
-            <li key={f.id} className="flex justify-between font-mono text-sm">
+            <li key={f.id} className="flex items-baseline justify-between gap-4 py-2 font-mono text-sm">
               <span>{f.field_name}</span>
-              <span className="text-verify">{f.expected_value}</span>
+              <span className="text-right text-verify">{f.expected_value}</span>
             </li>
           ))}
         </ul>
       </details>
 
-      <p className="text-sm text-ink/60">
-        BoundRight is a review assistant. It does not provide insurance advice,
-        and final determination of coverage accuracy is the responsibility of
-        the licensed agent. Reviewer confirm/dismiss and PDF export arrive in
-        the next build phase.
-      </p>
+      {/* Footer actions (spec 4.3.5) */}
+      <ReviewFooter
+        checkId={checkId}
+        status={status}
+        criticalsRemaining={criticalsRemaining}
+      />
     </div>
-  );
-}
-
-function SummaryChip({ tone, label }: { tone: "flag" | "caution" | "verify" | "ink"; label: string }) {
-  const cls = {
-    flag: "border-flag text-flag",
-    caution: "border-caution text-caution",
-    verify: "border-verify text-verify",
-    ink: "border-line text-ink/70",
-  }[tone];
-  return (
-    <span
-      className={`inline-block -rotate-1 rounded border-2 px-3 py-1 font-mono text-sm font-medium uppercase tracking-wider ${cls}`}
-    >
-      {label}
-    </span>
   );
 }
