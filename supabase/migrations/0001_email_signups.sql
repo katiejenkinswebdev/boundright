@@ -9,3 +9,7 @@ create table if not exists email_signups (
 );
 
 alter table email_signups enable row level security;
+
+-- New tables are not exposed to Data API roles without explicit grants.
+-- Only the service role may touch this table; anon/authenticated get nothing.
+grant all on email_signups to service_role;
