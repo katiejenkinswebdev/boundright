@@ -82,6 +82,21 @@ export async function createCheck(formData: FormData): Promise<CreateCheckResult
   const admin = createAdminClient();
   if (!admin) return { ok: false, message: "Server not configured. Try again shortly." };
 
+  // Burst rate limit on the upload path: 10 new checks per user per 10 minutes.
+  const tenMinutesAgo = new Date(Date.now() - 10 * 60 * 1000).toISOString();
+  const { count: recentCount } = await admin
+    .from("events")
+    .select("id", { count: "exact", head: true })
+    .eq("user_id", profile.user_id)
+    .eq("event_name", "check_created")
+    .gte("created_at", tenMinutesAgo);
+  if ((recentCount ?? 0) >= 10) {
+    return {
+      ok: false,
+      message: "That's a lot of checks at once — wait a few minutes and try again.",
+    };
+  }
+
   const { data: check, error } = await admin
     .from("checks")
     .insert({

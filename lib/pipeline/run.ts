@@ -163,16 +163,28 @@ export async function runCheck(checkId: string): Promise<void> {
       })
       .eq("id", checkId);
 
-    // Successful checks count against the cap; failed ones don't.
-    await admin.rpc("increment_checks_this_period", {
-      p_agency_id: check.agency_id,
-    });
+    // Successful checks count against the cap; failed ones don't, and the
+    // bundled sample check (created only by runSampleCheck) is free.
+    if (!check.label.startsWith("Sample:")) {
+      await admin.rpc("increment_checks_this_period", {
+        p_agency_id: check.agency_id,
+      });
+    }
 
     await admin.from("events").insert({
       agency_id: check.agency_id,
       event_name: "check_run",
       metadata: { check_id: checkId, cost_cents: Math.round(usage.costCents) },
     });
+
+    // Cost guardrail: any single check over $2 of API cost gets flagged.
+    if (usage.costCents > 200) {
+      await admin.from("events").insert({
+        agency_id: check.agency_id,
+        event_name: "cost_guardrail_check",
+        metadata: { check_id: checkId, cost_cents: Math.round(usage.costCents) },
+      });
+    }
 
     await sendCheckReadyEmail(check.agency_id, checkId, check.label);
   } catch (err) {
