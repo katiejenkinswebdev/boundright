@@ -1,0 +1,17 @@
+{
+  "criticals": [
+    {
+      "category": "named_insured",
+      "field_match": "named insured",
+      "status": "mismatch"
+    }
+  ],
+  "moderates": [
+    {
+      "category": "premium",
+      "field_match": "premium",
+      "status": "mismatch"
+    }
+  ],
+  "minors": []
+}

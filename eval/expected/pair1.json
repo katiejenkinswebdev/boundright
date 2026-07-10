@@ -1,0 +1,22 @@
+{
+  "criticals": [
+    {
+      "category": "limits",
+      "field_match": "general aggregate",
+      "status": "mismatch"
+    },
+    {
+      "category": "forms",
+      "field_match": "cg 20 37",
+      "status": "not_found_in_policy"
+    }
+  ],
+  "moderates": [],
+  "minors": [
+    {
+      "category": "premium",
+      "field_match": "premium",
+      "status": "mismatch"
+    }
+  ]
+}

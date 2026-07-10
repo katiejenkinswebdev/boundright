@@ -1,0 +1,92 @@
+{
+  "findings": [
+    {
+      "field_name": "Named Insured",
+      "category": "named_insured",
+      "status": "match",
+      "severity": null,
+      "expected_value": "Acme Manufacturing, Inc.",
+      "found_value": "Acme Manufacturing, Inc.",
+      "doc_a_page": 1,
+      "doc_b_page": 1,
+      "confidence": "high"
+    },
+    {
+      "field_name": "Effective Date",
+      "category": "dates",
+      "status": "match",
+      "severity": null,
+      "expected_value": "01/01/2026",
+      "found_value": "01/01/2026",
+      "doc_a_page": 1,
+      "doc_b_page": 1,
+      "confidence": "high"
+    },
+    {
+      "field_name": "Expiration Date",
+      "category": "dates",
+      "status": "match",
+      "severity": null,
+      "expected_value": "01/01/2027",
+      "found_value": "01/01/2027",
+      "doc_a_page": 1,
+      "doc_b_page": 1,
+      "confidence": "high"
+    },
+    {
+      "field_name": "General Aggregate Limit",
+      "category": "limits",
+      "status": "mismatch",
+      "severity": "critical",
+      "expected_value": "$2,000,000",
+      "found_value": "$1,000,000",
+      "doc_a_page": 2,
+      "doc_b_page": 2,
+      "confidence": "high"
+    },
+    {
+      "field_name": "CG 20 37 04 13 Additional Insured - Completed Operations",
+      "category": "forms",
+      "status": "not_found_in_policy",
+      "severity": "critical",
+      "expected_value": "CG 20 37 04 13",
+      "found_value": null,
+      "doc_a_page": 3,
+      "doc_b_page": null,
+      "confidence": "high"
+    },
+    {
+      "field_name": "Each Occurrence Limit",
+      "category": "limits",
+      "status": "match",
+      "severity": null,
+      "expected_value": "$1,000,000",
+      "found_value": "$1,000,000",
+      "doc_a_page": 2,
+      "doc_b_page": 2,
+      "confidence": "high"
+    },
+    {
+      "field_name": "Per Claim Deductible (BI & PD)",
+      "category": "deductibles",
+      "status": "match",
+      "severity": null,
+      "expected_value": "$2,500",
+      "found_value": "$2,500",
+      "doc_a_page": 2,
+      "doc_b_page": 2,
+      "confidence": "high"
+    },
+    {
+      "field_name": "Total Annual Premium",
+      "category": "premium",
+      "status": "mismatch",
+      "severity": "minor",
+      "expected_value": "$14,250",
+      "found_value": "$14,890",
+      "doc_a_page": 1,
+      "doc_b_page": 1,
+      "confidence": "high"
+    }
+  ]
+}

@@ -1,0 +1,22 @@
+{
+  "criticals": [
+    {
+      "category": "dates",
+      "field_match": "expiration",
+      "status": "mismatch"
+    },
+    {
+      "category": "deductibles",
+      "field_match": "deductible",
+      "status": "mismatch"
+    }
+  ],
+  "moderates": [
+    {
+      "category": "forms",
+      "field_match": "cp 10 30",
+      "status": "mismatch"
+    }
+  ],
+  "minors": []
+}

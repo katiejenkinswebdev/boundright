@@ -26,22 +26,21 @@ export default async function DashboardPage() {
       {/* Empty state — the full dashboard lands in Phase 4. */}
       <section className="flex flex-col items-center rounded-lg border border-line bg-card px-8 py-20 text-center">
         <h1 className="text-2xl font-semibold">
-          Run a sample check to see your dashboard come alive.
+          Run your first check and see what BoundRight catches.
         </h1>
         <p className="mt-3 max-w-md text-ink/70">
-          We&apos;ll compare a specimen proposal against its issued policy so
-          you can see exactly what a BoundRight report looks like — no risk,
-          nothing uploaded.
+          Upload a proposal and its issued policy — BoundRight compares them
+          field by field and hands you a cited report to review.
         </p>
-        <button
-          type="button"
-          disabled
-          title="Arrives with the check pipeline (Phase 2)"
-          className="mt-8 rounded bg-ink px-6 py-3 font-semibold text-paper opacity-50"
+        <a
+          href="/checks/new"
+          className="mt-8 rounded bg-ink px-6 py-3 font-semibold text-paper hover:bg-ink/90"
         >
-          Run a sample check
-        </button>
-        <p className="mt-2 text-sm text-ink/50">Coming online in Phase 2.</p>
+          Run a check
+        </a>
+        <p className="mt-2 text-sm text-ink/50">
+          The one-click sample check arrives in the polish phase.
+        </p>
       </section>
     </main>
   );

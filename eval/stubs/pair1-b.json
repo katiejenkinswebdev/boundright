@@ -1,0 +1,28 @@
+{
+  "document_type": "policy",
+  "named_insureds": [{ "value": "Acme Manufacturing, Inc.", "page": 1 }],
+  "effective_date": { "value": "01/01/2026", "page": 1 },
+  "expiration_date": { "value": "01/01/2027", "page": 1 },
+  "coverages": [
+    {
+      "line": "General Liability",
+      "limits": [
+        { "name": "Each Occurrence Limit", "value": "$1,000,000", "page": 2 },
+        { "name": "General Aggregate Limit", "value": "$1,000,000", "page": 2 },
+        { "name": "Products/Completed Operations Aggregate", "value": "$2,000,000", "page": 2 },
+        { "name": "Personal & Advertising Injury Limit", "value": "$1,000,000", "page": 2 },
+        { "name": "Damage to Premises Rented to You", "value": "$100,000", "page": 2 },
+        { "name": "Medical Expense Limit", "value": "$5,000", "page": 2 }
+      ],
+      "deductibles": [
+        { "name": "Per Claim Deductible (BI & PD)", "value": "$2,500", "page": 2 }
+      ]
+    }
+  ],
+  "forms_endorsements": [
+    { "number": "CG 00 01 04 13", "title": "Commercial General Liability Coverage Form", "page": 3 },
+    { "number": "CG 20 10 04 13", "title": "Additional Insured - Owners, Lessees or Contractors - Scheduled Person or Organization", "page": 3 },
+    { "number": "IL 00 17 11 98", "title": "Common Policy Conditions", "page": 3 }
+  ],
+  "premium": { "value": "$14,890", "page": 1 }
+}
