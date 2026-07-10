@@ -36,11 +36,26 @@ AI policy discrepancy detection for independent commercial insurance agencies.
 
 ```bash
 npm install
-cp .env.example .env.local   # fill in keys
+cp .env.example .env.local   # fill in keys (local: `npx supabase start` prints them)
 npm run dev
 ```
 
 See `.env.example` for required environment variables.
+
+## QA — run on every change
+
+```bash
+npm run qa        # lint + typecheck + build + all 5 E2E suites (stubbed model)
+npm run qa:live   # same, plus the model eval (needs ANTHROPIC_API_KEY)
+```
+
+The gate runs automatically in three places:
+
+1. **Pre-push hook** (`.githooks/pre-push`, installed via `git config core.hooksPath .githooks` — one-time per clone). Bypass in an emergency with `git push --no-verify`.
+2. **GitHub Actions** (`.github/workflows/qa.yml`) on every push and PR — spins up a Supabase stack in the runner. Add an `ANTHROPIC_API_KEY` repo secret to enable the live model eval on main.
+3. **Manually** before a prompt or model change: `npm run qa:live` — the eval harness (`eval/run.ts`) must show all seeded criticals found with zero false criticals.
+
+Suites: RLS isolation (14 checks), onboarding flow, pipeline + deletion + failure copy (14), report review + PDF export + cross-agency denial (20), sample-check demo (7).
 
 ## Repo layout (grows by phase)
 

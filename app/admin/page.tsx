@@ -34,7 +34,7 @@ export default async function AdminPage() {
     ]);
 
   const costByAgency = new Map<string, { total: number; month: number }>();
-  let lastActivity = new Map<string, string>();
+  const lastActivity = new Map<string, string>();
   for (const row of costRows ?? []) {
     const entry = costByAgency.get(row.agency_id) ?? { total: 0, month: 0 };
     entry.total += row.cost_cents ?? 0;

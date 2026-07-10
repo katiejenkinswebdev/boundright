@@ -98,7 +98,13 @@ check("sample check completes", status === "ready_for_review", status);
 const reportHtml = await (await get(checkPath)).text();
 check("report shows seeded critical", reportHtml.includes("General Aggregate Limit"));
 check("report shows confirm/dismiss", reportHtml.includes("Confirm") && reportHtml.includes("Dismiss"));
-check("sample did not consume quota", (await (await get("/dashboard")).text()).includes("10 of 10 checks remaining") || true);
+// Next SSR inserts <!-- --> between dynamic text nodes — strip before matching.
+const dashAfter = (await (await get("/dashboard")).text()).replaceAll("<!-- -->", "");
+check(
+  "sample did not consume quota",
+  dashAfter.includes("10 of 10 checks remaining"),
+  dashAfter.match(/\d+ of \d+ checks remaining/)?.[0] ?? "banner not found"
+);
 
 console.log(failures === 0 ? "\nSample-check E2E passed." : `\n${failures} FAILURES`);
 process.exit(failures === 0 ? 0 : 1);

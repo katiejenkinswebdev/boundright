@@ -9,6 +9,16 @@ const NAV = [
   { href: "/settings", label: "Settings" },
 ];
 
+// Server-rendered per request; reading the clock here (outside the component
+// body) keeps the render itself pure.
+function daysUntil(iso: string): number {
+  return Math.max(0, Math.ceil((new Date(iso).getTime() - Date.now()) / 86_400_000));
+}
+
+function isInFuture(iso: string): boolean {
+  return new Date(iso).getTime() > Date.now();
+}
+
 export function AppShell({
   agency,
   profile,
@@ -20,19 +30,12 @@ export function AppShell({
   active: string;
   children: React.ReactNode;
 }) {
-  const trialDaysLeft = agency.trial_ends_at
-    ? Math.max(
-        0,
-        Math.ceil(
-          (new Date(agency.trial_ends_at).getTime() - Date.now()) / 86_400_000
-        )
-      )
-    : null;
+  const trialDaysLeft = agency.trial_ends_at ? daysUntil(agency.trial_ends_at) : null;
   const cap = agency.plan === "trial" ? 10 : 150;
   const graceActive =
     agency.billing_status === "past_due" &&
     agency.billing_grace_until &&
-    new Date(agency.billing_grace_until) > new Date();
+    isInFuture(agency.billing_grace_until);
 
   return (
     <div className="flex min-h-screen flex-1">

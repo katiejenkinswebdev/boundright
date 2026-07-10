@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+# Runs the full QA gate before every push. Bypass in an emergency with:
+#   git push --no-verify
+echo "Running QA gate before push (git push --no-verify to skip)…"
+npm run qa

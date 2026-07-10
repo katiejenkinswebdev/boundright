@@ -157,7 +157,6 @@ export async function startCheck(checkId: string): Promise<StartResult> {
   if (!admin) return { ok: false, message: "Server not configured." };
 
   // Confirm both uploads actually landed before burning pipeline time.
-  const paths = docPaths(checkId);
   const { data: objects } = await admin.storage
     .from("documents")
     .list(`checks/${checkId}`);
@@ -165,7 +164,6 @@ export async function startCheck(checkId: string): Promise<StartResult> {
   if (!names.has("doc_a.pdf") || !names.has("doc_b.pdf")) {
     return { ok: false, message: "One of the uploads didn't finish. Try again." };
   }
-  void paths;
 
   after(async () => {
     await runCheck(checkId);
