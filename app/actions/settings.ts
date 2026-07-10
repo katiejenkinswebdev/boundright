@@ -1,0 +1,123 @@
+"use server";
+
+import { redirect } from "next/navigation";
+import { revalidatePath } from "next/cache";
+import { requireProfile } from "@/lib/auth";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { createServerSupabase } from "@/lib/supabase/server";
+
+export type SettingsState = { status: "idle" | "ok" | "error"; message: string };
+
+const ok = (message: string): SettingsState => ({ status: "ok", message });
+const fail = (message: string): SettingsState => ({ status: "error", message });
+
+export async function updateProfile(
+  _prev: SettingsState,
+  formData: FormData
+): Promise<SettingsState> {
+  const { supabase, profile } = await requireProfile();
+  const fullName = String(formData.get("full_name") ?? "").trim();
+  if (!fullName) return fail("Enter your name.");
+  const { error } = await supabase
+    .from("profiles")
+    .update({ full_name: fullName })
+    .eq("id", profile.id);
+  if (error) return fail("Couldn't save. Try again.");
+  revalidatePath("/settings");
+  return ok("Profile saved.");
+}
+
+export async function updateAgency(
+  _prev: SettingsState,
+  formData: FormData
+): Promise<SettingsState> {
+  const { supabase, agency } = await requireProfile();
+  const name = String(formData.get("agency_name") ?? "").trim();
+  const minutes = Number(formData.get("manual_check_minutes"));
+  const premium = Number(formData.get("avg_account_premium"));
+  const rate = Number(formData.get("csr_hourly_rate"));
+  if (!name) return fail("Enter your agency's name.");
+  for (const v of [minutes, premium, rate]) {
+    if (!Number.isFinite(v) || v <= 0) return fail("Assumptions must be numbers above zero.");
+  }
+  const { error } = await supabase
+    .from("agencies")
+    .update({
+      name,
+      manual_check_minutes: Math.round(minutes),
+      avg_account_premium: premium,
+      csr_hourly_rate: rate,
+    })
+    .eq("id", agency.id);
+  if (error) return fail("Couldn't save. Try again.");
+  revalidatePath("/settings");
+  return ok("Agency settings saved.");
+}
+
+export async function uploadLogo(
+  _prev: SettingsState,
+  formData: FormData
+): Promise<SettingsState> {
+  const { agency } = await requireProfile();
+  const file = formData.get("logo");
+  if (!(file instanceof File) || file.size === 0) return fail("Choose an image file.");
+  if (!["image/png", "image/jpeg"].includes(file.type)) {
+    return fail("Use a PNG or JPEG image.");
+  }
+  if (file.size > 2 * 1024 * 1024) return fail("Keep the logo under 2 MB.");
+
+  const admin = createAdminClient();
+  if (!admin) return fail("Server not configured.");
+  const ext = file.type === "image/png" ? "png" : "jpg";
+  const path = `${agency.id}/logo.${ext}`;
+  const { error } = await admin.storage
+    .from("logos")
+    .upload(path, Buffer.from(await file.arrayBuffer()), {
+      contentType: file.type,
+      upsert: true,
+    });
+  if (error) return fail("Upload failed. Try again.");
+  const { data: pub } = admin.storage.from("logos").getPublicUrl(path);
+  await admin.from("agencies").update({ logo_url: pub.publicUrl }).eq("id", agency.id);
+  revalidatePath("/settings");
+  return ok("Logo uploaded.");
+}
+
+export async function changePassword(
+  _prev: SettingsState,
+  formData: FormData
+): Promise<SettingsState> {
+  const password = String(formData.get("password") ?? "");
+  if (password.length < 8) return fail("Use a password of at least 8 characters.");
+  const supabase = await createServerSupabase();
+  const { error } = await supabase.auth.updateUser({ password });
+  if (error) return fail(error.message);
+  return ok("Password updated.");
+}
+
+/** Danger zone: deletes the agency, all its data, and the account. */
+export async function deleteAccount(
+  _prev: SettingsState,
+  formData: FormData
+): Promise<SettingsState> {
+  const { supabase, agency, user } = await requireProfile();
+  const typed = String(formData.get("confirm_name") ?? "").trim();
+  if (typed !== agency.name) {
+    return fail("Type your agency's name exactly to confirm.");
+  }
+  const admin = createAdminClient();
+  if (!admin) return fail("Server not configured.");
+
+  // Everything cascades from agencies; then remove auth users.
+  const { data: members } = await admin
+    .from("profiles")
+    .select("user_id")
+    .eq("agency_id", agency.id);
+  await admin.from("agencies").delete().eq("id", agency.id);
+  for (const m of members ?? []) {
+    if (m.user_id !== user.id) await admin.auth.admin.deleteUser(m.user_id);
+  }
+  await supabase.auth.signOut();
+  await admin.auth.admin.deleteUser(user.id);
+  redirect("/");
+}

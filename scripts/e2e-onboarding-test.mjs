@@ -110,7 +110,7 @@ const dashHtml = await dash.text();
 check("dashboard renders", dash.status === 200);
 check("dashboard shows agency name", dashHtml.includes(agencyName));
 check("dashboard shows reviewer name", dashHtml.includes("Test Owner"));
-check("dashboard shows sample-check empty state", dashHtml.includes("Run a sample check"));
+check("dashboard shows first-check empty state", dashHtml.includes("Run your first check"));
 
 // 4. Re-visiting onboarding when already onboarded bounces to dashboard.
 const obAgain = await get("/onboarding");

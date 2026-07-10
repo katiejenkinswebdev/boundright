@@ -31,6 +31,27 @@ export async function createCheck(formData: FormData): Promise<CreateCheckResult
     return { ok: false, message: "Pick a policy type." };
   }
 
+  // Billing state gates (Section 7): read-only mode preserves data but
+  // pauses new checks.
+  if (agency.billing_status === "canceled") {
+    return {
+      ok: false,
+      message:
+        "Your subscription has ended, so new checks are paused. Your data and reports are still here — resubscribe in Settings → Billing to continue.",
+    };
+  }
+  if (
+    agency.billing_status === "past_due" &&
+    agency.billing_grace_until &&
+    new Date(agency.billing_grace_until) < new Date()
+  ) {
+    return {
+      ok: false,
+      message:
+        "Payment is past due and the grace period has ended. Update your card in Settings → Billing to resume checks.",
+    };
+  }
+
   // Usage limits — honest and explicit, never silent overage.
   if (agency.plan === "trial") {
     if (agency.trial_ends_at && new Date(agency.trial_ends_at) < new Date()) {

@@ -20,6 +20,9 @@ export type Agency = {
   trial_ends_at: string | null;
   checks_this_period: number;
   period_resets_at: string | null;
+  billing_status: "ok" | "past_due" | "canceled";
+  billing_grace_until: string | null;
+  stripe_customer_id: string | null;
 };
 
 /** Redirects to /login when unauthenticated. */
