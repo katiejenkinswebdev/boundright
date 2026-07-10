@@ -48,8 +48,8 @@ export async function GET(request: Request) {
             body: JSON.stringify({
               from: "BoundRight <notifications@boundright.app>",
               to: [email],
-              subject: `${agency.name} — policy check ROI report for ${numbers.monthLabel}`,
-              html: `<p>Your ${numbers.monthLabel} report is attached: ${numbers.checksRun} checks, ${numbers.findingsConfirmed} confirmed discrepancies, ~$${numbers.exposureFlagged.toLocaleString()} exposure flagged.</p><p>Share it with your principal — it's the receipt for the work your team did.</p>`,
+              subject: `${agency.name} · policy check ROI report for ${numbers.monthLabel}`,
+              html: `<p>Your ${numbers.monthLabel} report is attached: ${numbers.checksRun} checks, ${numbers.findingsConfirmed} confirmed discrepancies, ~$${numbers.exposureFlagged.toLocaleString()} exposure flagged.</p><p>Share it with your principal. It's the receipt for the work your team did.</p>`,
               attachments: [
                 {
                   filename: `BoundRight ROI ${numbers.monthLabel}.pdf`,

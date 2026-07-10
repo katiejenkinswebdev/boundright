@@ -37,7 +37,7 @@ export async function createCheck(formData: FormData): Promise<CreateCheckResult
     return {
       ok: false,
       message:
-        "Your subscription has ended, so new checks are paused. Your data and reports are still here — resubscribe in Settings → Billing to continue.",
+        "Your subscription has ended, so new checks are paused. Your data and reports are still here. Resubscribe in Settings → Billing to continue.",
     };
   }
   if (
@@ -93,7 +93,7 @@ export async function createCheck(formData: FormData): Promise<CreateCheckResult
   if ((recentCount ?? 0) >= 10) {
     return {
       ok: false,
-      message: "That's a lot of checks at once — wait a few minutes and try again.",
+      message: "That's a lot of checks at once. Wait a few minutes and try again.",
     };
   }
 

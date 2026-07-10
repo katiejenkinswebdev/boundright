@@ -69,17 +69,17 @@ export async function computeMonthlyNumbers(
 
 function summaryParagraph(n: MonthlyNumbers, agencyName: string): string {
   if (n.checksRun === 0) {
-    return `${agencyName} ran no policy checks in ${n.monthLabel}. Every unchecked renewal is an unreviewed E&O exposure — the fastest win next month is checking each renewal as it's issued.`;
+    return `${agencyName} ran no policy checks in ${n.monthLabel}. Every unchecked renewal is an unreviewed E&O exposure. The fastest win next month is checking each renewal as it's issued.`;
   }
   const pieces = [
     `In ${n.monthLabel}, ${agencyName} ran ${n.checksRun} policy check${n.checksRun === 1 ? "" : "s"} through BoundRight`,
     n.findingsConfirmed > 0
       ? `and the team confirmed ${n.findingsConfirmed} discrepanc${n.findingsConfirmed === 1 ? "y" : "ies"} between what was sold and what was issued`
-      : `and every compared field matched — clean issuance across the board`,
+      : `and every compared field matched, clean issuance across the board`,
   ];
   let s = pieces.join(" ") + ".";
   if (n.criticalConfirmed > 0) {
-    s += ` ${n.criticalConfirmed} ${n.criticalConfirmed === 1 ? "was" : "were"} critical — limits, forms, or dates that would have surfaced at claim time. Based on the agency's average account premium, that's an estimated $${n.exposureFlagged.toLocaleString()} of exposure caught before the client found it.`;
+    s += ` ${n.criticalConfirmed} ${n.criticalConfirmed === 1 ? "was" : "were"} critical: limits, forms, or dates that would have surfaced at claim time. Based on the agency's average account premium, that's an estimated $${n.exposureFlagged.toLocaleString()} of exposure caught before the client found it.`;
   }
   s += ` The checks saved an estimated ${n.hoursSaved.toFixed(1)} staff hours of manual line-by-line review.`;
   return s;
@@ -119,7 +119,7 @@ export async function buildMonthlyReportPdf(
   };
 
   text(agencyName, 18, { font: bold });
-  text(`Policy Check ROI Report — ${n.monthLabel}`, 12, { color: MUTED });
+  text(`Policy check ROI report · ${n.monthLabel}`, 12, { color: MUTED });
   y -= 12;
   page.drawLine({
     start: { x: 64, y },
@@ -152,13 +152,13 @@ export async function buildMonthlyReportPdf(
   text(summaryParagraph(n, agencyName), 10.5);
   y -= 10;
   text(
-    "Hours saved = checks × your manual check time. Exposure flagged = confirmed critical findings × your average account premium — an estimate based on your ROI assumptions, editable in Settings.",
+    "Hours saved = checks × your manual check time. Exposure flagged = confirmed critical findings × your average account premium, an estimate based on your ROI assumptions, editable in Settings.",
     8.5,
     { color: MUTED }
   );
 
   page.drawText(
-    "Prepared with BoundRight — the policy checking assistant. Findings were reviewed and confirmed by a licensed agent.",
+    "Prepared with BoundRight. Findings were reviewed and confirmed by a licensed agent. Every account, bound right, documented.",
     { x: 64, y: 48, size: 8, font: sans, color: MUTED }
   );
 

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Lockup } from "@/app/components/brand";
 import { requireProfile } from "@/lib/auth";
 import { NewCheckForm } from "./NewCheckForm";
 
@@ -9,8 +10,8 @@ export default async function NewCheckPage() {
   return (
     <main className="mx-auto w-full max-w-[1100px] flex-1 px-6 py-8">
       <header className="mb-8 flex items-center justify-between">
-        <Link href="/dashboard" className="text-xl font-semibold tracking-tight">
-          Bound<span className="text-verify">Right</span>
+        <Link href="/dashboard">
+          <Lockup />
         </Link>
         <span className="font-mono text-sm text-ink/60">
           {agency.checks_this_period} of {cap} checks used

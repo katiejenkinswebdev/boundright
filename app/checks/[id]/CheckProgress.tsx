@@ -91,7 +91,7 @@ export function CheckProgress({
         })}
       </ol>
       <p className="mt-6 text-sm text-ink/60">
-        Usually takes 1 to 2 minutes. You can leave — we&apos;ll email you when
+        Usually takes 1 to 2 minutes. You can leave; we&apos;ll email you when
         it&apos;s ready.
       </p>
     </div>

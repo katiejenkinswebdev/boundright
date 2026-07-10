@@ -72,7 +72,7 @@ export default async function ChecksPage({
 
       {(checks ?? []).length === 0 ? (
         <div className="rounded-lg border border-line bg-card p-12 text-center text-ink/70">
-          {q ? `No checks match “${q}”.` : "No checks yet — run your first one."}
+          {q ? `No checks match “${q}”.` : "No checks yet. Run your first one."}
         </div>
       ) : (
         <div className="overflow-x-auto rounded-lg border border-line bg-card">

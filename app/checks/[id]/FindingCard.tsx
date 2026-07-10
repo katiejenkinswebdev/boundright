@@ -18,7 +18,11 @@ export type FindingRow = {
   reviewer_note: string | null;
 };
 
-export function Stamp({
+/**
+ * Quiet severity/status badge. Deliberately level and thin-bordered: the
+ * rotated stamp gesture is reserved for the BOUND RIGHT confirmation stamp.
+ */
+export function Badge({
   tone,
   children,
 }: {
@@ -33,7 +37,7 @@ export function Stamp({
   }[tone];
   return (
     <span
-      className={`inline-block -rotate-2 rounded border-2 px-2 py-0.5 font-mono text-xs font-medium uppercase tracking-wider ${cls}`}
+      className={`inline-block rounded border px-2 py-0.5 font-mono text-xs font-medium uppercase tracking-wider ${cls}`}
     >
       {children}
     </span>
@@ -71,11 +75,11 @@ export function FindingCard({ finding }: { finding: FindingRow }) {
           </span>
         </div>
         <div className="flex items-center gap-2">
-          {finding.severity && <Stamp tone={severityTone}>{finding.severity}</Stamp>}
+          {finding.severity && <Badge tone={severityTone}>{finding.severity}</Badge>}
           {finding.reviewer_action && (
-            <Stamp tone={finding.reviewer_action === "confirmed" ? "verify" : "muted"}>
+            <Badge tone={finding.reviewer_action === "confirmed" ? "verify" : "muted"}>
               {finding.reviewer_action}
-            </Stamp>
+            </Badge>
           )}
         </div>
       </div>
@@ -107,7 +111,7 @@ export function FindingCard({ finding }: { finding: FindingRow }) {
 
       {finding.confidence === "low" && (
         <p className="mt-3 text-sm text-caution">
-          Low extraction confidence — verify against source.
+          Low extraction confidence. Verify against source.
         </p>
       )}
 
@@ -152,7 +156,7 @@ export function FindingCard({ finding }: { finding: FindingRow }) {
           onBlur={() => {
             if (finding.reviewer_action) act(finding.reviewer_action);
           }}
-          placeholder="Optional note — saved with your decision, included in the exported report."
+          placeholder="Optional note. Saved with your decision and included in the exported report."
           rows={2}
           className="mt-3 w-full rounded border border-line bg-paper px-3 py-2 text-sm"
         />

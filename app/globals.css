@@ -31,6 +31,26 @@ body {
   line-height: 1.6;
 }
 
+/* The stamp lands with a single subtle settle animation on confirmation.
+   The one sanctioned motion flourish (brand guidelines 05 · Motion). */
+@keyframes stamp-settle {
+  0% {
+    transform: rotate(-3deg) scale(1.25);
+    opacity: 0;
+  }
+  70% {
+    transform: rotate(-3deg) scale(0.97);
+    opacity: 1;
+  }
+  100% {
+    transform: rotate(-3deg) scale(1);
+    opacity: 1;
+  }
+}
+.stamp-settle {
+  animation: stamp-settle 0.35s ease-out both;
+}
+
 /* Visible keyboard focus everywhere (WCAG) */
 :focus-visible {
   outline: 2px solid var(--ink);

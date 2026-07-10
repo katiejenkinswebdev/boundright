@@ -118,6 +118,7 @@ async function main() {
     runDate: "July 10, 2026",
     reviewerName: "Rita Reviewer",
     reviewedDate: "July 10, 2026",
+    stampDateLine: "07·10·2026",
     modelVersion: "claude-sonnet-5",
     promptVersion: "extract_v1+compare_v1+verify_v1",
     scanned: false,
@@ -137,6 +138,7 @@ async function main() {
     ["reviewer note included", "Verified against dec page."],
     ["missing form finding", "CG 20 37"],
     ["disclaimer footer", "review assistant"],
+    ["brand tagline present", "Proof it was bound right."],
     ["engine version", "claude-sonnet-5"],
     ["matches section", "MATCHED FIELDS"],
   ] as const) {

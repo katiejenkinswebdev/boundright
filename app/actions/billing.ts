@@ -54,7 +54,7 @@ export async function openBillingPortal(
   const stripe = getStripe();
   if (!stripe) return { status: "error", message: NOT_CONFIGURED };
   if (!agency.stripe_customer_id) {
-    return { status: "error", message: "No subscription yet — pick a plan first." };
+    return { status: "error", message: "No subscription yet. Pick a plan first." };
   }
 
   const session = await stripe.billingPortal.sessions.create({

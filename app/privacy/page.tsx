@@ -1,22 +1,23 @@
 import Link from "next/link";
+import { Lockup } from "@/app/components/brand";
 
-export const metadata = { title: "Privacy Policy — BoundRight" };
+export const metadata = { title: "Privacy Policy · BoundRight" };
 
 export default function PrivacyPage() {
   return (
     <main className="mx-auto w-full max-w-2xl flex-1 px-6 py-12">
-      <Link href="/" className="text-xl font-semibold tracking-tight">
-        Bound<span className="text-verify">Right</span>
+      <Link href="/">
+        <Lockup />
       </Link>
       <h1 className="mt-8 text-2xl font-semibold">Privacy Policy</h1>
       <p className="mt-2 text-sm text-ink/60">
-        Draft — under attorney review. Effective upon publication.
+        Draft, under attorney review. Effective upon publication.
       </p>
       <div className="mt-6 space-y-4 text-[15px] leading-relaxed text-ink/90">
         <p>
           <strong>Documents.</strong> We process your uploaded documents and
-          delete them. Deletion happens immediately after a check completes —
-          success or failure — and is verified by a nightly job. We keep only
+          delete them. Deletion happens immediately after a check completes,
+          success or failure, and is verified by a nightly job. We keep only
           the file names and the findings.
         </p>
         <p>
@@ -42,7 +43,7 @@ export default function PrivacyPage() {
         </p>
         <p>
           <strong>Deletion.</strong> Delete your account any time from
-          Settings — it removes your agency and all associated data. Canceled
+          Settings; it removes your agency and all associated data. Canceled
           subscriptions keep read-only access for 90 days, then data is deleted
           after two warning emails.
         </p>

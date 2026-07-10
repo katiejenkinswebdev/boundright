@@ -47,13 +47,21 @@ export async function GET(
       year: "numeric",
     });
 
+  const reviewed = check.reviewed_at ? new Date(check.reviewed_at) : new Date();
+  const stampDateLine = [
+    String(reviewed.getMonth() + 1).padStart(2, "0"),
+    String(reviewed.getDate()).padStart(2, "0"),
+    reviewed.getFullYear(),
+  ].join("·");
+
   const pdf = await buildReportPdf({
     agencyName: agency?.name ?? "Agency",
     label: check.label,
     policyType: check.policy_type,
     runDate: fmt(check.created_at),
     reviewerName: reviewer?.full_name ?? "Licensed agent",
-    reviewedDate: check.reviewed_at ? fmt(check.reviewed_at) : "—",
+    reviewedDate: check.reviewed_at ? fmt(check.reviewed_at) : fmt(reviewed.toISOString()),
+    stampDateLine,
     modelVersion: check.model_version ?? "—",
     promptVersion: check.prompt_version ?? "—",
     scanned: check.doc_a_scanned || check.doc_b_scanned,

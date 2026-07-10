@@ -37,6 +37,8 @@ export type ReportData = {
   runDate: string;
   reviewerName: string;
   reviewedDate: string;
+  /** MM·DD·YYYY, printed on the stamp's date line. */
+  stampDateLine: string;
   modelVersion: string;
   promptVersion: string;
   scanned: boolean;
@@ -65,6 +67,7 @@ export async function buildReportPdf(data: ReportData): Promise<Uint8Array> {
   const sans = await doc.embedFont(StandardFonts.Helvetica);
   const sansBold = await doc.embedFont(StandardFonts.HelveticaBold);
   const mono = await doc.embedFont(StandardFonts.Courier);
+  const monoBold = await doc.embedFont(StandardFonts.CourierBold);
 
   // Assigned by newPage() before any drawing; the definite-assignment
   // assertion reflects the newPage() call preceding all draw calls below.
@@ -118,8 +121,7 @@ export async function buildReportPdf(data: ReportData): Promise<Uint8Array> {
       width: w,
       height: 15,
       borderColor: color,
-      borderWidth: 1.2,
-      rotate: degrees(-1.5),
+      borderWidth: 0.8,
     });
     page.drawText(label.toUpperCase(), {
       x: x + 5,
@@ -131,15 +133,50 @@ export async function buildReportPdf(data: ReportData): Promise<Uint8Array> {
     return x + w + 8;
   };
 
+  // The BOUND RIGHT stamp: the one bold element. Verify Green, tilted 3
+  // degrees, date line carries the review date. Appears only because this
+  // report was actually reviewed (export is gated on reviewed status).
+  const boundRightStamp = (x: number, topY: number) => {
+    const rot = degrees(-3);
+    page.drawRectangle({
+      x,
+      y: topY - 54,
+      width: 92,
+      height: 54,
+      borderColor: VERIFY,
+      borderWidth: 1.6,
+      rotate: rot,
+    });
+    const line = (t: string, dy: number, size: number, spacing = 3) => {
+      // approximate letterspacing by drawing per character
+      let cx = x + 13;
+      for (const ch of t) {
+        page.drawText(ch, {
+          x: cx,
+          y: topY - dy,
+          size,
+          font: monoBold,
+          color: VERIFY,
+          rotate: rot,
+        });
+        cx += monoBold.widthOfTextAtSize(ch, size) + spacing;
+      }
+    };
+    line("BOUND", 20, 11);
+    line("RIGHT", 33, 11);
+    line(data.stampDateLine, 45, 6.5, 1.5);
+  };
+
   newPage();
 
   // Header
   text(data.agencyName, { font: sansBold, size: 16, gap: 2 });
-  text("Policy Discrepancy Report — prepared with BoundRight", {
+  text("Policy discrepancy report · Proof it was bound right.", {
     size: 9,
     color: MUTED,
     gap: 12,
   });
+  boundRightStamp(PAGE_W - MARGIN - 100, PAGE_H - MARGIN + 6);
   page.drawLine({
     start: { x: MARGIN, y: y },
     end: { x: PAGE_W - MARGIN, y: y },
@@ -160,7 +197,7 @@ export async function buildReportPdf(data: ReportData): Promise<Uint8Array> {
 
   if (data.scanned) {
     text(
-      "Notice: one or more source documents were scanned images. Extraction confidence is reduced — findings were verified against the source documents by the reviewer.",
+      "Notice: one or more source documents were scanned images. Extraction confidence is reduced; findings were verified against the source documents by the reviewer.",
       { size: 9, color: CAUTION, gap: 12 }
     );
   }

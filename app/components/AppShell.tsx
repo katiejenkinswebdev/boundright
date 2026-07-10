@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Lockup, Wordmark } from "@/app/components/brand";
 import { signOut } from "@/app/actions/auth";
 import type { Agency, Profile } from "@/lib/auth";
 
@@ -40,8 +41,8 @@ export function AppShell({
   return (
     <div className="flex min-h-screen flex-1">
       <aside className="hidden w-56 shrink-0 flex-col border-r border-line bg-card px-4 py-6 sm:flex">
-        <Link href="/dashboard" className="mb-8 px-2 text-xl font-semibold tracking-tight">
-          Bound<span className="text-verify">Right</span>
+        <Link href="/dashboard" className="mb-8 px-2">
+          <Lockup />
         </Link>
         <nav className="flex flex-col gap-1">
           {NAV.map((item) => (
@@ -74,8 +75,8 @@ export function AppShell({
       <div className="flex min-w-0 flex-1 flex-col">
         {/* Mobile top bar */}
         <header className="flex items-center justify-between border-b border-line bg-card px-4 py-3 sm:hidden">
-          <Link href="/dashboard" className="text-lg font-semibold">
-            Bound<span className="text-verify">Right</span>
+          <Link href="/dashboard" className="text-lg">
+            <Wordmark />
           </Link>
           <nav className="flex gap-3 text-sm">
             {NAV.map((item) => (
@@ -100,7 +101,7 @@ export function AppShell({
           <div className="border-b border-caution/50 bg-caution/10 px-6 py-2 text-sm">
             {graceActive
               ? "Your last payment didn't go through. Update your card in Settings → Billing to keep running checks."
-              : "Payment is past due — new checks are paused. Update your card in Settings → Billing."}
+              : "Payment is past due, so new checks are paused. Update your card in Settings → Billing."}
           </div>
         )}
         {agency.billing_status === "canceled" && (

@@ -36,8 +36,8 @@ export default async function DashboardPage() {
             Run a sample check to see your dashboard come alive.
           </h2>
           <p className="mt-3 max-w-md text-ink/70">
-            We&apos;ll compare a specimen proposal against its issued policy —
-            two seeded errors included — so you can see exactly what a
+            We&apos;ll compare a specimen proposal against its issued policy,
+            two seeded errors included, so you can see exactly what a
             BoundRight report looks like. Nothing of yours is uploaded.
           </p>
           <div className="mt-8">
@@ -88,7 +88,7 @@ export default async function DashboardPage() {
 
             <div
               className="rounded-lg border border-line bg-card p-5"
-              title={`${stats.trend.reduce((s, p) => s + p.checks, 0)} checks × ${agency.manual_check_minutes} min ÷ 60 — based on your assumptions`}
+              title={`${stats.trend.reduce((s, p) => s + p.checks, 0)} checks × ${agency.manual_check_minutes} min ÷ 60, based on your assumptions`}
             >
               <p className="text-sm text-ink/60">Hours saved</p>
               <p className="mt-1 text-3xl font-semibold">{stats.hoursSaved.toFixed(1)}</p>

@@ -164,7 +164,7 @@ export function BillingSection({
             {portalPending ? "Opening…" : "Manage billing"}
           </button>
           <p className="text-sm text-ink/60">
-            Update your card, download invoices, or cancel in one click — no
+            Update your card, download invoices, or cancel in one click. No
             retention hoops.
           </p>
           <Msg state={portalState} />
@@ -175,7 +175,7 @@ export function BillingSection({
             <label className="flex cursor-pointer items-start gap-3 rounded border border-line p-4">
               <input type="radio" name="plan" value="founding" defaultChecked className="mt-1" />
               <span>
-                <span className="font-semibold">Founding — $249/mo</span>
+                <span className="font-semibold">Founding · $249/mo</span>
                 <br />
                 <span className="text-sm text-ink/60">150 checks/mo, founding price locked in</span>
               </span>
@@ -183,7 +183,7 @@ export function BillingSection({
             <label className="flex cursor-pointer items-start gap-3 rounded border border-line p-4">
               <input type="radio" name="plan" value="standard" className="mt-1" />
               <span>
-                <span className="font-semibold">Standard — $349/mo</span>
+                <span className="font-semibold">Standard · $349/mo</span>
                 <br />
                 <span className="text-sm text-ink/60">150 checks/mo</span>
               </span>

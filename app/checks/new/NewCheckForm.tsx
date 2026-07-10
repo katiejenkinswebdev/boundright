@@ -15,7 +15,7 @@ function validateFile(file: File): string | null {
   }
   if (file.size > MAX_BYTES) {
     const mb = (file.size / (1024 * 1024)).toFixed(0);
-    return `That file is ${mb} MB — the limit is 50 MB. Compress or split the PDF and try again.`;
+    return `That file is ${mb} MB. The limit is 50 MB. Compress or split the PDF and try again.`;
   }
   return null;
 }
@@ -59,7 +59,7 @@ function DropZone({
           <>
             <span className="font-mono text-sm break-all">{file.name}</span>
             <span className="mt-1 text-sm text-ink/60">
-              {(file.size / (1024 * 1024)).toFixed(1)} MB — click to replace
+              {(file.size / (1024 * 1024)).toFixed(1)} MB · click to replace
             </span>
           </>
         ) : (
@@ -207,7 +207,7 @@ export function NewCheckForm() {
 
       <p className="text-sm text-ink/60">
         PDF only, up to 50 MB and 300 pages each. Documents are processed and
-        deleted — we keep only the findings.
+        deleted. We keep only the findings.
       </p>
 
       <button

@@ -1,16 +1,17 @@
 import Link from "next/link";
+import { Lockup } from "@/app/components/brand";
 
-export const metadata = { title: "Terms of Service — BoundRight" };
+export const metadata = { title: "Terms of Service · BoundRight" };
 
 export default function TermsPage() {
   return (
     <main className="mx-auto w-full max-w-2xl flex-1 px-6 py-12">
-      <Link href="/" className="text-xl font-semibold tracking-tight">
-        Bound<span className="text-verify">Right</span>
+      <Link href="/">
+        <Lockup />
       </Link>
       <h1 className="mt-8 text-2xl font-semibold">Terms of Service</h1>
       <p className="mt-2 text-sm text-ink/60">
-        Draft — under attorney review. Effective upon publication.
+        Draft, under attorney review. Effective upon publication.
       </p>
       <div className="mt-6 space-y-4 text-[15px] leading-relaxed text-ink/90">
         <p>

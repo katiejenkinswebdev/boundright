@@ -1,8 +1,9 @@
 import Link from "next/link";
+import { Lockup } from "@/app/components/brand";
 import { notFound } from "next/navigation";
 import { requireProfile } from "@/lib/auth";
 import { CheckProgress } from "./CheckProgress";
-import { FindingCard, Stamp, type FindingRow } from "./FindingCard";
+import { FindingCard, Badge, type FindingRow } from "./FindingCard";
 import { ReviewFooter } from "./ReviewFooter";
 
 const SEVERITY_ORDER = { critical: 0, moderate: 1, minor: 2 } as const;
@@ -28,8 +29,8 @@ export default async function CheckPage({
   return (
     <main className="mx-auto w-full max-w-[1100px] flex-1 px-6 py-8">
       <header className="mb-8 flex items-center justify-between">
-        <Link href="/dashboard" className="text-xl font-semibold tracking-tight">
-          Bound<span className="text-verify">Right</span>
+        <Link href="/dashboard">
+          <Lockup />
         </Link>
         <Link href="/checks/new" className="text-sm underline">
           New check
@@ -76,7 +77,11 @@ export default async function CheckPage({
                 documents.
               </div>
             )}
-            <ReportBody checkId={check.id} status={check.status} agencyName={agency.name} />
+            <ReportBody
+              checkId={check.id}
+              status={check.status}
+              reviewedAt={check.reviewed_at}
+            />
           </>
         )}
       </div>
@@ -87,10 +92,11 @@ export default async function CheckPage({
 async function ReportBody({
   checkId,
   status,
+  reviewedAt,
 }: {
   checkId: string;
   status: string;
-  agencyName: string;
+  reviewedAt: string | null;
 }) {
   const { supabase } = await requireProfile();
   const { data } = await supabase
@@ -118,10 +124,10 @@ async function ReportBody({
     <div className="space-y-8 pb-24">
       {/* Summary strip (spec 4.3.2) */}
       <div className="flex flex-wrap gap-2">
-        <Stamp tone="flag">{bySeverity("critical").length} Critical</Stamp>
-        <Stamp tone="caution">{bySeverity("moderate").length} Moderate</Stamp>
-        <Stamp tone="muted">{bySeverity("minor").length} Minor</Stamp>
-        <Stamp tone="verify">{matches.length} Matches</Stamp>
+        <Badge tone="flag">{bySeverity("critical").length} Critical</Badge>
+        <Badge tone="caution">{bySeverity("moderate").length} Moderate</Badge>
+        <Badge tone="muted">{bySeverity("minor").length} Minor</Badge>
+        <Badge tone="verify">{matches.length} Matches</Badge>
       </div>
 
       {/* Findings grouped by severity (spec 4.3.3) */}
@@ -144,7 +150,7 @@ async function ReportBody({
 
       {issues.length === 0 && (
         <div className="rounded-lg border border-verify/40 bg-card p-8 text-center">
-          <Stamp tone="verify">No discrepancies</Stamp>
+          <Badge tone="verify">No discrepancies</Badge>
           <p className="mt-4 text-ink/80">
             Every extracted field matched. Skim the matches below, then mark
             the check reviewed for your file.
@@ -155,7 +161,7 @@ async function ReportBody({
       {/* Matches, collapsed by default (spec 4.3.4) */}
       <details className="rounded-lg border border-line bg-card p-4">
         <summary className="cursor-pointer font-semibold">
-          {matches.length} fields matched — show all
+          {matches.length} fields matched · show all
         </summary>
         <ul className="mt-3 divide-y divide-line/60">
           {matches.map((f) => (
@@ -171,6 +177,7 @@ async function ReportBody({
       <ReviewFooter
         checkId={checkId}
         status={status}
+        reviewedAt={reviewedAt}
         criticalsRemaining={criticalsRemaining}
       />
     </div>

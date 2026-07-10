@@ -105,7 +105,7 @@ export default async function AdminPage() {
           <tbody>
             {(failures ?? []).length === 0 && (
               <tr>
-                <td className="px-4 py-3 text-ink/60">No failures. 🎉</td>
+                <td className="px-4 py-3 text-ink/60">No failures this week.</td>
               </tr>
             )}
             {(failures ?? []).map((f) => (

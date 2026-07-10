@@ -2,14 +2,17 @@
 
 import { useState, useTransition } from "react";
 import { markReviewed } from "@/app/actions/review";
+import { BoundRightStamp } from "@/app/components/brand";
 
 export function ReviewFooter({
   checkId,
   status,
+  reviewedAt,
   criticalsRemaining,
 }: {
   checkId: string;
   status: string;
+  reviewedAt: string | null;
   criticalsRemaining: number;
 }) {
   const [pending, startTransition] = useTransition();
@@ -20,9 +23,7 @@ export function ReviewFooter({
     <div className="sticky bottom-0 -mx-6 border-t border-line bg-paper/95 px-6 py-4 backdrop-blur">
       <div className="mx-auto flex max-w-2xl flex-wrap items-center justify-between gap-3">
         {reviewed ? (
-          <span className="inline-block -rotate-2 rounded border-2 border-verify px-3 py-1 font-mono text-sm font-medium uppercase tracking-wider text-verify">
-            Reviewed
-          </span>
+          <BoundRightStamp reviewedAt={reviewedAt ?? new Date()} />
         ) : (
           <button
             type="button"
@@ -48,7 +49,7 @@ export function ReviewFooter({
         {reviewed ? (
           <a
             href={`/api/checks/${checkId}/report`}
-            className="rounded bg-verify px-6 py-3 font-semibold text-white hover:bg-verify/90"
+            className="rounded bg-ink px-6 py-3 font-semibold text-paper hover:bg-ink/90"
           >
             Export report (PDF)
           </a>

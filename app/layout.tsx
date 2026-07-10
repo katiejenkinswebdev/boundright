@@ -11,13 +11,13 @@ const plexSans = IBM_Plex_Sans({
 const plexMono = IBM_Plex_Mono({
   variable: "--font-plex-mono",
   subsets: ["latin"],
-  weight: ["400", "500"],
+  weight: ["400", "500", "600"],
 });
 
 export const metadata: Metadata = {
-  title: "BoundRight — Catch policy errors before your client does",
+  title: "BoundRight · Every account. Bound right.",
   description:
-    "BoundRight compares proposals against issued policies field by field and hands your team a cited discrepancy report to review. Built for independent commercial insurance agencies.",
+    "BoundRight checks issued policies against proposals and documents every discrepancy for independent insurance agencies.",
 };
 
 export default function RootLayout({
