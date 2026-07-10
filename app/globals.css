@@ -1,0 +1,48 @@
+@import "tailwindcss";
+
+:root {
+  /* BoundRight design tokens — "audit ledger, modern" */
+  --ink: #1b2a41; /* deep navy: primary text, header */
+  --paper: #fafaf7; /* warm off-white background */
+  --verify: #1f7a5c; /* confirmation green */
+  --flag: #c4452b; /* critical red, used sparingly */
+  --caution: #b7791f; /* moderate amber */
+  --line: #d8d9d4; /* hairline borders */
+  --card: #ffffff; /* white cards on paper */
+}
+
+@theme inline {
+  --color-ink: var(--ink);
+  --color-paper: var(--paper);
+  --color-verify: var(--verify);
+  --color-flag: var(--flag);
+  --color-caution: var(--caution);
+  --color-line: var(--line);
+  --color-card: var(--card);
+  --font-sans: var(--font-plex-sans);
+  --font-mono: var(--font-plex-mono);
+}
+
+body {
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-plex-sans), system-ui, sans-serif;
+  font-size: 17px; /* generous base for the 40–60 buyer demographic */
+  line-height: 1.6;
+}
+
+/* Visible keyboard focus everywhere (WCAG) */
+:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
