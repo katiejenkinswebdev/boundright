@@ -9,12 +9,26 @@ import {
   type PipelineFinding,
   type Verification,
 } from "./schemas";
-import { EXTRACT_SYSTEM, extractUserMessage, EXTRACT_PROMPT_VERSION } from "@/prompts/extract_v1";
+import { EXTRACT_SYSTEM, extractUserMessage, EXTRACT_PROMPT_VERSION } from "@/prompts/extract_v2";
 import { COMPARE_SYSTEM, compareUserMessage, COMPARE_PROMPT_VERSION } from "@/prompts/compare_v1";
 import { VERIFY_SYSTEM, verifyUserMessage, VERIFY_PROMPT_VERSION } from "@/prompts/verify_v1";
+import { COMPARE_RENEWAL_SYSTEM, compareRenewalUserMessage, COMPARE_RENEWAL_PROMPT_VERSION } from "@/prompts/compare_renewal_v1";
+import { COMPARE_COI_SYSTEM, compareCoiUserMessage, COMPARE_COI_PROMPT_VERSION } from "@/prompts/compare_coi_v1";
+import { LETTER_SYSTEM, letterUserMessage, LETTER_PROMPT_VERSION } from "@/prompts/letter_v1";
 
 export const MODEL = "claude-sonnet-5";
-export const PROMPT_VERSION = `${EXTRACT_PROMPT_VERSION}+${COMPARE_PROMPT_VERSION}+${VERIFY_PROMPT_VERSION}`;
+export type CheckType = "issuance" | "renewal" | "coi";
+
+export function promptVersionFor(checkType: CheckType): string {
+  const compare =
+    checkType === "renewal"
+      ? COMPARE_RENEWAL_PROMPT_VERSION
+      : checkType === "coi"
+        ? COMPARE_COI_PROMPT_VERSION
+        : COMPARE_PROMPT_VERSION;
+  return `${EXTRACT_PROMPT_VERSION}+${compare}+${VERIFY_PROMPT_VERSION}`;
+}
+export const PROMPT_VERSION = promptVersionFor("issuance");
 
 // claude-sonnet-5: $3/MTok in, $15/MTok out.
 const INPUT_CENTS_PER_MTOK = 300;
@@ -123,20 +137,85 @@ export async function extractFromScanned(
 export async function compare(
   proposal: Extraction,
   policy: Extraction,
-  usage: Usage
+  usage: Usage,
+  checkType: CheckType = "issuance"
 ): Promise<PipelineFinding[]> {
   const proposalJson = JSON.stringify(proposal, null, 2);
   const policyJson = JSON.stringify(policy, null, 2);
   const stub = stubResponse<{ findings: PipelineFinding[] }>(proposalJson + policyJson);
   if (stub) return stub.findings;
+  const system =
+    checkType === "renewal"
+      ? COMPARE_RENEWAL_SYSTEM
+      : checkType === "coi"
+        ? COMPARE_COI_SYSTEM
+        : COMPARE_SYSTEM;
+  const userMessage =
+    checkType === "renewal"
+      ? compareRenewalUserMessage(proposalJson, policyJson)
+      : checkType === "coi"
+        ? compareCoiUserMessage(proposalJson, policyJson)
+        : compareUserMessage(proposalJson, policyJson);
   const result = await structuredCall<{ findings: PipelineFinding[] }>(
-    COMPARE_SYSTEM,
-    [{ type: "text", text: compareUserMessage(proposalJson, policyJson) }],
+    system,
+    [{ type: "text", text: userMessage }],
     FINDINGS_SCHEMA,
     usage
   );
   return result.findings;
 }
+
+/** Drafts the carrier correction-request letter from confirmed findings. */
+export async function draftCorrectionLetter(
+  input: {
+    agencyName: string;
+    reviewerName: string;
+    label: string;
+    policyType: string;
+    checkType: string;
+    carrier: string | null;
+    findings: PipelineFinding[];
+  },
+  usage: Usage
+): Promise<string> {
+  if (process.env.CLAUDE_STUB_DIR) {
+    return [
+      `Subject: Policy correction request - ${input.label}`,
+      "",
+      "To Policy Services:",
+      "",
+      "In our policy review we identified the following items requiring correction:",
+      ...input.findings.map(
+        (f, i) => `${i + 1}. ${f.field_name}: source shows ${f.expected_value ?? "(not found)"}, issued policy shows ${f.found_value ?? "(not found)"}. Please correct.`
+      ),
+      "",
+      "Please issue a correcting endorsement effective inception and confirm in writing.",
+      "",
+      `${input.reviewerName}`,
+      `${input.agencyName}`,
+    ].join("\n");
+  }
+  const response = await client.messages.create({
+    model: MODEL,
+    max_tokens: 4000,
+    system: LETTER_SYSTEM,
+    messages: [
+      {
+        role: "user",
+        content: letterUserMessage({
+          ...input,
+          findingsJson: JSON.stringify(input.findings, null, 2),
+        }),
+      },
+    ],
+  });
+  addUsage(usage, response.usage);
+  const text = response.content.find((b) => b.type === "text")?.text;
+  if (!text) throw new Error("Empty letter response.");
+  return text;
+}
+
+export { LETTER_PROMPT_VERSION };
 
 /** Second pass on a critical finding. Cheap insurance against false criticals. */
 export async function verifyCritical(

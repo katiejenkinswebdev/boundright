@@ -5,6 +5,9 @@ import { setFindingReview } from "@/app/actions/review";
 
 export type FindingRow = {
   id: string;
+  doc_a_excerpt?: string | null;
+  doc_b_excerpt?: string | null;
+  dismiss_reason?: string | null;
   field_name: string;
   category: string;
   status: string;
@@ -50,10 +53,12 @@ export function FindingCard({ finding }: { finding: FindingRow }) {
   const [showNote, setShowNote] = useState(!!finding.reviewer_note);
   const [error, setError] = useState<string | null>(null);
 
-  const act = (action: "confirmed" | "dismissed") => {
+  const [dismissing, setDismissing] = useState(false);
+  const act = (action: "confirmed" | "dismissed", reason?: string) => {
     setError(null);
+    setDismissing(false);
     startTransition(async () => {
-      const result = await setFindingReview(finding.id, action, note);
+      const result = await setFindingReview(finding.id, action, note, reason);
       if (!result.ok) setError(result.message);
     });
   };
@@ -91,9 +96,7 @@ export function FindingCard({ finding }: { finding: FindingRow }) {
             {finding.expected_value ?? "Not found"}
           </p>
           {finding.doc_a_page && (
-            <span className="mt-2 inline-block rounded border border-line px-2 py-0.5 font-mono text-xs text-ink/60">
-              Proposal p. {finding.doc_a_page}
-            </span>
+            <SourcePeek label={`Proposal p. ${finding.doc_a_page}`} excerpt={finding.doc_a_excerpt} />
           )}
         </div>
         <div className="rounded border border-line/60 p-3">
@@ -102,9 +105,7 @@ export function FindingCard({ finding }: { finding: FindingRow }) {
             {finding.found_value ?? "Not found"}
           </p>
           {finding.doc_b_page && (
-            <span className="mt-2 inline-block rounded border border-line px-2 py-0.5 font-mono text-xs text-ink/60">
-              Policy p. {finding.doc_b_page}
-            </span>
+            <SourcePeek label={`Policy p. ${finding.doc_b_page}`} excerpt={finding.doc_b_excerpt} />
           )}
         </div>
       </div>
@@ -131,7 +132,7 @@ export function FindingCard({ finding }: { finding: FindingRow }) {
         <button
           type="button"
           disabled={pending}
-          onClick={() => act("dismissed")}
+          onClick={() => setDismissing((v) => !v)}
           className={`rounded px-4 py-2 text-sm font-semibold disabled:opacity-50 ${
             finding.reviewer_action === "dismissed"
               ? "bg-ink text-paper"
@@ -148,6 +149,33 @@ export function FindingCard({ finding }: { finding: FindingRow }) {
           {showNote ? "Hide note" : "Add note"}
         </button>
       </div>
+
+      {dismissing && (
+        <div className="mt-3 rounded border border-line bg-paper p-3">
+          <p className="mb-2 text-sm font-semibold">Why dismiss? This tunes future checks.</p>
+          <div className="flex flex-wrap gap-2">
+            {(
+              [
+                ["not_a_discrepancy", "Not a real discrepancy"],
+                ["wrong_extraction", "Extracted value is wrong"],
+                ["known_intentional", "Known and intentional"],
+                ["duplicate", "Duplicate finding"],
+                ["other", "Other"],
+              ] as const
+            ).map(([value, label]) => (
+              <button
+                key={value}
+                type="button"
+                disabled={pending}
+                onClick={() => act("dismissed", value)}
+                className="rounded border border-line px-3 py-1.5 text-sm hover:border-ink"
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       {showNote && (
         <textarea
@@ -167,5 +195,33 @@ export function FindingCard({ finding }: { finding: FindingRow }) {
         </p>
       )}
     </li>
+  );
+}
+
+function SourcePeek({ label, excerpt }: { label: string; excerpt?: string | null }) {
+  const [open, setOpen] = useState(false);
+  if (!excerpt) {
+    return (
+      <span className="mt-2 inline-block rounded border border-line px-2 py-0.5 font-mono text-xs text-ink/60">
+        {label}
+      </span>
+    );
+  }
+  return (
+    <div className="mt-2">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        aria-expanded={open}
+        className="rounded border border-line px-2 py-0.5 font-mono text-xs text-ink/60 underline decoration-dotted hover:border-ink"
+      >
+        {label}
+      </button>
+      {open && (
+        <p className="mt-2 rounded border border-line bg-paper p-2 font-mono text-xs leading-relaxed text-ink/80">
+          {excerpt}
+        </p>
+      )}
+    </div>
   );
 }

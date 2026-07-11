@@ -95,6 +95,25 @@ export async function changePassword(
   return ok("Password updated.");
 }
 
+export async function updateIntegrations(
+  _prev: SettingsState,
+  formData: FormData
+): Promise<SettingsState> {
+  const { supabase, agency, profile } = await requireProfile();
+  if (profile.role !== "admin") return fail("Only admins can change integrations.");
+  const url = String(formData.get("notify_webhook_url") ?? "").trim();
+  if (url && !/^https:\/\//.test(url)) {
+    return fail("Webhook URL must start with https://");
+  }
+  const { error } = await supabase
+    .from("agencies")
+    .update({ notify_webhook_url: url || null })
+    .eq("id", agency.id);
+  if (error) return fail("Couldn't save. Try again.");
+  revalidatePath("/settings");
+  return ok(url ? "Webhook saved. New-check and reminder notices will post there." : "Webhook removed.");
+}
+
 /** Danger zone: deletes the agency, all its data, and the account. */
 export async function deleteAccount(
   _prev: SettingsState,

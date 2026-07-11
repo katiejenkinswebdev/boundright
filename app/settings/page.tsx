@@ -9,6 +9,8 @@ import {
   BillingSection,
   DangerZone,
 } from "./SettingsForms";
+import { TeamSection, IntegrationsSection } from "./TeamSection";
+import { isAdmin } from "@/lib/roles";
 
 function Section({
   id,
@@ -28,7 +30,14 @@ function Section({
 }
 
 export default async function SettingsPage() {
-  const { profile, agency, user } = await requireProfile();
+  const { supabase, profile, agency, user } = await requireProfile();
+  const admin = isAdmin(profile);
+  const { data: members } = admin
+    ? await supabase
+        .from("profiles")
+        .select("id, full_name, role")
+        .order("created_at", { ascending: true })
+    : { data: null };
 
   return (
     <AppShell agency={agency} profile={profile} active="/settings">
@@ -41,6 +50,22 @@ export default async function SettingsPage() {
           </div>
         </Section>
 
+        {admin && (
+        <Section title="Team">
+          <TeamSection members={members ?? []} selfId={profile.id} />
+        </Section>
+        )}
+
+        {admin && (
+        <Section title="Integrations">
+          <IntegrationsSection
+            webhookUrl={agency.notify_webhook_url}
+            inboundToken={agency.inbound_token}
+          />
+        </Section>
+        )}
+
+        {admin && (
         <Section title="Agency">
           <div className="space-y-8">
             <AgencyForm
@@ -52,13 +77,16 @@ export default async function SettingsPage() {
             <LogoForm logoUrl={agency.logo_url} />
           </div>
         </Section>
+        )}
 
+        {admin && (
         <Section id="billing" title="Billing">
           <BillingSection
             plan={agency.plan}
             hasSubscription={!!agency.stripe_customer_id}
           />
         </Section>
+        )}
 
         <Section title="Legal">
           <ul className="space-y-1 text-sm">
@@ -80,9 +108,11 @@ export default async function SettingsPage() {
           </ul>
         </Section>
 
+        {admin && (
         <Section title="Danger zone">
           <DangerZone agencyName={agency.name} />
         </Section>
+        )}
       </div>
     </AppShell>
   );

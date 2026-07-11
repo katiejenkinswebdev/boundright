@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { requireProfile } from "@/lib/auth";
 import { getDashboardStats } from "@/lib/stats";
+import { canSeeAnalytics } from "@/lib/roles";
 import { AppShell } from "@/app/components/AppShell";
 import { TrendChart } from "@/app/components/TrendChart";
 import { MonthlyReportButton } from "./MonthlyReportButton";
@@ -15,10 +16,72 @@ const STATUS_LABEL: Record<string, string> = {
   failed: "Failed",
 };
 
+function RecentOnly({ stats }: { stats: Awaited<ReturnType<typeof getDashboardStats>> }) {
+  return (
+    <section className="rounded-lg border border-line bg-card p-6">
+      <div className="mb-4 flex items-center justify-between">
+        <h2 className="font-semibold">Recent checks</h2>
+        <Link href="/checks" className="text-sm underline">
+          View all
+        </Link>
+      </div>
+      <ul className="divide-y divide-line/60">
+        {stats.recent.map((c) => (
+          <li key={c.id}>
+            <Link
+              href={`/checks/${c.id}`}
+              className="flex items-center justify-between gap-4 py-3 hover:bg-paper"
+            >
+              <span className="min-w-0 flex-1 truncate font-medium">{c.label}</span>
+              <span className="font-mono text-xs uppercase tracking-wide text-ink/60">
+                {STATUS_LABEL[c.status] ?? c.status}
+              </span>
+            </Link>
+          </li>
+        ))}
+      </ul>
+      <p className="mt-4 text-sm text-ink/50">
+        Agency analytics are available to managers and admins.
+      </p>
+    </section>
+  );
+}
+
 export default async function DashboardPage() {
   const { supabase, profile, agency } = await requireProfile();
   const stats = await getDashboardStats(supabase, agency);
   const hasAnyChecks = stats.recent.length > 0;
+  const analytics = canSeeAnalytics(profile);
+
+  // Per-carrier error rates (managers and admins only).
+  let carrierRows: { carrier: string; checks: number; criticals: number }[] = [];
+  if (analytics) {
+    const { data: carrierChecks } = await supabase
+      .from("checks")
+      .select("id, carrier")
+      .not("carrier", "is", null)
+      .in("status", ["ready_for_review", "reviewed"]);
+    const { data: confirmedCriticals } = await supabase
+      .from("findings")
+      .select("check_id")
+      .eq("reviewer_action", "confirmed")
+      .eq("severity", "critical");
+    const criticalByCheck = new Map<string, number>();
+    for (const fc of confirmedCriticals ?? []) {
+      criticalByCheck.set(fc.check_id, (criticalByCheck.get(fc.check_id) ?? 0) + 1);
+    }
+    const byCarrier = new Map<string, { checks: number; criticals: number }>();
+    for (const c of carrierChecks ?? []) {
+      const entry = byCarrier.get(c.carrier) ?? { checks: 0, criticals: 0 };
+      entry.checks++;
+      entry.criticals += criticalByCheck.get(c.id) ?? 0;
+      byCarrier.set(c.carrier, entry);
+    }
+    carrierRows = [...byCarrier.entries()]
+      .map(([carrier, v]) => ({ carrier, ...v }))
+      .sort((a, b) => b.criticals - a.criticals)
+      .slice(0, 10);
+  }
 
   return (
     <AppShell agency={agency} profile={profile} active="/dashboard">
@@ -27,7 +90,7 @@ export default async function DashboardPage() {
           <h1 className="text-2xl font-semibold">Dashboard</h1>
           <p className="text-sm text-ink/60">{agency.name}</p>
         </div>
-        <MonthlyReportButton />
+        {analytics && <MonthlyReportButton />}
       </div>
 
       {!hasAnyChecks ? (
@@ -47,6 +110,8 @@ export default async function DashboardPage() {
             Or run your first real check
           </Link>
         </section>
+      ) : !analytics ? (
+        <RecentOnly stats={stats} />
       ) : (
         <>
           {/* KPI row */}
@@ -117,6 +182,36 @@ export default async function DashboardPage() {
             <h2 className="mb-4 font-semibold">Last 6 months</h2>
             <TrendChart trend={stats.trend} />
           </section>
+
+          {carrierRows.length > 0 && (
+            <section className="mb-8 rounded-lg border border-line bg-card p-6">
+              <h2 className="mb-1 font-semibold">Carrier issuance accuracy</h2>
+              <p className="mb-4 text-sm text-ink/60">
+                Confirmed critical findings by issuing carrier. Where the
+                corrections keep going.
+              </p>
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-line text-left">
+                    <th className="py-2 font-semibold">Carrier</th>
+                    <th className="py-2 text-right font-semibold">Checks</th>
+                    <th className="py-2 text-right font-semibold">Confirmed criticals</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {carrierRows.map((r) => (
+                    <tr key={r.carrier} className="border-b border-line/50">
+                      <td className="py-2">{r.carrier}</td>
+                      <td className="py-2 text-right font-mono">{r.checks}</td>
+                      <td className={`py-2 text-right font-mono ${r.criticals > 0 ? "text-flag" : ""}`}>
+                        {r.criticals}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </section>
+          )}
 
           {/* Recent checks */}
           <section className="rounded-lg border border-line bg-card p-6">

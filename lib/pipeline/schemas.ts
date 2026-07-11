@@ -4,7 +4,7 @@
 export type CitedValue = { value: string; page: number };
 
 export type Extraction = {
-  document_type: "proposal" | "binder" | "policy" | "unknown";
+  document_type: "proposal" | "binder" | "policy" | "certificate" | "unknown";
   named_insureds?: CitedValue[];
   effective_date?: CitedValue;
   expiration_date?: CitedValue;
@@ -14,6 +14,7 @@ export type Extraction = {
     deductibles?: { name: string; value: string; page: number }[];
   }[];
   forms_endorsements?: { number: string; title?: string; page: number }[];
+  carrier?: CitedValue;
   premium?: CitedValue;
   extraction_notes?: string[];
 };
@@ -78,7 +79,7 @@ export const EXTRACTION_SCHEMA = {
   properties: {
     document_type: {
       type: "string",
-      enum: ["proposal", "binder", "policy", "unknown"],
+      enum: ["proposal", "binder", "policy", "certificate", "unknown"],
     },
     named_insureds: { type: "array", items: citedValue },
     effective_date: citedValue,
@@ -109,6 +110,7 @@ export const EXTRACTION_SCHEMA = {
         additionalProperties: false,
       },
     },
+    carrier: citedValue,
     premium: citedValue,
     extraction_notes: { type: "array", items: { type: "string" } },
   },

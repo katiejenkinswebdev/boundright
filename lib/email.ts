@@ -80,7 +80,7 @@ export async function ownerEmail(agencyId: string): Promise<string | null> {
     .from("profiles")
     .select("user_id")
     .eq("agency_id", agencyId)
-    .eq("role", "owner")
+    .eq("role", "admin")
     .limit(1)
     .maybeSingle();
   if (!owner) return null;

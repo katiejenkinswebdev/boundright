@@ -7,6 +7,11 @@ import { inputClass, labelClass, primaryButtonClass } from "@/app/components/ui"
 
 const MAX_BYTES = 50 * 1024 * 1024;
 const POLICY_TYPES = ["GL", "Property", "WC", "Auto", "Umbrella", "Package", "Other"];
+const CHECK_TYPES = [
+  { value: "issuance", label: "Issuance check", a: "Proposal or Binder", b: "Issued Policy", blurb: "Does the issued policy match what you sold?" },
+  { value: "renewal", label: "Renewal comparison", a: "Expiring Policy", b: "Renewal Policy", blurb: "What changed from last term?" },
+  { value: "coi", label: "Certificate check", a: "Certificate (COI)", b: "Underlying Policy", blurb: "Does the policy support every certificate claim?" },
+] as const;
 
 function validateFile(file: File): string | null {
   const ext = file.name.includes(".") ? file.name.split(".").pop() : "file";
@@ -92,6 +97,7 @@ export function NewCheckForm() {
   const router = useRouter();
   const [label, setLabel] = useState("");
   const [policyType, setPolicyType] = useState("GL");
+  const [checkType, setCheckType] = useState<(typeof CHECK_TYPES)[number]>(CHECK_TYPES[0]);
   const [docA, setDocA] = useState<File | null>(null);
   const [docB, setDocB] = useState<File | null>(null);
   const [errors, setErrors] = useState<{ a: string | null; b: string | null; form: string | null }>({
@@ -117,6 +123,7 @@ export function NewCheckForm() {
       const fd = new FormData();
       fd.set("label", label);
       fd.set("policy_type", policyType);
+      fd.set("check_type", checkType.value);
       fd.set("doc_a_filename", docA.name);
       fd.set("doc_b_filename", docB.name);
       const created = await createCheck(fd);
@@ -166,6 +173,30 @@ export function NewCheckForm() {
 
   return (
     <form onSubmit={submit} className="space-y-6">
+      <fieldset>
+        <legend className="mb-2 block text-sm font-semibold">What are you checking?</legend>
+        <div className="grid gap-2 sm:grid-cols-3">
+          {CHECK_TYPES.map((t) => (
+            <label
+              key={t.value}
+              className={`cursor-pointer rounded border p-3 text-sm ${
+                checkType.value === t.value ? "border-ink bg-paper" : "border-line"
+              }`}
+            >
+              <input
+                type="radio"
+                name="check_type_radio"
+                checked={checkType.value === t.value}
+                onChange={() => setCheckType(t)}
+                className="sr-only"
+              />
+              <span className="font-semibold">{t.label}</span>
+              <span className="mt-1 block text-ink/60">{t.blurb}</span>
+            </label>
+          ))}
+        </div>
+      </fieldset>
+
       <div className="grid gap-4 sm:grid-cols-[2fr_1fr]">
         <div>
           <label htmlFor="label" className={labelClass}>
@@ -201,8 +232,8 @@ export function NewCheckForm() {
       </div>
 
       <div className="flex flex-col gap-4 sm:flex-row">
-        <DropZone label="Proposal or Binder" file={docA} error={errors.a} onFile={setFile("a")} />
-        <DropZone label="Issued Policy" file={docB} error={errors.b} onFile={setFile("b")} />
+        <DropZone label={checkType.a} file={docA} error={errors.a} onFile={setFile("a")} />
+        <DropZone label={checkType.b} file={docB} error={errors.b} onFile={setFile("b")} />
       </div>
 
       <p className="text-sm text-ink/60">

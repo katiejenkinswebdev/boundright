@@ -7,11 +7,34 @@ import {
   verifyCritical,
   emptyUsage,
   MODEL,
-  PROMPT_VERSION,
+  promptVersionFor,
   MAX_VISION_PAGES,
+  type CheckType,
 } from "./claude";
 import type { PipelineFinding } from "./schemas";
 import { sendCheckReadyEmail } from "@/lib/email";
+import { notifyAgency } from "@/lib/notify";
+
+/**
+ * A short source excerpt around the cited value: the citation preview that
+ * survives document deletion. ~240 chars, centered on the value when found.
+ */
+export function citationExcerpt(
+  pages: string[],
+  page: number | null,
+  value: string | null
+): string | null {
+  if (page === null || page < 1 || page > pages.length) return null;
+  const text = pages[page - 1].replace(/\s+/g, " ").trim();
+  if (!text) return null;
+  const idx = value ? text.indexOf(value) : -1;
+  if (idx >= 0) {
+    const start = Math.max(0, idx - 100);
+    const end = Math.min(text.length, idx + value!.length + 100);
+    return `${start > 0 ? "…" : ""}${text.slice(start, end)}${end < text.length ? "…" : ""}`;
+  }
+  return text.slice(0, 240) + (text.length > 240 ? "…" : "");
+}
 
 export function docPaths(checkId: string) {
   return {
@@ -55,7 +78,7 @@ export async function runCheck(checkId: string): Promise<void> {
   try {
     const { data: check } = await admin
       .from("checks")
-      .select("id, agency_id, label")
+      .select("id, agency_id, label, check_type")
       .eq("id", checkId)
       .single();
     if (!check) return;
@@ -107,7 +130,8 @@ export async function runCheck(checkId: string): Promise<void> {
 
     // --- Compare ---
     await admin.from("checks").update({ status: "comparing" }).eq("id", checkId);
-    let findings = await compare(extractionA, extractionB, usage);
+    const checkType = (check.check_type ?? "issuance") as CheckType;
+    let findings = await compare(extractionA, extractionB, usage, checkType);
 
     // --- Verify criticals (second pass) ---
     const verified: PipelineFinding[] = [];
@@ -147,6 +171,8 @@ export async function runCheck(checkId: string): Promise<void> {
         doc_a_page: f.doc_a_page,
         doc_b_page: f.doc_b_page,
         confidence: f.confidence,
+        doc_a_excerpt: citationExcerpt(ingestA.pages, f.doc_a_page, f.expected_value),
+        doc_b_excerpt: citationExcerpt(ingestB.pages, f.doc_b_page, f.found_value),
       }))
     );
     if (insertError) throw insertError;
@@ -156,7 +182,8 @@ export async function runCheck(checkId: string): Promise<void> {
       .update({
         status: "ready_for_review",
         model_version: MODEL,
-        prompt_version: PROMPT_VERSION,
+        prompt_version: promptVersionFor(checkType),
+        carrier: extractionB.carrier?.value ?? extractionA.carrier?.value ?? null,
         tokens_in: usage.tokensIn,
         tokens_out: usage.tokensOut,
         cost_cents: Math.round(usage.costCents),
@@ -187,6 +214,10 @@ export async function runCheck(checkId: string): Promise<void> {
     }
 
     await sendCheckReadyEmail(check.agency_id, checkId, check.label);
+    await notifyAgency(
+      check.agency_id,
+      `BoundRight: the check for "${check.label}" is ready for review.`
+    );
   } catch (err) {
     console.error(`Check ${checkId} failed:`, err instanceof Error ? err.message : err);
     await fail(

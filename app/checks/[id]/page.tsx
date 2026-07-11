@@ -4,6 +4,7 @@ import { AppShell } from "@/app/components/AppShell";
 import { CheckProgress } from "./CheckProgress";
 import { FindingCard, Badge, type FindingRow } from "./FindingCard";
 import { ReviewFooter } from "./ReviewFooter";
+import { CorrectionLetter } from "./CorrectionLetter";
 
 const SEVERITY_ORDER = { critical: 0, moderate: 1, minor: 2 } as const;
 
@@ -71,6 +72,7 @@ export default async function CheckPage({
               checkId={check.id}
               status={check.status}
               reviewedAt={check.reviewed_at}
+              correctionLetter={check.correction_letter}
             />
           </>
         )}
@@ -83,10 +85,12 @@ async function ReportBody({
   checkId,
   status,
   reviewedAt,
+  correctionLetter,
 }: {
   checkId: string;
   status: string;
   reviewedAt: string | null;
+  correctionLetter: string | null;
 }) {
   const { supabase } = await requireProfile();
   const { data } = await supabase
@@ -162,6 +166,10 @@ async function ReportBody({
           ))}
         </ul>
       </details>
+
+      {status === "reviewed" && issues.some((f) => f.reviewer_action === "confirmed") && (
+        <CorrectionLetter checkId={checkId} initialLetter={correctionLetter} />
+      )}
 
       {/* Footer actions (spec 4.3.5) */}
       <ReviewFooter

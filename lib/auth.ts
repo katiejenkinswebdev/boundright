@@ -23,6 +23,8 @@ export type Agency = {
   billing_status: "ok" | "past_due" | "canceled";
   billing_grace_until: string | null;
   stripe_customer_id: string | null;
+  notify_webhook_url: string | null;
+  inbound_token: string;
 };
 
 /** Redirects to /login when unauthenticated. */

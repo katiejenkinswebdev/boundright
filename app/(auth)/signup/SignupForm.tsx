@@ -7,11 +7,12 @@ import { inputClass, labelClass, primaryButtonClass } from "@/app/components/ui"
 
 const initial: AuthFormState = { status: "idle", message: "" };
 
-export function SignupForm() {
+export function SignupForm({ next = "" }: { next?: string }) {
   const [state, action, pending] = useActionState(signUp, initial);
 
   return (
     <form action={action} className="space-y-4">
+      <input type="hidden" name="next" value={next} />
       <div>
         <label htmlFor="full_name" className={labelClass}>
           Your name

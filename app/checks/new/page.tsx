@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { requireProfile } from "@/lib/auth";
 import { AppShell } from "@/app/components/AppShell";
 import { NewCheckForm } from "./NewCheckForm";
@@ -16,8 +17,12 @@ export default async function NewCheckPage() {
           </span>
         </div>
         <p className="mb-8 text-ink/70">
-          Upload the proposal or binder you sold and the policy the carrier
-          issued. BoundRight compares them field by field.
+          Pick what you&apos;re checking, upload the two documents, and
+          BoundRight compares them field by field. Several to run?{" "}
+          <Link href="/checks/batch" className="underline">
+            Use batch mode
+          </Link>
+          .
         </p>
         <div className="rounded-lg border border-line bg-card p-8">
           <NewCheckForm />

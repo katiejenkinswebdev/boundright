@@ -6,6 +6,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { runCheck, docPaths } from "@/lib/pipeline/run";
 
 const POLICY_TYPES = ["GL", "Property", "WC", "Auto", "Umbrella", "Package", "Other"];
+const CHECK_TYPES = ["issuance", "renewal", "coi"];
 const TRIAL_CHECK_LIMIT = 10;
 const PAID_CHECK_LIMIT = 150;
 
@@ -23,6 +24,10 @@ export async function createCheck(formData: FormData): Promise<CreateCheckResult
 
   const label = String(formData.get("label") ?? "").trim();
   const policyType = String(formData.get("policy_type") ?? "");
+  const checkType = String(formData.get("check_type") ?? "issuance");
+  if (!CHECK_TYPES.includes(checkType)) {
+    return { ok: false, message: "Pick a check type." };
+  }
   const docAName = String(formData.get("doc_a_filename") ?? "").slice(0, 255);
   const docBName = String(formData.get("doc_b_filename") ?? "").slice(0, 255);
 
@@ -103,6 +108,7 @@ export async function createCheck(formData: FormData): Promise<CreateCheckResult
       agency_id: agency.id,
       label,
       policy_type: policyType,
+      check_type: checkType,
       status: "queued",
       doc_a_filename: docAName || null,
       doc_b_filename: docBName || null,

@@ -49,7 +49,10 @@ export default async function proxy(request: NextRequest) {
   }
 
   if (user && AUTH_PAGES.some((p) => pathname === p)) {
-    return NextResponse.redirect(new URL("/dashboard", request.url));
+    const next = request.nextUrl.searchParams.get("next");
+    return NextResponse.redirect(
+      new URL(next?.startsWith("/join/") ? next : "/dashboard", request.url)
+    );
   }
 
   return response;

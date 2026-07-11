@@ -23,6 +23,8 @@ export async function signUp(
   const email = String(formData.get("email") ?? "").trim().toLowerCase();
   const password = String(formData.get("password") ?? "");
   const acceptedTerms = formData.get("accept_terms") === "on";
+  const nextParam = String(formData.get("next") ?? "");
+  const next = nextParam.startsWith("/") ? nextParam : "/onboarding";
 
   if (!fullName) return fail("Enter your name so reports can credit the reviewer.");
   if (!email) return fail("Enter your work email.");
@@ -35,7 +37,7 @@ export async function signUp(
     password,
     options: {
       data: { full_name: fullName },
-      emailRedirectTo: appUrl("/auth/callback?next=/onboarding"),
+      emailRedirectTo: appUrl(`/auth/callback?next=${encodeURIComponent(next)}`),
     },
   });
 
@@ -46,7 +48,7 @@ export async function signUp(
     return idleOk("Check your email to confirm your account, then sign in.");
   }
 
-  redirect("/onboarding");
+  redirect(next);
 }
 
 export async function signIn(

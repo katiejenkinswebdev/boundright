@@ -84,7 +84,7 @@ export async function completeOnboarding(
     user_id: user.id,
     agency_id: agency.id,
     full_name: fullName,
-    role: "owner",
+    role: "admin",
   });
 
   if (profileError) {

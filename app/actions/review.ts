@@ -6,17 +6,31 @@ import { requireProfile } from "@/lib/auth";
 export type ReviewResult = { ok: true } | { ok: false; message: string };
 
 /** Confirm or dismiss a finding, with an optional reviewer note. RLS scopes access. */
+const DISMISS_REASONS = [
+  "not_a_discrepancy",
+  "wrong_extraction",
+  "duplicate",
+  "known_intentional",
+  "other",
+];
+
 export async function setFindingReview(
   findingId: string,
   action: "confirmed" | "dismissed",
-  note: string
+  note: string,
+  dismissReason?: string
 ): Promise<ReviewResult> {
   const { supabase } = await requireProfile();
+  const reason =
+    action === "dismissed" && dismissReason && DISMISS_REASONS.includes(dismissReason)
+      ? dismissReason
+      : null;
   const { data, error } = await supabase
     .from("findings")
     .update({
       reviewer_action: action,
       reviewer_note: note.trim() ? note.trim().slice(0, 2000) : null,
+      dismiss_reason: reason,
     })
     .eq("id", findingId)
     .select("id, check_id")
