@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { buildMonthlyReportPdf, computeMonthlyNumbers } from "@/lib/monthly-report";
+import { emailHtml, ownerEmail, sendEmail } from "@/lib/email";
 import { isAuthorizedCron } from "../route-helpers";
 
 /**
@@ -27,40 +28,25 @@ export async function GET(request: Request) {
       const numbers = await computeMonthlyNumbers(admin, agency, priorMonth);
       const pdf = await buildMonthlyReportPdf(agency.name, numbers);
 
-      const { data: owner } = await admin
-        .from("profiles")
-        .select("user_id")
-        .eq("agency_id", agency.id)
-        .eq("role", "owner")
-        .limit(1)
-        .maybeSingle();
       let emailed = false;
-      if (owner && process.env.RESEND_API_KEY) {
-        const { data: userData } = await admin.auth.admin.getUserById(owner.user_id);
-        const email = userData?.user?.email;
-        if (email) {
-          await fetch("https://api.resend.com/emails", {
-            method: "POST",
-            headers: {
-              Authorization: `Bearer ${process.env.RESEND_API_KEY}`,
-              "Content-Type": "application/json",
+      const email = process.env.RESEND_API_KEY ? await ownerEmail(agency.id) : null;
+      if (email) {
+        await sendEmail(
+          email,
+          `${agency.name} · policy check ROI report for ${numbers.monthLabel}`,
+          emailHtml({
+            heading: `Your ${numbers.monthLabel} report is attached`,
+            bodyHtml: `<p style="margin:0 0 12px;">${numbers.checksRun} checks run, ${numbers.findingsConfirmed} confirmed discrepancies, an estimated $${numbers.exposureFlagged.toLocaleString()} of exposure flagged.</p><p style="margin:0;">Share it with your principal. It's the receipt for the work your team did.</p>`,
+          }),
+          [
+            {
+              filename: `BoundRight ROI ${numbers.monthLabel}.pdf`,
+              content: Buffer.from(pdf).toString("base64"),
             },
-            body: JSON.stringify({
-              from: "BoundRight <notifications@boundright.app>",
-              to: [email],
-              subject: `${agency.name} · policy check ROI report for ${numbers.monthLabel}`,
-              html: `<p>Your ${numbers.monthLabel} report is attached: ${numbers.checksRun} checks, ${numbers.findingsConfirmed} confirmed discrepancies, ~$${numbers.exposureFlagged.toLocaleString()} exposure flagged.</p><p>Share it with your principal. It's the receipt for the work your team did.</p>`,
-              attachments: [
-                {
-                  filename: `BoundRight ROI ${numbers.monthLabel}.pdf`,
-                  content: Buffer.from(pdf).toString("base64"),
-                },
-              ],
-            }),
-          });
-          emailed = true;
-          sent++;
-        }
+          ]
+        );
+        emailed = true;
+        sent++;
       }
 
       await admin.from("monthly_snapshots").upsert(

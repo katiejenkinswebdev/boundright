@@ -72,6 +72,11 @@ export default async function SettingsPage() {
                 Privacy Policy
               </Link>
             </li>
+            <li>
+              <a href="/boundright-data-processing.pdf" className="underline">
+                Data processing one-pager (PDF, for due diligence)
+              </a>
+            </li>
           </ul>
         </Section>
 

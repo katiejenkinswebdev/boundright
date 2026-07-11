@@ -48,6 +48,13 @@ export default function PrivacyPage() {
           after two warning emails.
         </p>
         <p>
+          Running due diligence? Download the{" "}
+          <a className="underline" href="/boundright-data-processing.pdf">
+            data processing one-pager
+          </a>{" "}
+          (what we store, what we delete, where it lives).
+        </p>
+        <p>
           Questions? <a className="underline" href="mailto:help@boundright.app">help@boundright.app</a>
         </p>
       </div>

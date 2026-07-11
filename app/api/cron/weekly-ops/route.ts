@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getStripe } from "@/lib/stripe";
+import { emailHtml, sendEmail } from "@/lib/email";
 import { isAuthorizedCron } from "../route-helpers";
 
 /** Weekly ops digest to the operator: signups, checks, failures, AI spend, MRR. */
@@ -58,27 +59,22 @@ export async function GET(request: Request) {
     mrr,
   };
 
-  if (process.env.RESEND_API_KEY) {
-    await fetch("https://api.resend.com/emails", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${process.env.RESEND_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        from: "BoundRight Ops <notifications@boundright.app>",
-        to: [adminEmail],
-        subject: `BoundRight week: ${summary.signups} signups, ${summary.checksRun} checks, MRR ${summary.mrr}`,
-        html: `<ul>
-          <li>New signups: ${summary.signups}</li>
-          <li>Checks run: ${summary.checksRun}</li>
-          <li>Failures: ${summary.failures}</li>
-          <li>AI spend: ${summary.aiSpend}</li>
-          <li>MRR: ${summary.mrr}</li>
-        </ul><p><a href="${process.env.APP_URL}/admin">Open the admin view</a></p>`,
-      }),
-    });
-  }
+  await sendEmail(
+    adminEmail,
+    `BoundRight week: ${summary.signups} signups, ${summary.checksRun} checks, MRR ${summary.mrr}`,
+    emailHtml({
+      heading: "The week in numbers",
+      bodyHtml: `<ul style="margin:0;padding-left:20px;">
+        <li>New signups: ${summary.signups}</li>
+        <li>Checks run: ${summary.checksRun}</li>
+        <li>Failures: ${summary.failures}</li>
+        <li>AI spend: ${summary.aiSpend}</li>
+        <li>MRR: ${summary.mrr}</li>
+      </ul>`,
+      cta: { label: "Open the admin view", url: `${process.env.APP_URL}/admin` },
+      includeDisclaimer: false,
+    })
+  );
 
   return NextResponse.json(summary);
 }
