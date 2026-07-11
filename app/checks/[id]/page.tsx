@@ -1,7 +1,6 @@
-import Link from "next/link";
-import { Lockup } from "@/app/components/brand";
 import { notFound } from "next/navigation";
 import { requireProfile } from "@/lib/auth";
+import { AppShell } from "@/app/components/AppShell";
 import { CheckProgress } from "./CheckProgress";
 import { FindingCard, Badge, type FindingRow } from "./FindingCard";
 import { ReviewFooter } from "./ReviewFooter";
@@ -14,7 +13,7 @@ export default async function CheckPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const { supabase, agency } = await requireProfile();
+  const { supabase, agency, profile } = await requireProfile();
 
   const { data: check } = await supabase
     .from("checks")
@@ -27,16 +26,7 @@ export default async function CheckPage({
   const scanned = check.doc_a_scanned || check.doc_b_scanned;
 
   return (
-    <main className="mx-auto w-full max-w-[1100px] flex-1 px-6 py-8">
-      <header className="mb-8 flex items-center justify-between">
-        <Link href="/dashboard">
-          <Lockup />
-        </Link>
-        <Link href="/checks/new" className="text-sm underline">
-          New check
-        </Link>
-      </header>
-
+    <AppShell agency={agency} profile={profile} active="/checks">
       <div className="mx-auto max-w-2xl">
         {/* Report header (spec 4.3.1) */}
         <h1 className="mb-1 text-2xl font-semibold">{check.label}</h1>
@@ -85,7 +75,7 @@ export default async function CheckPage({
           </>
         )}
       </div>
-    </main>
+    </AppShell>
   );
 }
 
