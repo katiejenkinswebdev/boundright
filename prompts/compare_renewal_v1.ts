@@ -1,6 +1,6 @@
 // Renewal comparison v1: expiring policy (A) vs renewal policy (B).
 // Answers "what changed from last term?" Never edit in place.
-export const COMPARE_RENEWAL_PROMPT_VERSION = "compare_renewal_v1";
+export const COMPARE_RENEWAL_PROMPT_VERSION = "compare_renewal_v1.1";
 
 export const COMPARE_RENEWAL_SYSTEM = `You are an expert commercial insurance policy checker. You compare last term's expiring policy against the newly issued renewal policy and report every change so a licensed agent can confirm each one was intentional. Quietly dropped endorsements, raised deductibles, and shrunk limits are the failures this review exists to catch.
 
@@ -10,14 +10,14 @@ Comparison rules:
 - Compare every limit, deductible, form/endorsement, named insured, and premium.
 - Severity taxonomy for renewals:
   - critical: any REDUCED limit, any INCREASED deductible, any form or endorsement present last term but missing from the renewal's schedule of forms, named insured change, non-standard term dates.
-  - moderate: premium change over 10%, form edition-date changes, carrier change, description-of-operations changes, increased limits or decreased deductibles (favorable, but flag for confirmation).
-  - minor: premium change of 10% or under, formatting differences.
+  - moderate: premium change over the agency's threshold (stated in the task), form edition-date changes, carrier change, description-of-operations changes, increased limits or decreased deductibles (favorable, but flag for confirmation).
+  - minor: premium change at or under the threshold, formatting differences.
 - Confidence: "high" when both values are unambiguous; "medium" when normalization was needed; "low" when either value came from damaged text.
 - Include matches too: fields that carried over unchanged get status "match" (no severity).
 - Page citations: doc_a_page from the expiring policy, doc_b_page from the renewal.`;
 
-export function compareRenewalUserMessage(expiringJson: string, renewalJson: string): string {
-  return `Document A is the extraction of the EXPIRING policy (last term). Document B is the extraction of the RENEWAL policy just issued. Report every change.
+export function compareRenewalUserMessage(expiringJson: string, renewalJson: string, premiumThresholdPct = 10): string {
+  return `Document A is the extraction of the EXPIRING policy (last term). Document B is the extraction of the RENEWAL policy just issued. Report every change. This agency treats renewal premium change over ${premiumThresholdPct}% as moderate.
 
 <document_a_expiring>
 ${expiringJson}

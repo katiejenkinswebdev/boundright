@@ -3,6 +3,7 @@ import { cookies } from "next/headers";
 import { signOut } from "@/app/actions/auth";
 import type { Agency, Profile } from "@/lib/auth";
 import { AppShellChrome } from "./AppShellChrome";
+import { FeedbackWidget } from "./FeedbackWidget";
 
 // Server-rendered per request; reading the clock here (outside the component
 // body) keeps the render itself pure.
@@ -68,6 +69,7 @@ export async function AppShell({
       <a href="mailto:help@boundright.app" className="block text-sm underline">
         Help
       </a>
+      <FeedbackWidget />
       <p className="text-sm text-ink/60">{profile.full_name}</p>
       <form action={signOut}>
         <button type="submit" className="text-sm underline">

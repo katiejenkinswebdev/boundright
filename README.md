@@ -8,76 +8,59 @@ Policy discrepancy detection for independent commercial insurance agencies. A CS
 - **Pricing:** $349/mo (founding: $249/mo), 150 checks/mo, 14-day free trial, no credit card to trial.
 - **The human-in-the-loop rule:** every finding is confirmed or dismissed by a licensed agent before export. The exported report is the agent's work product, not the AI's.
 
+## Use cases
+
+| The moment | What goes wrong without BoundRight | What solves it |
+|---|---|---|
+| A policy arrives from the carrier | Nobody checks it line by line; a $1M aggregate ships instead of $2M | Issuance check: field-by-field comparison with page citations, critical findings verified by a second AI pass |
+| Renewal season, 40 policies in a week | Quietly dropped endorsements and raised deductibles slip through | Renewal comparison (expiring vs renewal) + batch mode |
+| A client demands a certificate today | The COI promises coverage the policy doesn't support | Certificate check: every COI claim verified against the policy |
+| A discrepancy is confirmed | The correction email takes 20 minutes to write and forgets "effective inception" | One-click correction request letter, industry conventions built in |
+| The finding is wrong | False positives erode trust silently | Dismiss-with-reason feeds the accuracy dataset; excerpts let reviewers verify without the original document |
+| A report sits unreviewed | Findings never become documented catches | 48h (configurable) reminders by email and Slack/Teams |
+| The CSR lives in Outlook | Uploading is one step too many | Email-in checks: forward the carrier email, the check starts itself |
+| The principal asks "was it worth it?" | Nobody remembers what was caught | ROI dashboard + auto-emailed monthly report, every number showing its math |
+| Renewal negotiations with carriers | No data on who issues wrong | Per-carrier confirmed-critical rates (managers+) |
+| A 20-person agency shares one login | No audit trail of who reviewed what | Roles (admin / manager / user), invites, per-reviewer attribution |
+
 ## Features
 
-### Checks — the core loop
-- Two-step New Check flow: label + policy type, then dual drop zones (drag-and-drop or click) for the proposal/binder and the issued policy
-- Client- and server-side validation with directive error copy (wrong file type, password-protected, over 50 MB / 300 pages)
-- Direct-to-storage uploads via short-lived signed URLs; PDFs never pass through the app server
-- Async processing with a staged progress screen (reading → comparing → building), live polling, and a "your check is ready" email
-- Failure states in plain language with one-click retry; failed checks never count against the monthly cap
-- Scanned-document detection (text coverage under 20%) with a vision fallback and a visible reduced-confidence notice
-- Sample check demo mode: one click runs a bundled specimen pair through the real pipeline, free, nothing uploaded
+### Checks
+- Three check types: issuance (proposal vs issued policy), renewal comparison (expiring vs renewal), certificate (COI vs policy), each with its own versioned comparison prompt and severity taxonomy
+- Two-step New Check flow with drag-and-drop, directive validation copy, direct-to-storage signed uploads, staged progress, ready emails; batch mode for many pairs at once; email-in via a per-agency tokenized address (`/api/inbound`)
+- Sample check demo mode (free, bundled specimens); failed checks never consume quota
 
 ### AI pipeline
-- Claude (`claude-sonnet-5`) extraction with structured JSON output: named insureds, dates, limits, deductibles, forms/endorsements schedules, premium — every value verbatim with a page citation, ISO form-number conventions respected
-- Field-by-field comparison with date/currency normalization and the hardcoded severity taxonomy (critical / moderate / minor), including missing-form detection against the schedule of forms and premium-variance thresholds
-- Documents-swapped sanity check ("these may be uploaded in reverse order")
-- Second-pass verification of every critical finding against source-page excerpts; disagreements downgrade confidence instead of shipping false criticals
-- Versioned prompts in `/prompts` with the model + prompt version stored on every check (audit trail), plus per-check token and cost logging
-- Uploaded PDFs deleted immediately after processing, success or failure, with a nightly job that verifies deletion independently
+- Claude structured extraction (verbatim values, page citations, ISO form conventions, issuing carrier); comparison with normalization and agency-configurable premium-variance thresholds; second-pass verification of criticals; versioned prompts with model + prompt version stored per check; per-check token/cost logging; PDFs deleted after processing with nightly verification
 
-### Report review
-- Summary strip with severity counts; findings grouped critical → moderate → minor
-- Side-by-side "Proposal says / Policy says" cards with explicit "Not found" states and clickable page-citation chips
-- Confidence indicators; low-confidence findings carry "Verify against source"
-- Confirm or Dismiss on every finding, with optional reviewer notes
-- Matches shown too (collapsed by default) to build trust in what was checked
-- "Mark reviewed" gated on a decision for every critical finding; confirmation lands the BOUND RIGHT stamp with the review date
+### Review and documentation
+- Findings grouped by severity with confirm/dismiss, reviewer notes, and dismiss reasons (not a discrepancy / wrong extraction / known intentional / duplicate) that build the false-positive dataset
+- Citation chips reveal ~240-character source excerpts, so reviewers can verify without the deleted originals
+- Mark reviewed gated on every critical having a decision; the BOUND RIGHT stamp lands on confirmation
+- Branded PDF export with reviewer attribution, citations, decisions, and the stamp; correction request letter drafted from confirmed findings (enumerated discrepancies, correction effective inception, written confirmation), editable and stored
 
-### Export
-- Branded PDF report: agency co-branding, findings ledger with citations, reviewer decisions and notes, "Reviewed by [name] on [date]", the stamp, engine version, and the disclaimer on every page — built to sit in an E&O file
-- Export gated to reviewed checks; every export recorded for the audit trail
+### Teams and roles
+- Admin / manager / user roles: users run and review; managers add agency analytics; admins add configuration, team, integrations, billing, and deletion
+- Email invites with join links; role management in Settings → Team
 
-### Checks list
-- Search by client/account label, severity chips per check, view/export/delete with a confirm step that states findings will be removed and stats adjusted
+### Metrics that show their work
+- Every dashboard number carries a "?" explainer with the exact formula and the agency's own inputs; only reviewer-confirmed findings count toward any metric
+- KPI tiles (cap meter, confirmed by severity, hours saved with dollar equivalent, exposure flagged), 6-month trend with table view, per-carrier confirmed-critical rates (managers+, with a small-sample caveat)
+- Monthly ROI report PDF, snapshotted and auto-emailed on the 1st
 
-### Dashboard
-- Four KPI tiles: checks this month with a cap meter, confirmed discrepancies split by severity, hours saved (with the math shown and editable assumptions), exposure flagged (labeled as an estimate)
-- Six-month trend chart (checks vs confirmed discrepancies) with an accessible table view and colorblind-validated series colors
-- Recent checks with live status
-- Monthly ROI report: one-page branded PDF with an auto-written summary paragraph, downloadable on demand, snapshotted, and auto-emailed to the account owner on the 1st for the prior month
+### Configuration (Settings → Configuration, admins)
+- ROI assumptions: manual check minutes, average account premium, loaded CSR hourly rate
+- Scoring thresholds: premium variance % (issuance) and renewal premium %, injected into comparisons per agency
+- Workflow: review-reminder timing in hours
 
-### Billing
-- 14-day / 10-check trial with a factual banner (days and checks remaining, no countdown theatrics)
-- Stripe Checkout for Founding ($249) and Standard ($349) plans; Customer Portal for card, invoices, and one-click cancellation with no retention tricks
-- Webhooks: subscription start, payment failure (7-day grace with in-app notice), recovery, and cancellation (read-only mode that preserves data and reports)
-- Honest usage limits: quiet notice at 80%, checks pause at 100% with the reset date — never silent overage billing
-- Burst rate limiting on check creation; monthly usage resets by cron
+### Integrations and feedback
+- Slack/Teams incoming webhook for check-ready and reminder notices; email-in address per agency
+- In-app feedback widget (general / bug / idea / "a finding was wrong") stored first-party and surfaced in the operator console; no third-party analytics
 
-### Accounts & settings
-- Email/password and magic-link sign-in, password reset, ToS consent at signup
-- Three-minute onboarding: agency name plus the three ROI assumptions (manual check time, average account premium, CSR hourly rate)
-- Settings: profile and password, agency name/logo/assumptions, billing, legal, and a danger zone that deletes the agency and all data (type the agency name to confirm)
-- Per-agency isolation enforced by Postgres row-level security, proven by tests
-
-### Email
-- Type-led branded templates (no imagery) for check-ready, monthly ROI report (PDF attached), and the weekly ops digest
-
-### Marketing site & trust
-- Landing page: "Was it bound right?" hero, public 3-tier pricing (never behind a demo call), free-audit offer, email capture, plain-words trust signals
-- Terms and Privacy drafts, plus a downloadable data-processing one-pager PDF (what we store, what we delete, where it lives) for buyer due diligence
-
-### Ops (solo-founder tooling)
-- `/admin` console: every agency with plan, billing state, usage, cumulative AI cost, and last activity; recent failures with reasons
-- Cost guardrails: per-check over $2 and per-agency over $75/mo are flagged
-- Weekly ops email: signups, checks, failures, AI spend, MRR from Stripe
-- Cron jobs: monthly period reset, monthly report generation + email, nightly deletion verification, weekly digest
-- Sentry error monitoring with document content and PII scrubbed; strict security headers (CSP, X-Frame-Options); first-party events analytics only
-
-### Accessibility & design
-- "Audit ledger, modern" design system: Ink/Paper palette, IBM Plex Sans + Mono (extracted values always in mono), the stamp as the single bold element
-- WCAG AA contrast, 16px+ body text, full keyboard reachability, visible focus, `prefers-reduced-motion` respected
+### Billing, ops, accessibility
+- 14-day/10-check trial, Stripe checkout + one-click-cancel portal, webhooks with 7-day payment grace and read-only cancellation, honest caps with no overages, burst rate limiting
+- Operator console (agencies, AI cost, failures, feedback), cost guardrails, weekly ops digest, cron jobs (period reset, monthly reports, deletion verification, reminders), Sentry with PII scrubbing, security headers, first-party events only
+- WCAG AA, keyboard reachable, reduced motion respected; "audit ledger, modern" design system with the stamp as the single bold element
 
 ## Stack
 
@@ -95,7 +78,7 @@ Policy discrepancy detection for independent commercial insurance agencies. A CS
 
 ## Privacy commitments (marketing must match behavior exactly)
 
-- Uploaded PDFs are **deleted after processing**. We keep only filenames and findings.
+- Uploaded PDFs are **deleted after processing**. We keep only filenames, findings, and the short cited excerpts shown in reports.
 - No document content or extracted values in logs or error monitoring.
 - RLS on every table; private storage bucket; short-lived signed URLs.
 

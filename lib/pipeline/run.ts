@@ -78,7 +78,7 @@ export async function runCheck(checkId: string): Promise<void> {
   try {
     const { data: check } = await admin
       .from("checks")
-      .select("id, agency_id, label, check_type")
+      .select("id, agency_id, label, check_type, agencies(premium_variance_threshold, renewal_premium_threshold)")
       .eq("id", checkId)
       .single();
     if (!check) return;
@@ -131,7 +131,14 @@ export async function runCheck(checkId: string): Promise<void> {
     // --- Compare ---
     await admin.from("checks").update({ status: "comparing" }).eq("id", checkId);
     const checkType = (check.check_type ?? "issuance") as CheckType;
-    let findings = await compare(extractionA, extractionB, usage, checkType);
+    const agencyCfg = check.agencies as unknown as {
+      premium_variance_threshold: number;
+      renewal_premium_threshold: number;
+    } | null;
+    let findings = await compare(extractionA, extractionB, usage, checkType, {
+      premiumPct: Number(agencyCfg?.premium_variance_threshold ?? 5),
+      renewalPremiumPct: Number(agencyCfg?.renewal_premium_threshold ?? 10),
+    });
 
     // --- Verify criticals (second pass) ---
     const verified: PipelineFinding[] = [];

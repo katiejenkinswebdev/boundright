@@ -134,11 +134,14 @@ export async function extractFromScanned(
   );
 }
 
+export type CompareThresholds = { premiumPct: number; renewalPremiumPct: number };
+
 export async function compare(
   proposal: Extraction,
   policy: Extraction,
   usage: Usage,
-  checkType: CheckType = "issuance"
+  checkType: CheckType = "issuance",
+  thresholds: CompareThresholds = { premiumPct: 5, renewalPremiumPct: 10 }
 ): Promise<PipelineFinding[]> {
   const proposalJson = JSON.stringify(proposal, null, 2);
   const policyJson = JSON.stringify(policy, null, 2);
@@ -152,10 +155,10 @@ export async function compare(
         : COMPARE_SYSTEM;
   const userMessage =
     checkType === "renewal"
-      ? compareRenewalUserMessage(proposalJson, policyJson)
+      ? compareRenewalUserMessage(proposalJson, policyJson, thresholds.renewalPremiumPct)
       : checkType === "coi"
         ? compareCoiUserMessage(proposalJson, policyJson)
-        : compareUserMessage(proposalJson, policyJson);
+        : compareUserMessage(proposalJson, policyJson, thresholds.premiumPct);
   const result = await structuredCall<{ findings: PipelineFinding[] }>(
     system,
     [{ type: "text", text: userMessage }],

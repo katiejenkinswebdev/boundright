@@ -77,11 +77,17 @@ export function AgencyForm({
   minutes,
   premium,
   rate,
+  varPct,
+  renewalPct,
+  reminderHours,
 }: {
   name: string;
   minutes: number;
   premium: number;
   rate: number;
+  varPct: number;
+  renewalPct: number;
+  reminderHours: number;
 }) {
   const [state, action, pending] = useActionState(updateAgency, initial);
   return (
@@ -112,7 +118,31 @@ export function AgencyForm({
           <input id="csr_hourly_rate" name="csr_hourly_rate" type="number" min={1} defaultValue={rate} className={inputClass} />
         </div>
       </div>
-      <p className="text-sm text-ink/60">These power your ROI dashboard.</p>
+      <div className="grid gap-4 sm:grid-cols-3">
+        <div>
+          <label htmlFor="premium_variance_threshold" className={labelClass}>
+            Premium variance threshold (%)
+          </label>
+          <input id="premium_variance_threshold" name="premium_variance_threshold" type="number" min={0.5} step={0.5} defaultValue={varPct} className={inputClass} />
+        </div>
+        <div>
+          <label htmlFor="renewal_premium_threshold" className={labelClass}>
+            Renewal premium threshold (%)
+          </label>
+          <input id="renewal_premium_threshold" name="renewal_premium_threshold" type="number" min={1} step={0.5} defaultValue={renewalPct} className={inputClass} />
+        </div>
+        <div>
+          <label htmlFor="reminder_hours" className={labelClass}>
+            Review reminder after (hours)
+          </label>
+          <input id="reminder_hours" name="reminder_hours" type="number" min={1} defaultValue={reminderHours} className={inputClass} />
+        </div>
+      </div>
+      <p className="text-sm text-ink/60">
+        These power your ROI dashboard and tune how checks are scored: premium
+        differences above your thresholds get flagged as moderate instead of
+        minor, and reminders go out when a report waits longer than you allow.
+      </p>
       <button disabled={pending} className={secondaryButtonClass}>
         {pending ? "Saving…" : "Save agency settings"}
       </button>

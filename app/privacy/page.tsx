@@ -22,8 +22,9 @@ export default function PrivacyPage() {
         </p>
         <p>
           <strong>What we store.</strong> Your account details, agency settings,
-          check labels, findings (field names, values, page numbers, reviewer
-          decisions and notes), and usage events. Data lives in our database
+          check labels, findings (field names, values, page numbers, short cited
+          excerpts of about 240 characters, reviewer decisions and notes), and
+          usage events. Data lives in our database
           hosted on Supabase, isolated per agency with row-level security.
         </p>
         <p>

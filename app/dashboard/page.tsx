@@ -6,6 +6,7 @@ import { AppShell } from "@/app/components/AppShell";
 import { TrendChart } from "@/app/components/TrendChart";
 import { MonthlyReportButton } from "./MonthlyReportButton";
 import { SampleCheckButton } from "./SampleCheckButton";
+import { InfoTip } from "@/app/components/InfoTip";
 
 const STATUS_LABEL: Record<string, string> = {
   queued: "Queued",
@@ -140,7 +141,14 @@ export default async function DashboardPage() {
             </div>
 
             <div className="rounded-lg border border-line bg-card p-5">
-              <p className="text-sm text-ink/60">Confirmed discrepancies</p>
+              <p className="text-sm text-ink/60">
+                Confirmed discrepancies
+                <InfoTip label="What counts as confirmed">
+                  Only findings a reviewer explicitly confirmed. Dismissed findings
+                  and unreviewed reports never count toward your numbers, so these
+                  totals are your team&apos;s judgment, not the AI&apos;s.
+                </InfoTip>
+              </p>
               <p className="mt-1 text-3xl font-semibold">{stats.confirmedTotal}</p>
               <p className="mt-3 text-xs text-ink/60">
                 <span className="text-flag">{stats.confirmedBySeverity.critical} critical</span>
@@ -151,14 +159,21 @@ export default async function DashboardPage() {
               </p>
             </div>
 
-            <div
-              className="rounded-lg border border-line bg-card p-5"
-              title={`${stats.trend.reduce((s, p) => s + p.checks, 0)} checks × ${agency.manual_check_minutes} min ÷ 60, based on your assumptions`}
-            >
-              <p className="text-sm text-ink/60">Hours saved</p>
+            <div className="rounded-lg border border-line bg-card p-5">
+              <p className="text-sm text-ink/60">
+                Hours saved
+                <InfoTip label="How hours saved is calculated">
+                  {stats.trend.reduce((s, p) => s + p.checks, 0)} completed checks
+                  (last 6 months) × your {agency.manual_check_minutes}-minute
+                  manual review time ÷ 60 = {stats.hoursSaved.toFixed(1)} hours. At
+                  your ${Number(agency.csr_hourly_rate)}/hr loaded CSR rate that is
+                  about ${Math.round(stats.hoursSaved * Number(agency.csr_hourly_rate)).toLocaleString()}
+                  {" "}in staff time. Both numbers are yours to edit in Settings.
+                </InfoTip>
+              </p>
               <p className="mt-1 text-3xl font-semibold">{stats.hoursSaved.toFixed(1)}</p>
               <p className="mt-3 text-xs text-ink/60">
-                Checks × your {agency.manual_check_minutes}-min manual review.{" "}
+                ≈ ${Math.round(stats.hoursSaved * Number(agency.csr_hourly_rate)).toLocaleString()} in staff time.{" "}
                 <Link href="/settings" className="underline">
                   Edit assumptions
                 </Link>
@@ -166,7 +181,15 @@ export default async function DashboardPage() {
             </div>
 
             <div className="rounded-lg border border-line bg-card p-5">
-              <p className="text-sm text-ink/60">Exposure flagged</p>
+              <p className="text-sm text-ink/60">
+                Exposure flagged
+                <InfoTip label="How exposure flagged is calculated">
+                  {stats.confirmedBySeverity.critical} confirmed critical findings ×
+                  your ${Number(agency.avg_account_premium).toLocaleString()} average
+                  account premium. An estimate of premium at risk, not a promise of
+                  avoided claims. Only findings a licensed reviewer confirmed count.
+                </InfoTip>
+              </p>
               <p className="mt-1 text-3xl font-semibold text-verify">
                 ${stats.exposureFlagged.toLocaleString()}
               </p>
@@ -185,7 +208,14 @@ export default async function DashboardPage() {
 
           {carrierRows.length > 0 && (
             <section className="mb-8 rounded-lg border border-line bg-card p-6">
-              <h2 className="mb-1 font-semibold">Carrier issuance accuracy</h2>
+              <h2 className="mb-1 font-semibold">
+                Carrier issuance accuracy
+                <InfoTip label="How carrier accuracy is measured">
+                  Carrier names are read from the issued policies. Criticals are
+                  counted only after your reviewer confirms them. Small sample
+                  sizes mislead: treat under 10 checks per carrier as anecdote.
+                </InfoTip>
+              </h2>
               <p className="mb-4 text-sm text-ink/60">
                 Confirmed critical findings by issuing carrier. Where the
                 corrections keep going.

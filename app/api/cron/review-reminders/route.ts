@@ -4,8 +4,6 @@ import { emailHtml, ownerEmail, sendEmail } from "@/lib/email";
 import { notifyAgency } from "@/lib/notify";
 import { isAuthorizedCron } from "../route-helpers";
 
-const STALE_HOURS = 48;
-
 /** Daily: nudge agencies about checks sitting unreviewed for 48+ hours. */
 export async function GET(request: Request) {
   if (!isAuthorizedCron(request)) {
@@ -14,15 +12,19 @@ export async function GET(request: Request) {
   const admin = createAdminClient();
   if (!admin) return NextResponse.json({ error: "not configured" }, { status: 503 });
 
-  const cutoff = new Date(Date.now() - STALE_HOURS * 3_600_000).toISOString();
-  const { data: stale } = await admin
+  const { data: staleAll } = await admin
     .from("checks")
-    .select("id, agency_id, label, created_at")
-    .eq("status", "ready_for_review")
-    .lt("created_at", cutoff);
+    .select("id, agency_id, label, created_at, agencies(reminder_hours)")
+    .eq("status", "ready_for_review");
+  const stale = (staleAll ?? []).filter((c) => {
+    const hours = Number(
+      (c.agencies as unknown as { reminder_hours: number } | null)?.reminder_hours ?? 48
+    );
+    return Date.now() - new Date(c.created_at).getTime() > hours * 3_600_000;
+  });
 
   const byAgency = new Map<string, { id: string; label: string }[]>();
-  for (const c of stale ?? []) {
+  for (const c of stale) {
     const list = byAgency.get(c.agency_id) ?? [];
     list.push({ id: c.id, label: c.label });
     byAgency.set(c.agency_id, list);
@@ -63,5 +65,5 @@ export async function GET(request: Request) {
     reminded++;
   }
 
-  return NextResponse.json({ agenciesReminded: reminded, staleChecks: stale?.length ?? 0 });
+  return NextResponse.json({ agenciesReminded: reminded, staleChecks: stale.length });
 }

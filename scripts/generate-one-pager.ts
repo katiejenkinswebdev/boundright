@@ -79,7 +79,7 @@ section("What we process, then delete", [
 section("What we store", [
   "Account details (name, email), agency settings, and your ROI assumptions.",
   "Check labels and original file names (never file contents).",
-  "Findings: field names, extracted values, page citations, severity, and your reviewers' decisions and notes.",
+  "Findings: field names, extracted values, page citations, short cited excerpts (about 240 characters each), severity, and your reviewers' decisions and notes.",
   "First-party usage events. No third-party analytics run in the product.",
 ]);
 

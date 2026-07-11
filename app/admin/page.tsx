@@ -18,7 +18,7 @@ export default async function AdminPage() {
   monthStart.setUTCDate(1);
   monthStart.setUTCHours(0, 0, 0, 0);
 
-  const [{ data: agencies }, { data: failures }, { data: costRows }] =
+  const [{ data: agencies }, { data: failures }, { data: costRows }, { data: feedback }] =
     await Promise.all([
       admin
         .from("agencies")
@@ -31,6 +31,11 @@ export default async function AdminPage() {
         .order("created_at", { ascending: false })
         .limit(25),
       admin.from("checks").select("agency_id, cost_cents, created_at"),
+      admin
+        .from("feedback")
+        .select("id, category, message, page, created_at")
+        .order("created_at", { ascending: false })
+        .limit(25),
     ]);
 
   const costByAgency = new Map<string, { total: number; month: number }>();
@@ -115,6 +120,26 @@ export default async function AdminPage() {
                 </td>
                 <td className="px-4 py-2 font-medium">{f.label}</td>
                 <td className="px-4 py-2 text-ink/80">{f.failure_reason}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </section>
+
+      <h2 className="mb-3 mt-8 font-semibold">Recent feedback</h2>
+      <section className="overflow-x-auto rounded-lg border border-line bg-card">
+        <table className="w-full text-sm">
+          <tbody>
+            {(feedback ?? []).length === 0 && (
+              <tr>
+                <td className="px-4 py-3 text-ink/60">No feedback yet.</td>
+              </tr>
+            )}
+            {(feedback ?? []).map((fb) => (
+              <tr key={fb.id} className="border-b border-line/50 align-top">
+                <td className="px-4 py-2 font-mono text-xs uppercase text-ink/60">{fb.category}</td>
+                <td className="px-4 py-2">{fb.message}</td>
+                <td className="px-4 py-2 font-mono text-xs text-ink/50">{fb.page}</td>
               </tr>
             ))}
           </tbody>

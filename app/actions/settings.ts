@@ -36,10 +36,14 @@ export async function updateAgency(
   const minutes = Number(formData.get("manual_check_minutes"));
   const premium = Number(formData.get("avg_account_premium"));
   const rate = Number(formData.get("csr_hourly_rate"));
+  const varPct = Number(formData.get("premium_variance_threshold"));
+  const renewalPct = Number(formData.get("renewal_premium_threshold"));
+  const reminderHours = Number(formData.get("reminder_hours"));
   if (!name) return fail("Enter your agency's name.");
-  for (const v of [minutes, premium, rate]) {
-    if (!Number.isFinite(v) || v <= 0) return fail("Assumptions must be numbers above zero.");
+  for (const v of [minutes, premium, rate, varPct, renewalPct, reminderHours]) {
+    if (!Number.isFinite(v) || v <= 0) return fail("Every number must be above zero.");
   }
+  if (varPct > 50 || renewalPct > 100) return fail("Premium thresholds look too high to be useful.");
   const { error } = await supabase
     .from("agencies")
     .update({
@@ -47,6 +51,9 @@ export async function updateAgency(
       manual_check_minutes: Math.round(minutes),
       avg_account_premium: premium,
       csr_hourly_rate: rate,
+      premium_variance_threshold: varPct,
+      renewal_premium_threshold: renewalPct,
+      reminder_hours: Math.round(reminderHours),
     })
     .eq("id", agency.id);
   if (error) return fail("Couldn't save. Try again.");

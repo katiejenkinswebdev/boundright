@@ -5,6 +5,7 @@ import { CheckProgress } from "./CheckProgress";
 import { FindingCard, Badge, type FindingRow } from "./FindingCard";
 import { ReviewFooter } from "./ReviewFooter";
 import { CorrectionLetter } from "./CorrectionLetter";
+import { InfoTip } from "@/app/components/InfoTip";
 
 const SEVERITY_ORDER = { critical: 0, moderate: 1, minor: 2 } as const;
 
@@ -122,6 +123,13 @@ async function ReportBody({
         <Badge tone="caution">{bySeverity("moderate").length} Moderate</Badge>
         <Badge tone="muted">{bySeverity("minor").length} Minor</Badge>
         <Badge tone="verify">{matches.length} Matches</Badge>
+        <InfoTip label="What the severities mean">
+          Critical: wrong named insured, limits, deductibles, dates, or a
+          missing form/endorsement. Moderate: premium variance over your
+          threshold, form edition-date changes. Minor: formatting and small
+          premium variance. Confidence shows how sure the extraction is; low
+          confidence means verify against the source document.
+        </InfoTip>
       </div>
 
       {/* Findings grouped by severity (spec 4.3.3) */}

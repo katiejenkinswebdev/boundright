@@ -66,13 +66,16 @@ export default async function SettingsPage() {
         )}
 
         {admin && (
-        <Section title="Agency">
+        <Section title="Configuration">
           <div className="space-y-8">
             <AgencyForm
               name={agency.name}
               minutes={agency.manual_check_minutes}
               premium={Number(agency.avg_account_premium)}
               rate={Number(agency.csr_hourly_rate)}
+              varPct={Number(agency.premium_variance_threshold)}
+              renewalPct={Number(agency.renewal_premium_threshold)}
+              reminderHours={agency.reminder_hours}
             />
             <LogoForm logoUrl={agency.logo_url} />
           </div>
