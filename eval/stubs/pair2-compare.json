@@ -1,0 +1,92 @@
+{
+  "findings": [
+    {
+      "field_name": "Named Insured",
+      "category": "named_insured",
+      "status": "match",
+      "severity": null,
+      "expected_value": "Harbor View Restaurants LLC",
+      "found_value": "Harbor View Restaurants LLC",
+      "doc_a_page": 1,
+      "doc_b_page": 1,
+      "confidence": "high"
+    },
+    {
+      "field_name": "Effective Date",
+      "category": "dates",
+      "status": "match",
+      "severity": null,
+      "expected_value": "03/15/2026",
+      "found_value": "03/15/2026",
+      "doc_a_page": 1,
+      "doc_b_page": 1,
+      "confidence": "high"
+    },
+    {
+      "field_name": "Expiration Date",
+      "category": "dates",
+      "status": "mismatch",
+      "severity": "critical",
+      "expected_value": "03/15/2027",
+      "found_value": "09/15/2026",
+      "doc_a_page": 1,
+      "doc_b_page": 1,
+      "confidence": "high"
+    },
+    {
+      "field_name": "Per Occurrence Deductible",
+      "category": "deductibles",
+      "status": "mismatch",
+      "severity": "critical",
+      "expected_value": "$2,500",
+      "found_value": "$5,000",
+      "doc_a_page": 2,
+      "doc_b_page": 2,
+      "confidence": "high"
+    },
+    {
+      "field_name": "CP 10 30 Causes of Loss - Special Form (edition date)",
+      "category": "forms",
+      "status": "mismatch",
+      "severity": "moderate",
+      "expected_value": "CP 10 30 10 12",
+      "found_value": "CP 10 30 06 07",
+      "doc_a_page": 3,
+      "doc_b_page": 3,
+      "confidence": "high"
+    },
+    {
+      "field_name": "Building Limit",
+      "category": "limits",
+      "status": "match",
+      "severity": null,
+      "expected_value": "$2,500,000",
+      "found_value": "$2,500,000",
+      "doc_a_page": 2,
+      "doc_b_page": 2,
+      "confidence": "high"
+    },
+    {
+      "field_name": "Business Personal Property",
+      "category": "limits",
+      "status": "match",
+      "severity": null,
+      "expected_value": "$750,000",
+      "found_value": "$750,000",
+      "doc_a_page": 2,
+      "doc_b_page": 2,
+      "confidence": "high"
+    },
+    {
+      "field_name": "Total Annual Premium",
+      "category": "premium",
+      "status": "match",
+      "severity": null,
+      "expected_value": "$21,600",
+      "found_value": "$21,600",
+      "doc_a_page": 1,
+      "doc_b_page": 1,
+      "confidence": "high"
+    }
+  ]
+}

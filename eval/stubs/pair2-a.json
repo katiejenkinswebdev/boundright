@@ -1,0 +1,26 @@
+{
+  "document_type": "proposal",
+  "named_insureds": [{ "value": "Harbor View Restaurants LLC", "page": 1 }],
+  "effective_date": { "value": "03/15/2026", "page": 1 },
+  "expiration_date": { "value": "03/15/2027", "page": 1 },
+  "coverages": [
+    {
+      "line": "Commercial Property",
+      "limits": [
+        { "name": "Building Limit", "value": "$2,500,000", "page": 2 },
+        { "name": "Business Personal Property", "value": "$750,000", "page": 2 },
+        { "name": "Business Income w/ Extra Expense", "value": "$500,000", "page": 2 }
+      ],
+      "deductibles": [
+        { "name": "Per Occurrence Deductible", "value": "$2,500", "page": 2 }
+      ]
+    }
+  ],
+  "forms_endorsements": [
+    { "number": "CP 00 10 10 12", "title": "Building and Personal Property Coverage Form", "page": 3 },
+    { "number": "CP 10 30 10 12", "title": "Causes of Loss - Special Form", "page": 3 },
+    { "number": "IL 00 17 11 98", "title": "Common Policy Conditions", "page": 3 }
+  ],
+  "premium": { "value": "$21,600", "page": 1 },
+  "extraction_notes": ["ref BR-STUB:pair2-compare"]
+}

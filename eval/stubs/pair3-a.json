@@ -1,0 +1,25 @@
+{
+  "document_type": "proposal",
+  "named_insureds": [{ "value": "Summit Trucking LLC", "page": 1 }],
+  "effective_date": { "value": "06/01/2026", "page": 1 },
+  "expiration_date": { "value": "06/01/2027", "page": 1 },
+  "coverages": [
+    {
+      "line": "Commercial Auto",
+      "limits": [
+        { "name": "Combined Single Limit (Liability)", "value": "$1,000,000", "page": 2 },
+        { "name": "Uninsured/Underinsured Motorist", "value": "$1,000,000", "page": 2 }
+      ],
+      "deductibles": [
+        { "name": "Comprehensive Deductible", "value": "$1,000", "page": 2 },
+        { "name": "Collision Deductible", "value": "$1,000", "page": 2 }
+      ]
+    }
+  ],
+  "forms_endorsements": [
+    { "number": "CA 00 01 11 20", "title": "Business Auto Coverage Form", "page": 3 },
+    { "number": "IL 00 17 11 98", "title": "Common Policy Conditions", "page": 3 }
+  ],
+  "premium": { "value": "$32,000", "page": 1 },
+  "extraction_notes": ["ref BR-STUB:pair3-compare"]
+}

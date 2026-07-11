@@ -1,0 +1,92 @@
+{
+  "findings": [
+    {
+      "field_name": "Named Insured",
+      "category": "named_insured",
+      "status": "mismatch",
+      "severity": "critical",
+      "expected_value": "Summit Trucking LLC",
+      "found_value": "Summit Trucking Co.",
+      "doc_a_page": 1,
+      "doc_b_page": 1,
+      "confidence": "high"
+    },
+    {
+      "field_name": "Total Annual Premium",
+      "category": "premium",
+      "status": "mismatch",
+      "severity": "moderate",
+      "expected_value": "$32,000",
+      "found_value": "$34,700",
+      "doc_a_page": 1,
+      "doc_b_page": 1,
+      "confidence": "high"
+    },
+    {
+      "field_name": "Effective Date",
+      "category": "dates",
+      "status": "match",
+      "severity": null,
+      "expected_value": "06/01/2026",
+      "found_value": "06/01/2026",
+      "doc_a_page": 1,
+      "doc_b_page": 1,
+      "confidence": "high"
+    },
+    {
+      "field_name": "Expiration Date",
+      "category": "dates",
+      "status": "match",
+      "severity": null,
+      "expected_value": "06/01/2027",
+      "found_value": "06/01/2027",
+      "doc_a_page": 1,
+      "doc_b_page": 1,
+      "confidence": "high"
+    },
+    {
+      "field_name": "Combined Single Limit (Liability)",
+      "category": "limits",
+      "status": "match",
+      "severity": null,
+      "expected_value": "$1,000,000",
+      "found_value": "$1,000,000",
+      "doc_a_page": 2,
+      "doc_b_page": 2,
+      "confidence": "high"
+    },
+    {
+      "field_name": "Comprehensive Deductible",
+      "category": "deductibles",
+      "status": "match",
+      "severity": null,
+      "expected_value": "$1,000",
+      "found_value": "$1,000",
+      "doc_a_page": 2,
+      "doc_b_page": 2,
+      "confidence": "high"
+    },
+    {
+      "field_name": "Collision Deductible",
+      "category": "deductibles",
+      "status": "match",
+      "severity": null,
+      "expected_value": "$1,000",
+      "found_value": "$1,000",
+      "doc_a_page": 2,
+      "doc_b_page": 2,
+      "confidence": "high"
+    },
+    {
+      "field_name": "CA 00 01 11 20 Business Auto Coverage Form",
+      "category": "forms",
+      "status": "match",
+      "severity": null,
+      "expected_value": "CA 00 01 11 20",
+      "found_value": "CA 00 01 11 20",
+      "doc_a_page": 3,
+      "doc_b_page": 3,
+      "confidence": "high"
+    }
+  ]
+}
