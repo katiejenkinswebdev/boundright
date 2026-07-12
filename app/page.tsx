@@ -147,31 +147,31 @@ export default function LandingPage() {
           No demo call required. Start a trial, check real renewals, decide for
           yourself.
         </p>
-        <div className="mt-6 grid gap-6 sm:grid-cols-3">
-          <div className="rounded-lg border border-line bg-card p-6">
-            <h3 className="font-semibold">{PLANS.trial.name}</h3>
-            <p className="mt-2 text-3xl font-semibold">${PLANS.trial.monthly}</p>
-            <p className="mt-1 text-sm text-ink/60">
-              {PLANS.trial.trialDays} days · {PLANS.trial.checksPerMonth} checks
-            </p>
-            <p className="mt-4 text-sm text-ink/80">{PLANS.trial.blurb}</p>
-          </div>
-          <div className="rounded-lg border-2 border-ink bg-card p-6">
-            <h3 className="font-semibold">{PLANS.founding.name}</h3>
-            <p className="mt-2 text-3xl font-semibold">
-              ${PLANS.founding.monthly}<span className="text-base font-normal text-ink/60">/mo</span>
-            </p>
-            <p className="mt-1 text-sm text-ink/60">{PLANS.founding.checksPerMonth} checks per month</p>
-            <p className="mt-4 text-sm text-ink/80">{PLANS.founding.blurb}</p>
-          </div>
-          <div className="rounded-lg border border-line bg-card p-6">
-            <h3 className="font-semibold">{PLANS.standard.name}</h3>
-            <p className="mt-2 text-3xl font-semibold">
-              ${PLANS.standard.monthly}<span className="text-base font-normal text-ink/60">/mo</span>
-            </p>
-            <p className="mt-1 text-sm text-ink/60">{PLANS.standard.checksPerMonth} checks per month</p>
-            <p className="mt-4 text-sm text-ink/80">{PLANS.standard.blurb}</p>
-          </div>
+        <div className="mt-6 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+          {(Object.entries(PLANS) as [string, (typeof PLANS)[keyof typeof PLANS]][]).map(
+            ([key, plan]) => (
+              <div
+                key={key}
+                className={`rounded-lg border bg-card p-6 ${
+                  key === "founding" ? "border-2 border-ink" : "border-line"
+                }`}
+              >
+                <h3 className="font-semibold">{plan.name}</h3>
+                <p className="mt-2 text-3xl font-semibold">
+                  ${plan.monthly}
+                  {plan.monthly > 0 && (
+                    <span className="text-base font-normal text-ink/60">/mo</span>
+                  )}
+                </p>
+                <p className="mt-1 text-sm text-ink/60">
+                  {"trialDays" in plan && plan.trialDays
+                    ? `${plan.trialDays} days · ${plan.checksPerMonth} checks`
+                    : `${plan.checksPerMonth}${key === "premium" ? "+" : ""} checks per month`}
+                </p>
+                <p className="mt-4 text-sm text-ink/80">{plan.blurb}</p>
+              </div>
+            )
+          )}
         </div>
       </section>
 

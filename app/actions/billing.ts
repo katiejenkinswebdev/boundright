@@ -27,7 +27,9 @@ export async function startCheckout(
   const priceId =
     plan === "founding"
       ? process.env.STRIPE_PRICE_ID_FOUNDING
-      : process.env.STRIPE_PRICE_ID_STANDARD;
+      : plan === "premium"
+        ? process.env.STRIPE_PRICE_ID_PREMIUM
+        : process.env.STRIPE_PRICE_ID_STANDARD;
   if (!priceId) return { status: "error", message: NOT_CONFIGURED };
 
   const session = await stripe.checkout.sessions.create({
@@ -73,7 +75,7 @@ export async function nextPeriodReset(): Promise<string> {
 export async function recordSubscription(
   agencyId: string,
   customerId: string,
-  plan: "founding" | "standard"
+  plan: "founding" | "standard" | "premium"
 ): Promise<void> {
   const admin = createAdminClient();
   if (!admin) return;
@@ -89,6 +91,10 @@ export async function recordSubscription(
       trial_ends_at: null,
     })
     .eq("id", agencyId);
+  // The premium tier includes bulk smart intake; flip the flag with the plan.
+  if (plan === "premium") {
+    await admin.from("agencies").update({ smart_intake_enabled: true }).eq("id", agencyId);
+  }
   await admin.from("events").insert({
     agency_id: agencyId,
     event_name: "subscription_started",

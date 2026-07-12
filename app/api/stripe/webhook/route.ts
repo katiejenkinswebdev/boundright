@@ -38,7 +38,9 @@ export async function POST(request: Request) {
     case "checkout.session.completed": {
       const session = event.data.object;
       const agencyId = session.metadata?.agency_id ?? session.client_reference_id;
-      const plan = session.metadata?.plan === "founding" ? "founding" : "standard";
+      const plan = ["founding", "premium"].includes(session.metadata?.plan ?? "")
+        ? (session.metadata!.plan as "founding" | "premium")
+        : "standard";
       if (agencyId && typeof session.customer === "string") {
         await recordSubscription(agencyId, session.customer, plan);
       }

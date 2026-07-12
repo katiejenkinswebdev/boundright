@@ -10,20 +10,31 @@ export const PLANS = {
     monthly: 0,
     checksPerMonth: 10,
     trialDays: 14,
+    smartIntake: false,
     blurb: "No credit card. Every feature, including exported reports.",
   },
   founding: {
-    name: "Founding",
+    name: "Founder",
     monthly: 249,
     checksPerMonth: 150,
+    smartIntake: false,
     blurb: "For the first agencies on board. The price stays locked in.",
   },
   standard: {
-    name: "Standard",
+    name: "Agency",
     monthly: 349,
     checksPerMonth: 150,
+    smartIntake: false,
     blurb:
       "Cancel anytime in one click. When a limit is reached, checks pause. We never bill overages.",
+  },
+  premium: {
+    name: "Whole Book",
+    monthly: 649,
+    checksPerMonth: 400,
+    smartIntake: true,
+    blurb:
+      "Bulk smart intake: drop a whole pile of unlabeled PDFs and BoundRight classifies, pairs, and runs them. Custom monthly check volumes available.",
   },
 } as const;
 

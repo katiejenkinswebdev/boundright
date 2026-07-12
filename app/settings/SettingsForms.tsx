@@ -252,7 +252,7 @@ export function BillingSection({
         </form>
       ) : (
         <form action={checkoutAction} onSubmit={(e) => track("checkout_started", { plan: new FormData(e.currentTarget).get("plan") })} className="space-y-3">
-          <div className="grid gap-3 sm:grid-cols-2">
+          <div className="grid gap-3 sm:grid-cols-3">
             <label className="flex cursor-pointer items-start gap-3 rounded border border-line p-4">
               <input type="radio" name="plan" value="founding" defaultChecked className="mt-1" />
               <span>
@@ -269,6 +269,17 @@ export function BillingSection({
                 <span className="font-semibold">{PLANS.standard.checksPerMonth} checks a month</span>
                 <br />
                 <span className="text-sm text-ink/60">Current standard rate</span>
+              </span>
+            </label>
+            <label className="flex cursor-pointer items-start gap-3 rounded border border-line p-4">
+              <input type="radio" name="plan" value="premium" className="mt-1" />
+              <span>
+                <span className="font-semibold">{PLANS.premium.checksPerMonth}+ checks a month</span>
+                <br />
+                <span className="text-sm text-ink/60">
+                  Bulk document upload included. Need a custom monthly volume?
+                  We set it for your account after checkout.
+                </span>
               </span>
             </label>
           </div>
