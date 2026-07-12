@@ -2,10 +2,17 @@ import Link from "next/link";
 import { requireProfile } from "@/lib/auth";
 import { AppShell } from "@/app/components/AppShell";
 import { NewCheckForm } from "./NewCheckForm";
+import { SmartIntake } from "./SmartIntake";
 
-export default async function NewCheckPage() {
+export default async function NewCheckPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ classic?: string }>;
+}) {
+  const { classic } = await searchParams;
   const { agency, profile } = await requireProfile();
   const cap = agency.plan === "trial" ? 10 : 150;
+  const smartIntake = agency.smart_intake_enabled && classic !== "1";
 
   return (
     <AppShell agency={agency} profile={profile} active="/checks/new">
@@ -16,21 +23,42 @@ export default async function NewCheckPage() {
             {agency.checks_this_period} of {cap} checks used
           </span>
         </div>
-        <p className="mb-8 text-ink/70">
-          Pick what you&apos;re checking, upload the two documents, and
-          BoundRight compares them field by field. Several to run?{" "}
-          <Link href="/checks/batch" className="underline">
-            Use batch mode
-          </Link>
-          . Many certificates against one policy?{" "}
-          <Link href="/checks/coi" className="underline">
-            Use the certificate flow
-          </Link>
-          .
-        </p>
-        <div className="rounded-lg border border-line bg-card p-8">
-          <NewCheckForm />
-        </div>
+        {smartIntake ? (
+          <>
+            <p className="mb-8 text-ink/70">
+              Drop every document at once. BoundRight classifies each one,
+              proposes the pairs, and runs the checks you confirm.
+            </p>
+            <SmartIntake />
+          </>
+        ) : (
+          <>
+            <p className="mb-8 text-ink/70">
+              Pick what you&apos;re checking, upload the two documents, and
+              BoundRight compares them field by field. Several to run?{" "}
+              <Link href="/checks/batch" className="underline">
+                Use batch mode
+              </Link>
+              . Many certificates against one policy?{" "}
+              <Link href="/checks/coi" className="underline">
+                Use the certificate flow
+              </Link>
+              .
+              {agency.smart_intake_enabled && (
+                <>
+                  {" "}Or drop everything at once with{" "}
+                  <Link href="/checks/new" className="underline">
+                    smart intake
+                  </Link>
+                  .
+                </>
+              )}
+            </p>
+            <div className="rounded-lg border border-line bg-card p-8">
+              <NewCheckForm />
+            </div>
+          </>
+        )}
       </div>
     </AppShell>
   );

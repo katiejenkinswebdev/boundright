@@ -2,7 +2,7 @@
 // hands to whoever asks "where does our data go?" during due diligence.
 // Usage: npx tsx scripts/generate-one-pager.ts   -> public/boundright-data-processing.pdf
 import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
-import { drawBrandFooter, drawSealLockup, drawWordmark } from "../lib/pdf-brand";
+import { drawBrandFooter, drawSealLockup } from "../lib/pdf-brand";
 import fs from "node:fs";
 import path from "node:path";
 

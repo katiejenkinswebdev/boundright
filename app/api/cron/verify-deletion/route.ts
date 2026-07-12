@@ -3,6 +3,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { isAuthorizedCron } from "../route-helpers";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
+const INTAKE_TTL_MS = 2 * DAY_MS;
 
 /**
  * Nightly guardrail for the privacy promise: any document file older than
@@ -28,6 +29,18 @@ export async function GET(request: Request) {
       const created = new Date(f.created_at ?? 0).getTime();
       if (Date.now() - created > DAY_MS) {
         stale.push(`checks/${dir.name}/${f.name}`);
+      }
+    }
+  }
+
+  // Smart-intake staging: unpaired files older than 48h are removed
+  // (disclosed on /ai and in the intake UI).
+  const { data: intakeDirs } = await admin.storage.from("documents").list("intake", { limit: 1000 });
+  for (const dir of intakeDirs ?? []) {
+    const { data: files } = await admin.storage.from("documents").list(`intake/${dir.name}`);
+    for (const f2 of files ?? []) {
+      if (Date.now() - new Date(f2.created_at ?? 0).getTime() > INTAKE_TTL_MS) {
+        stale.push(`intake/${dir.name}/${f2.name}`);
       }
     }
   }

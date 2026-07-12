@@ -23,10 +23,12 @@ Policy discrepancy detection for independent commercial insurance agencies. A CS
 | Renewal negotiations with carriers | No data on who issues wrong | Per-carrier confirmed-critical rates (managers+) |
 | A 20-person agency shares one login | No audit trail of who reviewed what | Roles (user / manager / admin / system_admin), invites, per-reviewer attribution |
 | A prospect asks "how does the AI work?" | Hand-waving | /ai plain-language transparency page + data-processing one-pager |
+| A folder of unlabeled PDFs from renewal week | Someone sorts and pairs them by hand | Smart intake (flagged): drop the pile, AI classifies and proposes pairs, human confirms, exceptions surface |
 
 ## Features
 
 ### Checks
+- **Smart intake (feature-flagged, system_admin enables per agency):** drop up to 30 unlabeled PDFs; a cheap classification pass identifies each document and proposes confidence-scored pairs (issuance/renewal/COI inferred); the human confirms before anything runs; orphans surfaced then deleted; staged files auto-removed in 48h
 - Three check types (issuance, renewal, certificate) with typed comparison prompts and per-type document labels; batch mode; certificate volume flow (one policy, many COIs); email-in via per-agency tokenized address; sample check demo mode; failed checks never consume quota
 - Directive validation copy, signed-URL direct uploads, staged progress with ready emails and Slack/Teams notices
 

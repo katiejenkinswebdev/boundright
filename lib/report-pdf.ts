@@ -1,4 +1,4 @@
-import { PDFDocument, PDFFont, PDFPage, StandardFonts, degrees, rgb } from "pdf-lib";
+import { PDFDocument, PDFFont, PDFPage, StandardFonts, rgb } from "pdf-lib";
 import { drawBrandFooter, drawVerificationStamp } from "./pdf-brand";
 
 // Palette (design tokens, print-friendly)

@@ -99,6 +99,20 @@ export default function AiTransparencyPage() {
         </section>
 
         <section>
+          <h2 className="mb-2 text-lg font-semibold">When you drop in a pile of documents</h2>
+          <p>
+            Some agencies turn on smart intake: you drop many unlabeled PDFs at
+            once, and the AI reads the first pages of each to figure out what
+            it is and who it covers, then suggests which documents belong
+            together. Those suggestions are only suggestions. You see every
+            proposed pair with a confidence label, fix anything wrong, and
+            nothing is compared until you confirm. Documents that have no
+            partner are shown to you, then deleted, and any staged file that
+            never runs is removed automatically within 48 hours.
+          </p>
+        </section>
+
+        <section>
           <h2 className="mb-2 text-lg font-semibold">Where AI writes words for you</h2>
           <p>
             One feature drafts a letter to the insurance carrier asking them to

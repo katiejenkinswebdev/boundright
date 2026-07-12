@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { requireProfile } from "@/lib/auth";
 import { isSystemAdmin } from "@/lib/roles";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { toggleSmartIntake } from "@/app/actions/admin";
 
 /** Ops console: system_admin role (ADMIN_EMAILS env as bootstrap fallback). */
 export default async function AdminPage() {
@@ -26,7 +27,7 @@ export default async function AdminPage() {
     await Promise.all([
       admin
         .from("agencies")
-        .select("id, name, plan, billing_status, checks_this_period, created_at, manual_check_minutes, avg_account_premium, csr_hourly_rate, premium_variance_threshold, renewal_premium_threshold, reminder_hours, notify_webhook_url")
+        .select("id, name, plan, billing_status, checks_this_period, created_at, manual_check_minutes, avg_account_premium, csr_hourly_rate, premium_variance_threshold, renewal_premium_threshold, reminder_hours, notify_webhook_url, smart_intake_enabled")
         .order("created_at", { ascending: false }),
       admin
         .from("checks")
@@ -163,6 +164,7 @@ export default async function AdminPage() {
               <th className="px-4 py-3 text-right font-semibold">Renewal %</th>
               <th className="px-4 py-3 text-right font-semibold">Reminder h</th>
               <th className="px-4 py-3 font-semibold">Slack/Teams</th>
+              <th className="px-4 py-3 font-semibold">Smart intake</th>
             </tr>
           </thead>
           <tbody>
@@ -176,6 +178,25 @@ export default async function AdminPage() {
                 <td className="px-4 py-2 text-right font-mono">{Number(a.renewal_premium_threshold)}</td>
                 <td className="px-4 py-2 text-right font-mono">{a.reminder_hours}</td>
                 <td className="px-4 py-2 font-mono text-xs">{a.notify_webhook_url ? "connected" : "—"}</td>
+                <td className="px-4 py-2">
+                  <form
+                    action={async () => {
+                      "use server";
+                      await toggleSmartIntake(a.id, !a.smart_intake_enabled);
+                    }}
+                  >
+                    <button
+                      type="submit"
+                      className={`rounded border px-2 py-0.5 font-mono text-xs ${
+                        a.smart_intake_enabled
+                          ? "border-verify text-verify"
+                          : "border-line text-ink/50 hover:border-ink"
+                      }`}
+                    >
+                      {a.smart_intake_enabled ? "on" : "off"}
+                    </button>
+                  </form>
+                </td>
               </tr>
             ))}
           </tbody>

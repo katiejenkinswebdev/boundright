@@ -15,6 +15,7 @@ import { VERIFY_SYSTEM, verifyUserMessage, VERIFY_PROMPT_VERSION } from "@/promp
 import { COMPARE_RENEWAL_SYSTEM, compareRenewalUserMessage, COMPARE_RENEWAL_PROMPT_VERSION } from "@/prompts/compare_renewal_v1";
 import { COMPARE_COI_SYSTEM, compareCoiUserMessage, COMPARE_COI_PROMPT_VERSION } from "@/prompts/compare_coi_v1";
 import { LETTER_SYSTEM, letterUserMessage, LETTER_PROMPT_VERSION } from "@/prompts/letter_v1";
+import { CLASSIFY_SYSTEM, classifyUserMessage } from "@/prompts/classify_v1";
 
 export const MODEL = "claude-sonnet-5";
 export type CheckType = "issuance" | "renewal" | "coi";
@@ -219,6 +220,59 @@ export async function draftCorrectionLetter(
 }
 
 export { LETTER_PROMPT_VERSION };
+
+export type Classification = {
+  document_type: "proposal" | "binder" | "policy" | "certificate" | "unknown";
+  named_insured?: string;
+  carrier?: string;
+  policy_number?: string;
+  effective_date?: string;
+  expiration_date?: string;
+  policy_line?: string;
+};
+
+const CLASSIFY_SCHEMA = {
+  type: "object",
+  properties: {
+    document_type: { type: "string", enum: ["proposal", "binder", "policy", "certificate", "unknown"] },
+    named_insured: { type: "string" },
+    carrier: { type: "string" },
+    policy_number: { type: "string" },
+    effective_date: { type: "string" },
+    expiration_date: { type: "string" },
+    policy_line: { type: "string", enum: ["GL", "Property", "WC", "Auto", "Umbrella", "Package", "Other"] },
+  },
+  required: ["document_type"],
+  additionalProperties: false,
+} as const;
+
+/** Cheap first-pass classification (first pages only) for smart intake. */
+export async function classifyDocument(
+  firstPagesText: string,
+  usage: Usage
+): Promise<Classification> {
+  const stub = stubResponse<Extraction>(firstPagesText);
+  if (stub) {
+    return {
+      document_type: stub.document_type === "unknown" ? "unknown" : stub.document_type,
+      named_insured: stub.named_insureds?.[0]?.value,
+      carrier: stub.carrier?.value,
+      effective_date: stub.effective_date?.value,
+      expiration_date: stub.expiration_date?.value,
+      policy_line: stub.coverages?.[0]?.line?.includes("Property")
+        ? "Property"
+        : stub.coverages?.[0]?.line?.includes("Auto")
+          ? "Auto"
+          : "GL",
+    };
+  }
+  return structuredCall<Classification>(
+    CLASSIFY_SYSTEM,
+    [{ type: "text", text: classifyUserMessage(firstPagesText) }],
+    CLASSIFY_SCHEMA as unknown as Record<string, unknown>,
+    usage
+  );
+}
 
 /** Second pass on a critical finding. Cheap insurance against false criticals. */
 export async function verifyCritical(
