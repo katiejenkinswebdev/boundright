@@ -1,5 +1,5 @@
 import { PDFDocument, PDFFont, PDFPage, StandardFonts, rgb } from "pdf-lib";
-import { drawBrandFooter, drawVerificationStamp } from "./pdf-brand";
+import { drawBrandFooter, drawSealLockup, drawVerificationStamp } from "./pdf-brand";
 
 // Palette (design tokens, print-friendly)
 const INK = rgb(0.106, 0.165, 0.255);
@@ -15,7 +15,7 @@ const MARGIN = 54;
 const FOOTER_H = 84;
 
 const DISCLAIMER =
-  "BoundRight is a review assistant. It does not provide insurance advice, and final determination of coverage accuracy is the responsibility of the licensed agent.";
+  "BoundRight is a review assistant and AI can make mistakes. It does not provide insurance advice, and final determination of coverage accuracy is the responsibility of the licensed agent; every finding in this report carries that agent's recorded decision.";
 
 export type ReportFinding = {
   field_name: string;
@@ -122,10 +122,10 @@ export async function buildReportPdf(data: ReportData): Promise<Uint8Array> {
 
   const text = (
     str: string,
-    opts: { font?: PDFFont; size?: number; color?: ReturnType<typeof rgb>; x?: number; gap?: number } = {}
+    opts: { font?: PDFFont; size?: number; color?: ReturnType<typeof rgb>; x?: number; gap?: number; width?: number } = {}
   ) => {
     const { font = sans, size = 10, color = INK, x = MARGIN, gap = 4 } = opts;
-    const lines = wrap(str, font, size, PAGE_W - MARGIN - x);
+    const lines = wrap(str, font, size, opts.width ?? PAGE_W - MARGIN - x);
     for (const line of lines) {
       ensure(size + gap);
       page.drawText(line, { x, y: y - size, size, font, color });
@@ -173,9 +173,10 @@ export async function buildReportPdf(data: ReportData): Promise<Uint8Array> {
     color: MUTED,
     gap: 12,
   });
-  drawVerificationStamp(page, monoBold, { x: PAGE_W - MARGIN - 100, topY: PAGE_H - MARGIN + 6, dateLine: data.stampDateLine });
-  // Stop the header rule short of the stamp so nothing strikes through it.
-  page.drawLine({ start: { x: MARGIN, y }, end: { x: PAGE_W - MARGIN - 125, y }, thickness: 1, color: INK });
+  // Header mark is the primary lockup (brand guide 02); the verification
+  // stamp lands at the certification block, where the review is attested.
+  drawSealLockup(page, { x: PAGE_W - MARGIN - 122, y: PAGE_H - MARGIN - 20, bold: sansBold, regular: sans, mono: monoBold });
+  page.drawLine({ start: { x: MARGIN, y }, end: { x: PAGE_W - MARGIN, y }, thickness: 1, color: INK });
   y -= 14;
 
   text(data.label, { font: sansBold, size: 13, gap: 6 });
@@ -322,20 +323,23 @@ export async function buildReportPdf(data: ReportData): Promise<Uint8Array> {
     });
   }
 
-  // Certification: the work-product claim, stated rather than implied.
-  ensure(70);
+  // Certification: the work-product claim, stated rather than implied. The
+  // dated BOUND RIGHT stamp sits here, at the verification moment.
+  ensure(92);
   y -= 10;
   page.drawLine({ start: { x: MARGIN, y }, end: { x: PAGE_W - MARGIN, y }, thickness: 0.75, color: INK });
   y -= 12;
+  drawVerificationStamp(page, monoBold, { x: PAGE_W - MARGIN - 100, topY: y + 4, dateLine: data.stampDateLine });
   text("REVIEWER CERTIFICATION", { font: sansBold, size: 9, gap: 4 });
   text(
     "I have reviewed each finding above against the source documents, and the decisions recorded in this report are mine.",
-    { size: 9, gap: 8 }
+    { size: 9, gap: 8, width: PAGE_W - MARGIN * 2 - 130 }
   );
   text(`${data.reviewerName} · ${data.agencyName} · ${data.reviewedDate}`, {
     font: sansBold,
     size: 9.5,
     gap: 4,
+    width: PAGE_W - MARGIN * 2 - 130,
   });
 
   // Second pass: report ID + pagination on every page footer.

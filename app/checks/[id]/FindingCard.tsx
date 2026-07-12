@@ -40,7 +40,7 @@ export function Badge({
   }[tone];
   return (
     <span
-      className={`inline-block rounded border px-2 py-0.5 font-mono text-xs font-medium uppercase tracking-wider ${cls}`}
+      className={`inline-flex items-center rounded border px-2.5 py-1.5 font-mono text-xs font-medium uppercase leading-none tracking-wide ${cls}`}
     >
       {children}
     </span>

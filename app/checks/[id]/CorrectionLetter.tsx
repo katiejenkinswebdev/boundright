@@ -21,8 +21,8 @@ export function CorrectionLetter({
       <p className="mt-1 text-sm text-ink/70">
         Drafts a request to the carrier from your confirmed findings:
         enumerated discrepancies, correction effective inception, written
-        confirmation requested. Review and edit before sending; it goes out
-        under your name.
+        confirmation requested. AI can make mistakes. Review and edit before
+        sending; it goes out under your name.
       </p>
 
       {letter ? (

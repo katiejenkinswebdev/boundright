@@ -40,9 +40,10 @@ Policy discrepancy detection for independent commercial insurance agencies. A CS
 ### Review workflow
 - Awaiting-review queue on the dashboard (all roles) with assignment and waiting age; count badge on the Checks nav; "Next unreviewed" on report footers; reviewer select per check
 - Confirm/dismiss with notes and dismiss reasons; citation chips reveal stored source excerpts; Mark reviewed gated on criticals; the dated BOUND RIGHT stamp lands beside the report title on confirmation, keeping the footer to a compact action row
+- Engine details ("✦ How AI checked this document") are a click-to-expand disclosure showing model + prompt versions with a link to /ai; the "AI can make mistakes. Review and edit before sending." disclaimer appears on every AI surface (report page, correction letter, smart intake confirm, exported PDF)
 
 ### Reports (one brand system: `lib/pdf-brand.ts`)
-- Discrepancy report: agency co-brand + the dated verification stamp, audit trail, document fingerprints, findings as exhibits with excerpts, dismissed-with-reason, reconciliation line, reviewer certification, report ID + pagination
+- Discrepancy report: agency co-brand + the BR seal lockup in the header, audit trail, document fingerprints, findings as exhibits with excerpts, dismissed-with-reason, reconciliation line, reviewer certification carrying the dated verification stamp, report ID + pagination
 - Reports know their intake: the discrepancy report's audit trail records smart-intake/email arrival (with the pair-confirmed-by-human note), and the period report adds a "How checks arrived" breakdown, only for agencies with the flag on
 - Period report from the dashboard: follows the active range filter exactly (presets or custom dates), six KPIs including staff cost savings, auto-written summary; monthly version auto-emailed on the 1st
 - All PDFs share the tilted-seal lockup or stamp per brand rules, wordmark footer, metadata, and the naming convention `BoundRight - {Type} - {Client} - {ISO date(s)}.pdf`

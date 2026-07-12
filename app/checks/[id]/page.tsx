@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requireProfile } from "@/lib/auth";
 import { AppShell } from "@/app/components/AppShell";
@@ -60,17 +61,35 @@ export default async function CheckPage({
             day: "numeric",
             year: "numeric",
           })}
-          {check.model_version && (
-            <span className="ml-2 font-mono text-xs text-ink/40">
-              {check.model_version} · {check.prompt_version}
-            </span>
-          )}
         </p>
-        <p className="mb-3 mt-2 text-xs text-ink/50">
-          BoundRight is a review assistant. It does not provide insurance
-          advice, and final determination of coverage accuracy is the
-          responsibility of the licensed agent.
+        <p className="mt-2 text-xs text-ink/50">
+          BoundRight is a review assistant and AI can make mistakes. It does
+          not provide insurance advice, and final determination of coverage
+          accuracy is the responsibility of the licensed agent.
         </p>
+        {check.model_version && (
+          <details className="mb-3 mt-1">
+            <summary className="inline-flex cursor-pointer items-center gap-1 font-mono text-xs text-ink/50 hover:text-ink">
+              ✦ How AI checked this document
+            </summary>
+            <div className="mt-2 max-w-md rounded-lg border border-line bg-card p-4 text-xs leading-relaxed text-ink/70">
+              <p>
+                Extraction and comparison ran on{" "}
+                <span className="font-mono text-ink">{check.model_version}</span>{" "}
+                using prompt versions{" "}
+                <span className="font-mono text-ink">{check.prompt_version}</span>.
+                Both are recorded on every check so a report can always say
+                exactly which AI produced it.
+              </p>
+              <p className="mt-2">
+                AI can make mistakes. Review and edit before sending.
+              </p>
+              <Link href="/ai" className="mt-2 inline-block underline">
+                How BoundRight uses AI
+              </Link>
+            </div>
+          </details>
+        )}
         {check.status === "ready_for_review" && (
           <div className="mb-6">
             <AssignSelect
@@ -154,11 +173,22 @@ async function ReportBody({
         <Badge tone="muted">{bySeverity("minor").length} Minor</Badge>
         <Badge tone="verify">{matches.length} Matches</Badge>
         <InfoTip label="What the severities mean">
-          Critical: wrong named insured, limits, deductibles, dates, or a
-          missing form/endorsement. Moderate: premium variance over your
-          threshold, form edition-date changes. Minor: formatting and small
-          premium variance. Confidence shows how sure the extraction is; low
-          confidence means verify against the source document.
+          <span className="block">
+            <strong className="text-flag">Critical</strong> — wrong named
+            insured, limits, deductibles, dates, or a missing form or
+            endorsement.
+          </span>
+          <span className="mt-2 block">
+            <strong className="text-caution">Moderate</strong> — premium
+            variance over your threshold, form edition-date changes.
+          </span>
+          <span className="mt-2 block">
+            <strong>Minor</strong> — formatting and small premium variance.
+          </span>
+          <span className="mt-2 block">
+            <strong>Confidence</strong> — how sure the extraction is. Low
+            means verify against the source document.
+          </span>
         </InfoTip>
       </div>
 

@@ -125,7 +125,8 @@ export function SmartIntake() {
     return (
       <div className="space-y-5">
         <p className="text-ink/80">
-          BoundRight classified your documents and proposes these pairs.
+          BoundRight classified your documents and proposes these pairs. AI
+          can make mistakes, so check each one.
           <strong> Nothing runs until you confirm.</strong> Uncheck any pair
           that&apos;s wrong.
         </p>
