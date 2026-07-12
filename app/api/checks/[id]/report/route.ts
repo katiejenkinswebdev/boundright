@@ -54,8 +54,43 @@ export async function GET(
     reviewed.getFullYear(),
   ].join("·");
 
+  // Agency logo for co-branding (public bucket).
+  let logo: { bytes: Uint8Array; kind: "png" | "jpg" } | null = null;
+  const { data: agencyFull } = await supabase
+    .from("agencies")
+    .select("logo_url")
+    .eq("id", check.agency_id)
+    .single();
+  if (agencyFull?.logo_url) {
+    try {
+      const res = await fetch(agencyFull.logo_url);
+      if (res.ok) {
+        logo = {
+          bytes: new Uint8Array(await res.arrayBuffer()),
+          kind: agencyFull.logo_url.endsWith(".png") ? "png" : "jpg",
+        };
+      }
+    } catch {
+      // co-branding is best-effort
+    }
+  }
+
   const pdf = await buildReportPdf({
     agencyName: agency?.name ?? "Agency",
+    logo,
+    reportId: `BR-${check.id.slice(0, 8).toUpperCase()}`,
+    docA: {
+      filename: check.doc_a_filename ?? "document_a.pdf",
+      pages: check.doc_a_pages,
+      sha256: check.doc_a_sha256,
+    },
+    docB: {
+      filename: check.doc_b_filename ?? "document_b.pdf",
+      pages: check.doc_b_pages,
+      sha256: check.doc_b_sha256,
+    },
+    receivedAt: check.created_at,
+    processedAt: check.processed_at,
     label: check.label,
     policyType: check.policy_type,
     runDate: fmt(check.created_at),

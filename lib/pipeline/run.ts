@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { ingestPdf, excerptPages, type PdfIngestResult } from "./pdf";
 import {
@@ -112,9 +113,17 @@ export async function runCheck(checkId: string): Promise<void> {
     const ingestA = docs.a.ingest as Extract<PdfIngestResult, { ok: true }>;
     const ingestB = docs.b.ingest as Extract<PdfIngestResult, { ok: true }>;
 
+    const sha = (b: Uint8Array) => createHash("sha256").update(b).digest("hex");
     await admin
       .from("checks")
-      .update({ doc_a_scanned: ingestA.scanned, doc_b_scanned: ingestB.scanned })
+      .update({
+        doc_a_scanned: ingestA.scanned,
+        doc_b_scanned: ingestB.scanned,
+        doc_a_sha256: sha(docs.a.bytes),
+        doc_b_sha256: sha(docs.b.bytes),
+        doc_a_pages: ingestA.pageCount,
+        doc_b_pages: ingestB.pageCount,
+      })
       .eq("id", checkId);
 
     // --- Extract ---
@@ -188,6 +197,7 @@ export async function runCheck(checkId: string): Promise<void> {
       .from("checks")
       .update({
         status: "ready_for_review",
+        processed_at: new Date().toISOString(),
         model_version: MODEL,
         prompt_version: promptVersionFor(checkType),
         carrier: extractionB.carrier?.value ?? extractionA.carrier?.value ?? null,

@@ -111,8 +111,27 @@ async function main() {
     .eq("check_id", checkId)
     .order("created_at", { ascending: true });
 
+  const { data: processedCheck } = await admin
+    .from("checks")
+    .select("*")
+    .eq("id", checkId)
+    .single();
+
   const pdfBytes = await buildReportPdf({
     agencyName: `Report E2E Agency ${stampId}`,
+    reportId: `BR-${checkId.slice(0, 8).toUpperCase()}`,
+    docA: {
+      filename: "pair1_proposal.pdf",
+      pages: processedCheck!.doc_a_pages,
+      sha256: processedCheck!.doc_a_sha256,
+    },
+    docB: {
+      filename: "pair1_policy.pdf",
+      pages: processedCheck!.doc_b_pages,
+      sha256: processedCheck!.doc_b_sha256,
+    },
+    receivedAt: processedCheck!.created_at,
+    processedAt: processedCheck!.processed_at,
     label: "Acme Mfg GL Renewal",
     policyType: "GL",
     runDate: "July 10, 2026",
@@ -131,9 +150,13 @@ async function main() {
   const pdfText = text as string;
   for (const [name, needle] of [
     ["agency name on report", `Report E2E Agency ${stampId}`],
-    ["reviewer attribution", "Reviewed by Rita Reviewer"],
+    ["reviewer attribution", "reviewed by Rita Reviewer"],
     ["critical finding present", "General Aggregate"],
-    ["citations present", "Proposal p. 2"],
+    ["citations present", "Document A p. 2"],
+    ["audit trail present", "AUDIT TRAIL"],
+    ["document fingerprints present", "SHA-256"],
+    ["certification present", "the decisions recorded in this report are mine"],
+    ["reconciliation line", "fields compared:"],
     ["reviewer decision recorded", "Reviewer decision: CONFIRMED"],
     ["reviewer note included", "Verified against dec page."],
     ["missing form finding", "CG 20 37"],
