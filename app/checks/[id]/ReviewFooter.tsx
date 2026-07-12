@@ -24,9 +24,7 @@ export function ReviewFooter({
     <div className="sticky bottom-0 -mx-6 border-t border-line bg-paper/95 px-6 py-4 backdrop-blur">
       <div className="mx-auto flex max-w-2xl flex-wrap items-center justify-between gap-3">
         {reviewed ? (
-          <span className="font-mono text-xs uppercase tracking-wide text-verify">
-            Reviewed
-          </span>
+          <span aria-hidden />
         ) : (
           <button
             type="button"

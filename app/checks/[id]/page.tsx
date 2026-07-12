@@ -53,15 +53,7 @@ export default async function CheckPage({
         <div className="flex items-start justify-between gap-4">
           <h1 className="mb-1 text-2xl font-semibold">{check.label}</h1>
           {check.status === "reviewed" && (
-            <div className="flex flex-col items-end gap-2">
-              <BoundRightStamp reviewedAt={check.reviewed_at ?? new Date()} />
-              <a
-                href={`/api/checks/${check.id}/report`}
-                className="rounded border border-ink px-3 py-1.5 text-sm font-semibold hover:bg-ink hover:text-paper"
-              >
-                Export report (PDF)
-              </a>
-            </div>
+            <BoundRightStamp reviewedAt={check.reviewed_at ?? new Date()} />
           )}
         </div>
         <p className="text-sm text-ink/60">
@@ -92,7 +84,8 @@ export default async function CheckPage({
           accuracy is the responsibility of the licensed agent.
         </p>
         {check.model_version && (
-          <details className="mb-3 mt-1">
+          <div className="mb-3 mt-1 flex items-start justify-between gap-4">
+          <details>
             <summary className="inline-flex cursor-pointer items-center gap-1 font-mono text-xs text-ink/50 hover:text-ink">
               ✦ How AI checked this document
             </summary>
@@ -113,6 +106,15 @@ export default async function CheckPage({
               </Link>
             </div>
           </details>
+          {check.status === "reviewed" && (
+            <a
+              href={`/api/checks/${check.id}/report`}
+              className="shrink-0 rounded border border-ink px-3 py-1.5 text-sm font-semibold hover:bg-ink hover:text-paper"
+            >
+              Export report (PDF)
+            </a>
+          )}
+          </div>
         )}
         {check.status === "ready_for_review" && (
           <div className="mb-6">

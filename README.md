@@ -41,7 +41,7 @@ Policy discrepancy detection for independent commercial insurance agencies. A CS
 
 ### Review workflow
 - Awaiting-review queue on the dashboard (all roles) with assignment and waiting age; count badge on the Checks nav; "Next unreviewed" on report footers; reviewer select per check
-- Confirm/dismiss with notes and dismiss reasons; citation chips reveal stored source excerpts; Mark reviewed gated on criticals; the dated BOUND RIGHT stamp lands beside the report title on confirmation (with a second Export PDF button beside it), keeping the footer to a compact action row; check status sits in the header metadata
+- Confirm/dismiss with notes and dismiss reasons; citation chips reveal stored source excerpts; Mark reviewed gated on criticals; the dated BOUND RIGHT stamp lands beside the report title on confirmation (with a second Export PDF button inline with the AI-details row, right-aligned), keeping the footer to a compact action row (no redundant Reviewed marker); check status sits in the header metadata
 - Instant hover tooltips (shared `HoverTip`/`InfoTip`, no native-title lag) on every pill and marker: severities, confirmed/dismissed, matches, statuses, ✦ AI markers, and extraction confidence — definitions all come from `lib/severity.ts`
 - Engine details ("✦ How AI checked this document") are a click-to-expand disclosure showing model + prompt versions with a link to /ai; the "AI can make mistakes. Review and edit before sending." disclaimer appears on every AI surface (report page, correction letter, smart intake confirm, exported PDF)
 
