@@ -1,6 +1,6 @@
 "use client";
 
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import { useState } from "react";
 
 const PRESETS = [
@@ -11,31 +11,64 @@ const PRESETS = [
   ["1y", "Year"],
 ] as const;
 
-/** Time-range filter for every windowed dashboard metric. URL-driven. */
-export function RangeFilter() {
+const chip = (active: boolean) =>
+  `rounded px-3 py-1.5 text-sm font-medium ${
+    active ? "bg-ink text-paper" : "border border-line text-ink/70 hover:border-ink"
+  }`;
+
+/**
+ * Time-range filter, URL-driven and page-agnostic: it preserves the page's
+ * other query params (status, type, sort, search) and resets pagination.
+ * `allowAll` adds an "All time" chip and makes it the default (checks list);
+ * without it the dashboard default of 6m applies.
+ */
+export function RangeFilter({ allowAll = false }: { allowAll?: boolean }) {
   const router = useRouter();
+  const pathname = usePathname();
   const params = useSearchParams();
-  const activeRange = params.get("from") ? "custom" : (params.get("range") ?? "6m");
+  const activeRange = params.get("from")
+    ? "custom"
+    : (params.get("range") ?? (allowAll ? "all" : "6m"));
   const [showCustom, setShowCustom] = useState(!!params.get("from"));
   const [from, setFrom] = useState(params.get("from") ?? "");
   const [to, setTo] = useState(params.get("to") ?? "");
 
+  const go = (overrides: Record<string, string | null>) => {
+    const p = new URLSearchParams(params.toString());
+    p.delete("page");
+    for (const [k, v] of Object.entries(overrides)) {
+      if (v === null) p.delete(k);
+      else p.set(k, v);
+    }
+    const qs = p.toString();
+    router.push(`${pathname}${qs ? `?${qs}` : ""}`);
+  };
+
   return (
     <div className="flex flex-wrap items-center gap-2" role="group" aria-label="Date range">
+      {allowAll && (
+        <button
+          type="button"
+          onClick={() => {
+            setShowCustom(false);
+            go({ range: null, from: null, to: null });
+          }}
+          aria-pressed={activeRange === "all"}
+          className={chip(activeRange === "all")}
+        >
+          All time
+        </button>
+      )}
       {PRESETS.map(([value, label]) => (
         <button
           key={value}
           type="button"
           onClick={() => {
             setShowCustom(false);
-            router.push(`/dashboard?range=${value}`);
+            go({ range: value, from: null, to: null });
           }}
           aria-pressed={activeRange === value}
-          className={`rounded px-3 py-1.5 text-sm font-medium ${
-            activeRange === value
-              ? "bg-ink text-paper"
-              : "border border-line text-ink/70 hover:border-ink"
-          }`}
+          className={chip(activeRange === value)}
         >
           {label}
         </button>
@@ -44,11 +77,7 @@ export function RangeFilter() {
         type="button"
         onClick={() => setShowCustom((v) => !v)}
         aria-pressed={activeRange === "custom"}
-        className={`rounded px-3 py-1.5 text-sm font-medium ${
-          activeRange === "custom"
-            ? "bg-ink text-paper"
-            : "border border-line text-ink/70 hover:border-ink"
-        }`}
+        className={chip(activeRange === "custom")}
       >
         Custom
       </button>
@@ -60,7 +89,7 @@ export function RangeFilter() {
             type="date"
             value={from}
             onChange={(e) => setFrom(e.target.value)}
-            className="rounded border border-line bg-card px-2 py-1 text-sm"
+            className="rounded border border-line bg-card px-3 py-1.5 font-sans text-sm text-ink accent-ink"
           />
           <span className="text-ink/50">to</span>
           <label className="sr-only" htmlFor="range-to">To</label>
@@ -69,12 +98,12 @@ export function RangeFilter() {
             type="date"
             value={to}
             onChange={(e) => setTo(e.target.value)}
-            className="rounded border border-line bg-card px-2 py-1 text-sm"
+            className="rounded border border-line bg-card px-3 py-1.5 font-sans text-sm text-ink accent-ink"
           />
           <button
             type="button"
             disabled={!from || !to}
-            onClick={() => router.push(`/dashboard?from=${from}&to=${to}`)}
+            onClick={() => go({ from, to, range: null })}
             className="rounded bg-ink px-3 py-1.5 text-sm font-semibold text-paper disabled:opacity-50"
           >
             Apply

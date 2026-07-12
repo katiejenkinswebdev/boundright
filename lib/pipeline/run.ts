@@ -54,7 +54,26 @@ const FAILURE_COPY: Record<string, string> = {
   too_many_pages: `This document is over 300 pages. Split it and check the relevant sections separately.`,
   too_many_scanned_pages: `One of the documents is a scanned image over ${MAX_VISION_PAGES} pages. BoundRight can read scans up to ${MAX_VISION_PAGES} pages — split the document and try again.`,
   download_failed: "We couldn't read the uploaded files. Upload them again.",
+  identical_files:
+    "Both uploads are the same file. Upload the proposal or source document as Document A and the issued policy as Document B.",
+  not_insurance_a:
+    "Document A doesn't look like an insurance document. We couldn't find policy fields (named insured, dates, limits, premium) in it. Emails, letters, and other attachments can't be checked — upload the proposal, binder, or policy itself.",
+  not_insurance_b:
+    "Document B doesn't look like an insurance document. We couldn't find policy fields (named insured, dates, limits, premium) in it. Emails, letters, and other attachments can't be checked — upload the proposal, binder, or policy itself.",
 };
+
+/** Input-quality gate: how many recognizable policy fields the extraction found. */
+function fieldYield(e: import("./schemas").Extraction): number {
+  return (
+    (e.named_insureds?.length ? 1 : 0) +
+    (e.effective_date ? 1 : 0) +
+    (e.expiration_date ? 1 : 0) +
+    (e.carrier ? 1 : 0) +
+    (e.premium ? 1 : 0) +
+    (e.coverages?.reduce((s, c) => s + (c.limits?.length ?? 0) + (c.deductibles?.length ?? 0), 0) ?? 0) +
+    (e.forms_endorsements?.length ?? 0)
+  );
+}
 
 type DocSide = "a" | "b";
 
@@ -91,7 +110,7 @@ export async function runCheck(checkId: string): Promise<void> {
     await auditLog({ agencyId: check.agency_id, checkId, checkLabel: check.label, action: "processing_started" });
 
     // --- Ingest both documents ---
-    const docs: Record<DocSide, { bytes: Uint8Array; ingest: PdfIngestResult }> =
+    const docs: Record<DocSide, { bytes: Uint8Array; sha256: string; ingest: PdfIngestResult }> =
       {} as never;
     for (const side of ["a", "b"] as DocSide[]) {
       const { data: blob, error } = await admin.storage
@@ -102,7 +121,10 @@ export async function runCheck(checkId: string): Promise<void> {
         return;
       }
       const bytes = new Uint8Array(await blob.arrayBuffer());
-      const ingest = await ingestPdf(bytes);
+      // Hash first and hand pdf.js a copy: it transfers (detaches) the
+      // buffer it is given, which silently empties `bytes` afterward.
+      const sha256 = createHash("sha256").update(bytes).digest("hex");
+      const ingest = await ingestPdf(bytes.slice());
       if (!ingest.ok) {
         await fail(FAILURE_COPY[ingest.reason]);
         return;
@@ -111,20 +133,24 @@ export async function runCheck(checkId: string): Promise<void> {
         await fail(FAILURE_COPY.too_many_scanned_pages);
         return;
       }
-      docs[side] = { bytes, ingest };
+      docs[side] = { bytes, sha256, ingest };
     }
 
     const ingestA = docs.a.ingest as Extract<PdfIngestResult, { ok: true }>;
     const ingestB = docs.b.ingest as Extract<PdfIngestResult, { ok: true }>;
 
-    const sha = (b: Uint8Array) => createHash("sha256").update(b).digest("hex");
+    // Same file twice produces a report full of matches that means nothing.
+    if (docs.a.sha256 === docs.b.sha256) {
+      await fail(FAILURE_COPY.identical_files);
+      return;
+    }
     await admin
       .from("checks")
       .update({
         doc_a_scanned: ingestA.scanned,
         doc_b_scanned: ingestB.scanned,
-        doc_a_sha256: sha(docs.a.bytes),
-        doc_b_sha256: sha(docs.b.bytes),
+        doc_a_sha256: docs.a.sha256,
+        doc_b_sha256: docs.b.sha256,
         doc_a_pages: ingestA.pageCount,
         doc_b_pages: ingestB.pageCount,
       })
@@ -140,6 +166,19 @@ export async function runCheck(checkId: string): Promise<void> {
           : extractFromText(okIngest.pagesText, usage);
       })
     );
+
+    // Input-quality gate: an email, memo, or blank page extracts almost
+    // nothing. Fail with a pointed message instead of producing a junk
+    // report ("quality in, quality out").
+    const MIN_FIELDS = 3;
+    if (extractionA.document_type === "unknown" && fieldYield(extractionA) < MIN_FIELDS) {
+      await fail(FAILURE_COPY.not_insurance_a);
+      return;
+    }
+    if (extractionB.document_type === "unknown" && fieldYield(extractionB) < MIN_FIELDS) {
+      await fail(FAILURE_COPY.not_insurance_b);
+      return;
+    }
 
     // --- Compare ---
     await admin.from("checks").update({ status: "comparing" }).eq("id", checkId);

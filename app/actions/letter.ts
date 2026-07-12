@@ -6,6 +6,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { draftCorrectionLetter, emptyUsage } from "@/lib/pipeline/claude";
 import type { PipelineFinding } from "@/lib/pipeline/schemas";
 import { auditLog } from "@/lib/audit";
+import { getLetterGuidance } from "@/lib/letter-guidance";
 
 export type LetterResult = { ok: true; letter: string } | { ok: false; message: string };
 
@@ -35,6 +36,7 @@ export async function generateCorrectionLetter(checkId: string): Promise<LetterR
 
   const usage = emptyUsage();
   try {
+    const guidance = await getLetterGuidance(agency.id);
     const letter = await draftCorrectionLetter(
       {
         label: check.label,
@@ -42,6 +44,8 @@ export async function generateCorrectionLetter(checkId: string): Promise<LetterR
         checkType: check.check_type,
         carrier: check.carrier,
         findings: confirmed as PipelineFinding[],
+        globalGuidance: guidance.global,
+        agencyGuidance: guidance.agency,
       },
       usage
     );

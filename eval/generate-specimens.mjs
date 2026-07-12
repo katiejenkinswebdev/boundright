@@ -280,6 +280,37 @@ const expectations = {
 };
 
 for (const [pair, expected] of Object.entries(expectations)) {
+
+  // --- Input-quality trash specimens (the guardrail set) ---
+  await makePdf("trash_email.pdf", [
+    [
+      "FROM: jbroker@agencymail.example",
+      "TO: underwriting@carrier.example",
+      "SUBJECT: RE: RE: FW: Acme renewal - attached docs",
+      "",
+      "Hi Sandra,",
+      "",
+      "Attached are the docs we discussed on the call. Let me know if the",
+      "committee needs anything else before Friday. Also - golf Thursday?",
+      "",
+      "Thanks,",
+      "Jim",
+      "",
+      "Reference: BR-STUB:trash-doc",
+    ],
+  ]);
+  await makePdf("trash_blank.pdf", [["", "Reference: BR-STUB:trash-doc", ""]]);
+  await makePdf("trash_memo.pdf", [
+    [
+      "INTEROFFICE MEMO",
+      "",
+      "All staff: the parking lot will be repaved Tuesday.",
+      "Please use the north entrance.",
+      "",
+      "Reference: BR-STUB:trash-doc",
+    ],
+  ]);
+
   fs.writeFileSync(
     path.join(expectedDir, `${pair}.json`),
     JSON.stringify(expected, null, 2)

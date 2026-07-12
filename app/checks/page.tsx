@@ -8,6 +8,8 @@ import { PageSizeSelect } from "./PageSizeSelect";
 import { AppShell } from "@/app/components/AppShell";
 import { DeleteCheckButton } from "./DeleteCheckButton";
 import { ArchiveCheckButton } from "./ArchiveCheckButton";
+import { RangeFilter } from "@/app/dashboard/RangeFilter";
+import { resolveRange } from "@/lib/stats";
 
 const STATUS_LABEL: Record<string, string> = {
   queued: "Queued",
@@ -42,6 +44,9 @@ export default async function ChecksPage({
     sort?: string;
     dir?: string;
     page?: string;
+    range?: string;
+    from?: string;
+    to?: string;
   }>;
 }) {
   const {
@@ -51,6 +56,9 @@ export default async function ChecksPage({
     sort = "date",
     dir = "desc",
     page: pageParam = "1",
+    range,
+    from,
+    to,
   } = await searchParams;
   const { supabase, profile, agency } = await requireProfile();
 
@@ -82,6 +90,13 @@ export default async function ChecksPage({
     if (statusFilter !== "all") query = query.eq("status", statusFilter);
   }
   if (typeFilter !== "all") query = query.eq("check_type", typeFilter);
+  // Date range: same presets as the dashboard; default is all time.
+  if (range || from) {
+    const window = resolveRange({ range, from, to });
+    query = query
+      .gte("created_at", window.from.toISOString())
+      .lt("created_at", window.to.toISOString());
+  }
   const { data: checks, count: totalCount } = await query;
 
   const href = (over: Record<string, string>) => {
@@ -89,6 +104,9 @@ export default async function ChecksPage({
     if (q?.trim()) p.set("q", q.trim());
     if (statusFilter !== "all") p.set("status", statusFilter);
     if (typeFilter !== "all") p.set("type", typeFilter);
+    if (range) p.set("range", range);
+    if (from) p.set("from", from);
+    if (to) p.set("to", to);
     if (sort !== "date") p.set("sort", sort);
     if (dir !== "desc") p.set("dir", dir);
     if (page > 1) p.set("page", String(page));
@@ -145,7 +163,7 @@ export default async function ChecksPage({
       </div>
 
       <div className="mb-3 flex flex-wrap items-center gap-2">
-        <span className="text-sm font-semibold text-ink/60">Findings:</span>
+        <span className="w-12 text-sm font-semibold text-ink/60">Status</span>
         {STATUS_FILTERS.map(([value, label]) => (
           <Link
             key={value}
@@ -157,8 +175,9 @@ export default async function ChecksPage({
             {label}
           </Link>
         ))}
-        <span className="mx-1 text-line">|</span>
-        <span className="text-sm font-semibold text-ink/60">Types:</span>
+      </div>
+      <div className="mb-3 flex flex-wrap items-center gap-2">
+        <span className="w-12 text-sm font-semibold text-ink/60">Type</span>
         {TYPE_FILTERS.map(([value, label]) => (
           <Link
             key={value}
@@ -171,8 +190,17 @@ export default async function ChecksPage({
           </Link>
         ))}
       </div>
+      <div className="mb-3 flex flex-wrap items-center gap-2">
+        <span className="w-12 text-sm font-semibold text-ink/60">Date</span>
+        <RangeFilter allowAll />
+      </div>
 
       <form className="mb-4" action="/checks" method="GET">
+        {statusFilter !== "all" && <input type="hidden" name="status" value={statusFilter} />}
+        {typeFilter !== "all" && <input type="hidden" name="type" value={typeFilter} />}
+        {range && <input type="hidden" name="range" value={range} />}
+        {from && <input type="hidden" name="from" value={from} />}
+        {to && <input type="hidden" name="to" value={to} />}
         <label htmlFor="q" className="sr-only">
           Search by client name
         </label>

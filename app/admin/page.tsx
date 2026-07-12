@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 import { requireProfile } from "@/lib/auth";
 import { isSystemAdmin } from "@/lib/roles";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { toggleSmartIntake, createAnnouncement, endAnnouncement } from "@/app/actions/admin";
+import { toggleSmartIntake, createAnnouncement, endAnnouncement, saveGlobalLetterGuidance, saveAgencyLetterGuidance } from "@/app/actions/admin";
 
 /** Ops console: system_admin role (ADMIN_EMAILS env as bootstrap fallback). */
 export default async function AdminPage() {
@@ -53,6 +53,15 @@ export default async function AdminPage() {
   const { data: aiRatings } = await admin
     .from("ai_feedback")
     .select("target, prompt_version, rating");
+  const { data: letterConfig } = await admin
+    .from("platform_config")
+    .select("value")
+    .eq("key", "letter_guidance")
+    .maybeSingle();
+  const { data: agencyGuidance } = await admin
+    .from("agencies")
+    .select("id, name, letter_instructions")
+    .order("name");
   const { data: announcements } = await admin
     .from("announcements")
     .select("id, message, link_url, starts_at, ends_at")
@@ -249,6 +258,74 @@ export default async function AdminPage() {
             ))}
           </tbody>
         </table>
+      </section>
+
+      <h2 className="mb-3 mt-8 font-semibold">Correction letter prompt</h2>
+      <section className="mb-8 rounded-lg border border-line bg-card p-6">
+        <p className="mb-4 text-sm text-ink/70">
+          Letters are drafted from the versioned base prompt (letter_v2, in
+          the repo). The guidance below layers on top without touching it:
+          the platform layer applies to every client, a client&apos;s own
+          layer applies only to them and wins where they conflict.
+        </p>
+        <form action={saveGlobalLetterGuidance} className="mb-6">
+          <label className="block">
+            <span className="mb-1 block text-sm font-semibold">
+              Platform-wide guidance (all clients, one place)
+            </span>
+            <textarea
+              name="guidance"
+              defaultValue={letterConfig?.value ?? ""}
+              rows={3}
+              maxLength={4000}
+              placeholder="Example: Always reference the producer code when known. Close with 'We appreciate your prompt attention.'"
+              className="w-full rounded border border-line bg-paper px-3 py-2 font-mono text-sm"
+            />
+          </label>
+          <button
+            type="submit"
+            className="mt-2 rounded bg-ink px-4 py-2 text-sm font-semibold text-paper hover:bg-ink/90"
+          >
+            Save platform guidance
+          </button>
+        </form>
+
+        <p className="mb-2 text-sm font-semibold">Per-client guidance</p>
+        <div className="space-y-2">
+          {(agencyGuidance ?? []).map((ag) => (
+            <details key={ag.id} className="rounded border border-line p-3">
+              <summary className="cursor-pointer text-sm">
+                <span className="font-medium">{ag.name}</span>
+                <span className="ml-2 font-mono text-xs text-ink/50">
+                  {ag.letter_instructions ? "customized" : "default"}
+                </span>
+              </summary>
+              <form
+                action={async (formData: FormData) => {
+                  "use server";
+                  await saveAgencyLetterGuidance(ag.id, formData);
+                }}
+                className="mt-3"
+              >
+                <textarea
+                  name="guidance"
+                  defaultValue={ag.letter_instructions ?? ""}
+                  rows={3}
+                  maxLength={4000}
+                  placeholder="Example: This agency signs as 'Risk Management Team'. Reference their carrier service center, not underwriting."
+                  className="w-full rounded border border-line bg-paper px-3 py-2 font-mono text-sm"
+                />
+                <button
+                  type="submit"
+                  className="mt-2 rounded border border-ink px-4 py-1.5 text-sm font-semibold hover:bg-ink hover:text-paper"
+                >
+                  Save for this client
+                </button>
+                <span className="ml-3 text-xs text-ink/50">Clear the box and save to return to default.</span>
+              </form>
+            </details>
+          ))}
+        </div>
       </section>
 
       <h2 className="mb-3 mt-8 font-semibold">Announcements (banner across the app)</h2>

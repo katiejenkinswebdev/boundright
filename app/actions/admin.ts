@@ -60,3 +60,38 @@ export async function endAnnouncement(id: string): Promise<void> {
     .gt("ends_at", new Date().toISOString());
   revalidatePath("/admin");
 }
+
+/** System admin only: the platform-wide letter guidance, one place for all clients. */
+export async function saveGlobalLetterGuidance(formData: FormData): Promise<void> {
+  const { profile } = await requireProfile();
+  if (!isSystemAdmin(profile)) throw new Error("System admin only.");
+  const admin = createAdminClient();
+  if (!admin) return;
+  const value = String(formData.get("guidance") ?? "").trim().slice(0, 4000);
+  await admin.from("platform_config").upsert({
+    key: "letter_guidance",
+    value,
+    updated_at: new Date().toISOString(),
+  });
+  revalidatePath("/admin");
+}
+
+/** System admin only: per-client letter guidance. */
+export async function saveAgencyLetterGuidance(agencyId: string, formData: FormData): Promise<void> {
+  const { profile } = await requireProfile();
+  if (!isSystemAdmin(profile)) throw new Error("System admin only.");
+  const admin = createAdminClient();
+  if (!admin) return;
+  const value = String(formData.get("guidance") ?? "").trim().slice(0, 4000);
+  await admin
+    .from("agencies")
+    .update({ letter_instructions: value || null })
+    .eq("id", agencyId);
+  await admin.from("events").insert({
+    agency_id: agencyId,
+    user_id: profile.user_id,
+    event_name: "letter_guidance_updated",
+    metadata: { length: value.length },
+  });
+  revalidatePath("/admin");
+}

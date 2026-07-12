@@ -21,6 +21,12 @@ export const TERM_DEF = {
   ai_draft: "AI-drafted from your confirmed findings. Review and edit before sending.",
 } as const;
 
+/**
+ * The general AI safety statement (industry standard). Surfaces where the
+ * user edits and sends AI output add the action sentence themselves.
+ */
+export const AI_SAFETY = "AI can make mistakes. Verify important information.";
+
 export const CONFIDENCE_DEF = {
   high: "The extraction is unambiguous: the value was read cleanly from both documents.",
   medium:

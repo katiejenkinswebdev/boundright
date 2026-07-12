@@ -77,6 +77,7 @@ step "onboarding-e2e"  node scripts/e2e-onboarding-test.mjs "$APP"
 step "pipeline-e2e"    env CLAUDE_STUB_DIR=eval/stubs npx tsx scripts/pipeline-e2e-test.ts
 step "report-e2e"      env CLAUDE_STUB_DIR=eval/stubs npx tsx scripts/report-e2e-test.ts "$APP"
 step "sample-check"    node scripts/sample-check-e2e.mjs "$APP"
+step "letter-guidance" env CLAUDE_STUB_DIR=eval/stubs npx tsx scripts/letter-guidance-test.ts
 
 if [ "$LIVE" -eq 1 ]; then
   if [ -n "${ANTHROPIC_API_KEY:-}" ]; then

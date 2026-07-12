@@ -36,6 +36,10 @@ Policy discrepancy detection for independent commercial insurance agencies. A CS
 
 - Running checks show live status: a 4-stage progress checklist on the check page (polls every 2.5s, failure states explained) and a pulsing indicator on Queued/Reading/Comparing rows in the checks list
 
+### Input-quality guardrails (quality in, quality out)
+- Rejected with pointed fix-it copy before any junk report can exist: password-protected PDFs, non-PDF files, documents over 300 pages, scans over the vision page limit, the same file uploaded twice, and non-insurance documents (emails, memos, blank pages — caught when extraction finds fewer than 3 policy fields and no recognizable document type)
+- Failed checks never count against the allowance, always show the reason plus Try again, land in the ops console failures table, and their PDFs are still deleted
+
 ### AI pipeline
 - Claude structured extraction (verbatim values, page citations, ISO form conventions, issuing carrier); agency-configurable premium-variance thresholds injected per comparison; second-pass verification of criticals; versioned prompts + model recorded per check; token/cost logging; source-document SHA-256 fingerprints; PDFs deleted after processing with nightly verification
 
@@ -43,7 +47,7 @@ Policy discrepancy detection for independent commercial insurance agencies. A CS
 - Awaiting-review queue on the dashboard (all roles) with assignment and waiting age; count badge on the Checks nav; "Next unreviewed" on report footers; reviewer select per check
 - Confirm/dismiss with notes and dismiss reasons; citation chips reveal stored source excerpts; Mark reviewed gated on criticals; the dated BOUND RIGHT stamp lands beside the report title on confirmation, keeping the footer to a compact action row (no redundant Reviewed marker); check status sits in the header metadata
 - Instant hover tooltips (shared `HoverTip`/`InfoTip`, no native-title lag) on every pill and marker: severities, confirmed/dismissed, matches, statuses, ✦ AI markers, and extraction confidence — definitions all come from `lib/severity.ts`
-- Engine details ("✦ How AI checked this document") are a click-to-expand disclosure showing model + prompt versions with a link to /ai; the "AI can make mistakes. Review and edit before sending." disclaimer appears on every AI surface (report page, correction letter, smart intake confirm, exported PDF)
+- Engine details ("✦ How AI checked this document") are a click-to-expand disclosure showing model + prompt versions with a link to /ai; the general AI safety statement "AI can make mistakes. Verify important information." appears on every AI surface; the letter (where the user edits and sends) uses the action form "Review and edit before sending"
 
 ### Reports (one brand system: `lib/pdf-brand.ts`)
 - Discrepancy report: agency co-brand + the BR seal lockup in the header, audit trail, document fingerprints, findings as exhibits with excerpts, dismissed-with-reason, reconciliation line, reviewer certification carrying the dated verification stamp, report ID + pagination
@@ -51,9 +55,10 @@ Policy discrepancy detection for independent commercial insurance agencies. A CS
 - Period report from the dashboard: follows the active range filter exactly (presets or custom dates), six KPIs including staff cost savings, auto-written summary; monthly version auto-emailed on the 1st
 - All PDFs share the tilted-seal lockup or stamp per brand rules, wordmark footer, metadata, and the naming convention `BoundRight - {Type} - {Client} - {ISO date(s)}.pdf`
 - Correction request letters drafted from confirmed findings (effective-inception convention, prompt letter_v2), editable, never auto-sent; no auto-signature — the sender signs it themselves, and reviewer/agency names are not sent to the model; the AI disclaimer sits directly above the Copy/Redraft buttons
+- Letter prompts are customizable without touching the versioned base: platform-wide guidance (ops console, one place, every client) plus per-client instructions (ops console, per agency, wins on conflict); layers are stored in platform_config / agencies.letter_instructions and covered by the letter-guidance QA suite
 
 ### Dashboard & analytics
-- Time-range filter (week / month / 3m / 6m / year / custom) driving all four KPI tiles, the adaptive-bucket trend chart (daily/weekly/monthly, non-overlapping axis labels, table view with severity breakdown), and carrier accuracy (managers+)
+- Time-range filter (week / month / 3m / 6m / year / custom, styled date inputs) on the dashboard and the checks list (with All time default there; combines with status/type/search); driving all four KPI tiles, the adaptive-bucket trend chart (daily/weekly/monthly, non-overlapping axis labels, table view with severity breakdown), and carrier accuracy (managers+)
 - Carrier issuance accuracy shows a trend per carrier (worsening / improving / steady) comparing the selected range's confirmed-critical rate to the same-length window before it; trends only render with at least 5 checks in both windows
 - Every metric shows its formula with the agency's own inputs on hover; only reviewer-confirmed findings count anywhere; the trend chart's hover card breaks confirmed discrepancies down by severity
 - Severity definitions live in `lib/severity.ts` and feed every tooltip: the checks-list finding pills, the report summary explainer, and each severity group heading on the report
@@ -186,7 +191,7 @@ The gate runs automatically in three places:
 
 **The README rule:** this file is the source of truth for what works right now. The pre-push hook fails any push that changes app code without touching README.md — every feature, setup step, or to-do change lands here in the same push, after QA passes.
 
-Suites: RLS isolation (14 checks), onboarding flow (10), pipeline + deletion + failure copy (14), report review + PDF export + cross-agency denial (21), sample-check demo (7).
+Suites: RLS isolation (14 checks), onboarding flow (10), pipeline + deletion + failure copy + input-quality guardrails (18), report review + PDF export + cross-agency denial (21), sample-check demo (7), letter guidance (6). Manual test plan with the specimen kit: TESTING.md (documents in ~/Documents/boundright-test-kit).
 
 ## Repo layout
 

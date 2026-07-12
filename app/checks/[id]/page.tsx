@@ -7,7 +7,7 @@ import { FindingCard, Badge, type FindingRow } from "./FindingCard";
 import { ReviewFooter } from "./ReviewFooter";
 import { CorrectionLetter } from "./CorrectionLetter";
 import { InfoTip, HoverTip } from "@/app/components/InfoTip";
-import { SEVERITY_DEF, TERM_DEF, STATUS_DEF } from "@/lib/severity";
+import { SEVERITY_DEF, TERM_DEF, STATUS_DEF, AI_SAFETY } from "@/lib/severity";
 import { AssignSelect } from "./AssignSelect";
 import { AiRating } from "@/app/components/AiRating";
 import { BoundRightStamp } from "@/app/components/brand";
@@ -97,9 +97,7 @@ export default async function CheckPage({
                 Both are recorded on every check so a report can always say
                 exactly which AI produced it.
               </p>
-              <p className="mt-2">
-                AI can make mistakes. Review and edit before sending.
-              </p>
+              <p className="mt-2">{AI_SAFETY} A licensed reviewer makes every final decision.</p>
               <Link href="/ai" className="mt-2 inline-block underline">
                 How BoundRight uses AI
               </Link>

@@ -152,6 +152,33 @@ check(
   docx.failure_reason
 );
 
+// ---------------------------------------------------------------------------
+// Failure path: a non-insurance document (email printed to PDF)
+// ---------------------------------------------------------------------------
+const trashEmail = fs.readFileSync(path.join(SPECIMENS, "trash_email.pdf"));
+const trashId = await createCheckWithDocs(agencyId, "Trash email test", trashEmail, policy);
+await runCheck(trashId);
+const trash = await getCheck(trashId);
+check("email-as-PDF fails the quality gate", trash.status === "failed", trash.status);
+check(
+  "trash failure copy names the problem and the fix",
+  (trash.failure_reason ?? "").includes("doesn't look like an insurance document"),
+  trash.failure_reason
+);
+
+// ---------------------------------------------------------------------------
+// Failure path: the same file uploaded twice
+// ---------------------------------------------------------------------------
+const dupId = await createCheckWithDocs(agencyId, "Duplicate file test", policy, policy);
+await runCheck(dupId);
+const dup = await getCheck(dupId);
+check("identical uploads fail", dup.status === "failed", dup.status);
+check(
+  "identical-files copy is directive",
+  (dup.failure_reason ?? "").includes("Both uploads are the same file"),
+  dup.failure_reason
+);
+
 // Failed checks must not count against the cap.
 const { data: agencyAfter } = await admin
   .from("agencies")
