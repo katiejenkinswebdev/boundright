@@ -62,10 +62,16 @@ Each failed check: shows the reason on the check page with "Try again", does NOT
 3. Announcements: post one ending tomorrow → ink banner on every app page; End now → gone on refresh.
 4. AI ratings and drift tables populate; feedback list shows widget submissions.
 
-## 7 · Roles sweep
+## 7 · User management (as manager or admin)
+
+1. Settings → Team: each member shows login email + last sign-in; open Manage on a lower-ranked member: edit name, change login email, Send password reset (check Inbucket at localhost:55324 in local dev), Suspend (badge appears; their next sign-in fails), Restore, Remove (confirm dialog; login deleted; audit log keeps their review history).
+2. Rank rules: a manager sees Manage only on users; an admin on managers and users; nobody manages themselves (use Profile) or an equal/higher rank.
+3. As admin: pending invites list under Team with Revoke.
+
+## 8 · Roles sweep
 
 user: no dashboard analytics, no delete, no admin sections in Settings. manager: + analytics + delete. admin: + team/config/billing. system_admin: + /admin. Non-admins hitting /admin get a 404.
 
-## 8 · Billing (needs Stripe test keys)
+## 9 · Billing (needs Stripe test keys)
 
 Subscribe on Founding from Settings → Billing (radio prices come from `lib/pricing.ts`), test-card checkout, plan reflects on the agency, Manage billing opens the portal, cancel in one click.

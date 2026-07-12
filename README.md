@@ -65,7 +65,8 @@ Policy discrepancy detection for independent commercial insurance agencies. A CS
 - Severity definitions live in `lib/severity.ts` and feed every tooltip: the checks-list finding pills, the report summary explainer, and each severity group heading on the report
 
 ### Teams & roles
-- user → manager (adds analytics) → admin (adds configuration, team, integrations, billing, deletion) → system_admin (operator; database-granted only)
+- user → manager (adds analytics + team management) → admin (adds configuration, team invites/roles, integrations, billing, deletion) → system_admin (operator; database-granted only)
+- Team management (manager+, strictly-lower-rank targets only, never yourself): see each member's login email and last sign-in, edit their name or login email, send a password reset, suspend/restore access (sign-in blocked within the hour), and remove them entirely — review history stays attributed in the audit log (user references null on deletion, never break). Admins also see and revoke pending invites. Every action logged to events
 - Email invites with join links (labeled Email/Role fields, role capabilities in a hover tip); each user's role (and what it grants) shown in Settings; the ops console shows every client's configuration in one place
 
 ### Product analytics (PostHog)
@@ -86,12 +87,16 @@ Policy discrepancy detection for independent commercial insurance agencies. A CS
 - System admin exports a per-client audit log CSV from the ops console (the export itself is logged)
 
 ### Billing, ops, platform
-- Pricing lives in one file: `lib/pricing.ts` (plan names, prices, allowances, blurbs). The landing page, Settings → Billing (which shows plan levels only, linking to /#pricing for current rates), and the usage caps all read it. To change pricing: edit that file, create the new price in Stripe, point the `STRIPE_PRICE_ID_*` env var at it — nothing else in the app changes
+- Pricing lives in one file: `lib/pricing.ts` (plan names, prices, allowances, blurbs). The landing page, Settings → Billing (which shows allowances and rate descriptions without tier names or prices, linking to /#pricing where the named tiers and current rates live), and the usage caps all read it. To change pricing: edit that file, create the new price in Stripe, point the `STRIPE_PRICE_ID_*` env var at it — nothing else in the app changes
 - Stripe trial/checkout/portal/webhooks with honest caps and no overage billing; operator console (agencies, config, AI cost, failures, drift, AI output ratings, feedback); cost guardrails; crons (period reset, monthly reports, deletion verification, review reminders, weekly ops digest); Sentry with PII scrubbing; security headers; RLS everywhere; WCAG AA
 - Platform announcements: system admin posts a banner (message, optional link) with show-from and hide-after dates from the ops console; it appears across the app and expires by itself, no deploy. "End now" kills a live banner immediately
-- Ops console shows every agency's full setup in one place: plan, billing, member counts by role, signup date, every adjustable assumption/threshold, webhook status, smart intake flag, and the per-client audit CSV
+- Ops console shows every agency's full setup in one place: plan, billing, member counts by role, signup date, every adjustable assumption/threshold, a per-client monthly check allowance override (blank = plan default; enforced everywhere caps are checked), client logo (one-click upload on their behalf), webhook status, smart intake flag, and the per-client audit CSV
+- Ops console Legal section: edit the Terms of Service and Privacy Policy as plain text, live at /terms and /privacy on save; blank falls back to the built-in documents
 - `/api/health` uptime probe (200 when app + database respond, 503 otherwise) used by the deploy smoke tests and uptime monitors
 - Test data: `npx tsx scripts/seed-test-agencies.ts` seeds Coastal Risk Partners (founding, smart intake on), Summit Insurance Group (trial), and Heartland Agency Co (standard, past_due) with distinct configurations and weeks of activity; admin logins `admin@coastalrisk.test` / `admin@summitinsurance.test` / `admin@heartlandagency.test`, password `BoundRight-Test-2026`
+
+### Landing page
+- Features → outcomes section: four cards pairing the agency's job (catch issuance errors, prove it was bound right, fix carrier mistakes, run the whole book) with the features that do it and the outcome delivered; public pricing with named tiers; free audit offer
 
 ## Architecture
 
