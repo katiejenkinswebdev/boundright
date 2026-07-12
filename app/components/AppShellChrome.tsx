@@ -152,7 +152,7 @@ export function AppShellChrome({
                 <NavIcon name={item.icon} />
                 {!collapsed && <span>{item.label}</span>}
                 {!collapsed && item.href === "/checks" && awaitingCount > 0 && (
-                  <span className={`ml-auto rounded-full px-1.5 font-mono text-xs ${isActive ? "bg-paper text-ink" : "bg-ink/10 text-ink"}`}>
+                  <span className={`ml-auto rounded-full px-1.5 font-mono text-xs font-medium ${isActive ? "bg-paper text-caution" : "bg-caution/15 text-caution"}`}>
                     {awaitingCount}
                   </span>
                 )}

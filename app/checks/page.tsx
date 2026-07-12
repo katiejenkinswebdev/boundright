@@ -193,9 +193,15 @@ export default async function ChecksPage({
             <tbody>
               {sorted.map((c) => {
                 const sev = sevByCheck.get(c.id);
+                const unviewed = c.status === "ready_for_review";
                 return (
-                  <tr key={c.id} className="border-b border-line/50">
-                    <td className="px-4 py-3 font-medium">
+                  <tr
+                    key={c.id}
+                    className={`border-b border-line/50 ${
+                      unviewed ? "border-l-2 border-l-caution bg-caution/5" : ""
+                    }`}
+                  >
+                    <td className={`px-4 py-3 ${unviewed ? "font-semibold" : "font-medium"}`}>
                       <Link href={`/checks/${c.id}`} className="hover:underline">
                         {c.label}
                       </Link>
@@ -214,7 +220,9 @@ export default async function ChecksPage({
                             ? "text-flag"
                             : c.status === "reviewed"
                               ? "text-verify"
-                              : "text-ink/60"
+                              : unviewed
+                                ? "rounded-full bg-caution/15 px-2 py-0.5 text-caution"
+                                : "text-ink/60"
                         }`}
                       >
                         {STATUS_LABEL[c.status] ?? c.status}
