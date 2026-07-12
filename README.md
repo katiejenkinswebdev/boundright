@@ -99,10 +99,11 @@ Policy discrepancy detection for independent commercial insurance agencies. A CS
 - System admin exports a per-client audit log CSV from the ops console (the export itself is logged)
 
 ### Billing, ops, platform
-- Four billing tiers in `lib/pricing.ts`: Trial (14 days, 10 checks) → Founder ($249, 150/mo, rate locked) → Agency ($349, 150/mo) → Whole Book ($649, 400+/mo, bulk smart intake included and enabled automatically at checkout, custom monthly volumes set per account via the ops-console allowance override). Tier names are display strings — rename them in that one file.
+- Four billing tiers in `lib/pricing.ts`: Trial (14 days, 10 checks) → Founder ($249, 150/mo, rate locked) → Core ($349, 150/mo) → Premier ($649, 400+/mo, bulk smart intake included and enabled automatically at checkout, custom monthly volumes set per account via the ops-console allowance override). Tier names are display strings — rename them in that one file.
 - Pricing lives in one file: `lib/pricing.ts` (plan names, prices, allowances, blurbs). The landing page, Settings → Billing (which shows allowances and rate descriptions without tier names or prices, linking to /#pricing where the named tiers and current rates live), and the usage caps all read it. To change pricing: edit that file, create the new price in Stripe, point the `STRIPE_PRICE_ID_*` env var at it — nothing else in the app changes
 - Stripe trial/checkout/portal/webhooks with honest caps and no overage billing; operator console (agencies, config, AI cost, failures, drift, AI output ratings, feedback); cost guardrails; crons (period reset, monthly reports, deletion verification, review reminders, weekly ops digest); Sentry with PII scrubbing; security headers; RLS everywhere; WCAG AA
 - Platform announcements: system admin posts a banner (message, optional link) with show-from and hide-after dates from the ops console; it appears across the app and expires by itself, no deploy. "End now" kills a live banner immediately
+- New client setup in one step from the ops console: agency name + plan + optional custom allowance + smart intake, and the client admin gets an emailed join link (also shown for copy); premium (Premier) auto-enables smart intake
 - Ops console shows every agency's full setup in one place: plan, billing, member counts by role, signup date, every adjustable assumption/threshold, a per-client monthly check allowance override (blank = plan default; enforced everywhere caps are checked), client logo (one-click upload on their behalf), webhook status, smart intake flag, and the per-client audit CSV
 - Ops console Legal section: edit the Terms of Service and Privacy Policy as plain text, live at /terms and /privacy on save; blank falls back to the built-in documents
 - `/api/health` uptime probe (200 when app + database respond, 503 otherwise) used by the deploy smoke tests and uptime monitors
@@ -253,7 +254,7 @@ Two hosted environments, one pipeline (`.github/workflows/deploy.yml`), build-on
 1. **Anthropic:** put `ANTHROPIC_API_KEY` in `.env.local` and as a GitHub Actions secret; run `npm run qa:live` — the live eval must pass (every seeded critical found, zero false criticals)
 2. **Supabase (production):** create the project, `supabase link`, `supabase db push` (12 migrations); grant your account `system_admin` (`update profiles set role='system_admin' where user_id = ...`)
 3. **Vercel:** create the project, set every var from `.env.example` (including `CRON_SECRET`, `ADMIN_EMAILS`), deploy; crons come from `vercel.json`
-4. **Stripe:** create Founder ($249), Agency ($349), and Whole Book ($649) prices, set `STRIPE_*` env vars (incl. `STRIPE_PRICE_ID_PREMIUM`), point the webhook at `/api/stripe/webhook`, run a test-mode subscribe/cancel round trip
+4. **Stripe:** create Founder ($249), Core ($349), and Premier ($649) prices, set `STRIPE_*` env vars (incl. `STRIPE_PRICE_ID_PREMIUM`), point the webhook at `/api/stripe/webhook`, run a test-mode subscribe/cancel round trip
 5. **Resend:** verify the sending domain; point an inbound provider (Resend Inbound / SendGrid Parse) at `/api/inbound`
 6. **Sentry:** set `SENTRY_DSN` (server) and `NEXT_PUBLIC_SENTRY_DSN` (client)
 7. **Content:** real Calendly URL and hero screenshot on the landing page; record the 3-minute demo

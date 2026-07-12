@@ -6,6 +6,7 @@ import { toggleSmartIntake, createAnnouncement, endAnnouncement, setAgencyAllowa
 import { AdminLogoForm } from "./AdminLogoForm";
 import { planCap } from "@/lib/pricing";
 import { LetterGuidancePanel } from "./LetterGuidancePanel";
+import { NewClientForm } from "./NewClientForm";
 
 /** Ops console: system_admin role (ADMIN_EMAILS env as bootstrap fallback). */
 export default async function AdminPage() {
@@ -144,6 +145,17 @@ export default async function AdminPage() {
         {(agencies ?? []).length} agencies · total AI spend{" "}
         {dollars([...costByAgency.values()].reduce((s, c) => s + c.total, 0))}
       </p>
+
+      <h2 className="mb-3 font-semibold">New client setup</h2>
+      <section className="mb-8 rounded-lg border border-ink bg-card p-6">
+        <p className="mb-4 text-sm text-ink/70">
+          One step: creates the agency on the chosen plan (with allowance and
+          smart intake configured) and emails the client admin their join
+          link. Their thresholds, logo, and letter guidance are editable
+          below the moment they exist.
+        </p>
+        <NewClientForm />
+      </section>
 
       {overCost.length > 0 && (
         <div className="mb-6 rounded border border-flag/50 bg-flag/10 p-4 text-sm">

@@ -4,6 +4,9 @@ import { revalidatePath } from "next/cache";
 import { requireProfile } from "@/lib/auth";
 import { isSystemAdmin } from "@/lib/roles";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { randomBytes } from "node:crypto";
+import { emailHtml, sendEmail } from "@/lib/email";
+import { PLANS } from "@/lib/pricing";
 
 /** System admin only: flip smart intake for a client agency. */
 export async function toggleSmartIntake(agencyId: string, enabled: boolean): Promise<void> {
@@ -159,4 +162,83 @@ export async function saveLegalDoc(formData: FormData): Promise<void> {
   revalidatePath("/terms");
   revalidatePath("/privacy");
   revalidatePath("/ops");
+}
+
+export type NewClientState = { status: "idle" | "ok" | "error"; message: string };
+
+/**
+ * System admin only: sets up a new client in one step — agency with plan,
+ * allowance, and smart intake configured, plus an admin invite emailed to
+ * the client (link also returned for copy/paste).
+ */
+export async function createClientAgency(
+  _prev: NewClientState,
+  formData: FormData
+): Promise<NewClientState> {
+  const { profile } = await requireProfile();
+  if (!isSystemAdmin(profile)) return { status: "error", message: "System admin only." };
+  const admin = createAdminClient();
+  if (!admin) return { status: "error", message: "Server not configured." };
+
+  const name = String(formData.get("name") ?? "").trim().slice(0, 120);
+  const plan = String(formData.get("plan") ?? "trial");
+  const adminEmail = String(formData.get("admin_email") ?? "").trim().toLowerCase();
+  const allowanceRaw = String(formData.get("allowance") ?? "").trim();
+  const smartIntake = formData.get("smart_intake") === "on";
+  if (!name) return { status: "error", message: "Give the agency a name." };
+  if (!(plan in PLANS)) return { status: "error", message: "Pick a plan." };
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(adminEmail)) {
+    return { status: "error", message: "Enter the client admin's email." };
+  }
+
+  const allowance =
+    allowanceRaw === "" ? null : Math.max(1, Math.min(10_000, Number(allowanceRaw) || 0)) || null;
+  const { data: agency, error } = await admin
+    .from("agencies")
+    .insert({
+      name,
+      plan,
+      billing_status: "ok",
+      checks_allowance: allowance,
+      smart_intake_enabled: smartIntake || plan === "premium",
+      trial_ends_at:
+        plan === "trial" ? new Date(Date.now() + 14 * 86_400_000).toISOString() : null,
+    })
+    .select("id")
+    .single();
+  if (error || !agency) {
+    return { status: "error", message: `Couldn't create the agency: ${error?.message}` };
+  }
+
+  const token = randomBytes(18).toString("hex");
+  const { error: invErr } = await admin.from("invites").insert({
+    agency_id: agency.id,
+    email: adminEmail,
+    role: "admin",
+    token,
+    invited_by: profile.user_id,
+  });
+  if (invErr) return { status: "error", message: "Agency created, but the invite failed." };
+
+  const url = `${process.env.APP_URL ?? "http://localhost:3000"}/join/${token}`;
+  await sendEmail(
+    adminEmail,
+    `Your ${name} workspace on BoundRight is ready`,
+    emailHtml({
+      heading: `Welcome to BoundRight`,
+      bodyHtml: `<p style="margin:0;">Your agency workspace "${name}" is set up on the ${PLANS[plan as keyof typeof PLANS].name} plan. The link below signs you in as the agency admin.</p>`,
+      cta: { label: "Open your workspace", url },
+    })
+  );
+  await admin.from("events").insert({
+    agency_id: agency.id,
+    user_id: profile.user_id,
+    event_name: "client_created_by_operator",
+    metadata: { plan, allowance, smart_intake: smartIntake },
+  });
+  revalidatePath("/ops");
+  return {
+    status: "ok",
+    message: `${name} is set up on ${PLANS[plan as keyof typeof PLANS].name}. Invite emailed to ${adminEmail} (link: ${url})`,
+  };
 }

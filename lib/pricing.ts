@@ -21,7 +21,7 @@ export const PLANS = {
     blurb: "For the first agencies on board. The price stays locked in.",
   },
   standard: {
-    name: "Agency",
+    name: "Core",
     monthly: 349,
     checksPerMonth: 150,
     smartIntake: false,
@@ -29,7 +29,7 @@ export const PLANS = {
       "Cancel anytime in one click. When a limit is reached, checks pause. We never bill overages.",
   },
   premium: {
-    name: "Whole Book",
+    name: "Premier",
     monthly: 649,
     checksPerMonth: 400,
     smartIntake: true,
