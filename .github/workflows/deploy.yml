@@ -1,0 +1,125 @@
+# Continuous deployment: every push to main that passes QA deploys to UAT
+# automatically; production is the same commit, promoted by approving the
+# "production" environment gate in the Actions run (build once, promote the
+# artifact — never rebuild between environments).
+#
+# Required repo secrets (Settings → Secrets and variables → Actions):
+#   VERCEL_TOKEN, VERCEL_ORG_ID,
+#   VERCEL_PROJECT_ID_UAT, VERCEL_PROJECT_ID_PROD,
+#   SUPABASE_DB_URL_UAT, SUPABASE_DB_URL_PROD   (postgres connection strings)
+#   SLACK_OPS_WEBHOOK_URL                        (deploy + downtime alerts)
+# Required repo variables: UAT_URL, PROD_URL     (e.g. https://uat.boundright.com)
+# Plus a GitHub environment named "production" with Katie as required reviewer.
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy-uat:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment:
+      name: uat
+      url: ${{ vars.UAT_URL }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Migrate UAT database
+        run: supabase db push --db-url "$SUPABASE_DB_URL"
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL_UAT }}
+
+      - name: Deploy to Vercel (UAT)
+        run: |
+          npm i -g vercel
+          vercel pull --yes --environment=production --token "$VERCEL_TOKEN"
+          vercel build --prod --token "$VERCEL_TOKEN"
+          vercel deploy --prebuilt --prod --token "$VERCEL_TOKEN"
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID_UAT }}
+
+      - name: Smoke test UAT
+        run: |
+          for i in $(seq 1 10); do
+            code=$(curl -s -o /dev/null -w "%{http_code}" "${{ vars.UAT_URL }}/api/health") && \
+              [ "$code" = "200" ] && exit 0
+            sleep 15
+          done
+          echo "UAT health check never returned 200 (last: $code)"; exit 1
+
+      - name: Alert Slack on failure
+        if: failure()
+        run: |
+          curl -s -X POST -H 'Content-Type: application/json' \
+            -d "{\"text\":\"UAT deploy failed for \`${GITHUB_SHA::7}\` — ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}\"}" \
+            "${{ secrets.SLACK_OPS_WEBHOOK_URL }}"
+
+  promote-production:
+    needs: deploy-uat
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    # Pauses here until the "production" environment is approved in the
+    # Actions UI. Approving IS the promote-to-production step.
+    environment:
+      name: production
+      url: ${{ vars.PROD_URL }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Migrate production database
+        run: supabase db push --db-url "$SUPABASE_DB_URL"
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL_PROD }}
+
+      - name: Deploy to Vercel (production)
+        run: |
+          npm i -g vercel
+          vercel pull --yes --environment=production --token "$VERCEL_TOKEN"
+          vercel build --prod --token "$VERCEL_TOKEN"
+          vercel deploy --prebuilt --prod --token "$VERCEL_TOKEN"
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID_PROD }}
+
+      - name: Smoke test production
+        run: |
+          for i in $(seq 1 10); do
+            code=$(curl -s -o /dev/null -w "%{http_code}" "${{ vars.PROD_URL }}/api/health") && \
+              [ "$code" = "200" ] && exit 0
+            sleep 15
+          done
+          echo "Production health check never returned 200 (last: $code)"; exit 1
+
+      - name: Notify Slack
+        if: always()
+        run: |
+          status="${{ job.status }}"
+          curl -s -X POST -H 'Content-Type: application/json' \
+            -d "{\"text\":\"Production deploy $status for \`${GITHUB_SHA::7}\` — ${{ vars.PROD_URL }}\"}" \
+            "${{ secrets.SLACK_OPS_WEBHOOK_URL }}"

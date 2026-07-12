@@ -89,6 +89,18 @@ export function FindingCard({ finding }: { finding: FindingRow }) {
               ✦ AI
             </span>
           )}
+          <span
+            title="How sure the extraction is. Low means verify against the source document."
+            className={`font-mono text-xs uppercase ${
+              finding.confidence === "low"
+                ? "text-flag"
+                : finding.confidence === "medium"
+                  ? "text-caution"
+                  : "text-ink/40"
+            }`}
+          >
+            {finding.confidence} confidence
+          </span>
           {finding.severity && <Badge tone={severityTone}>{finding.severity}</Badge>}
           {finding.reviewer_action && (
             <Badge tone={finding.reviewer_action === "confirmed" ? "verify" : "muted"}>
@@ -211,7 +223,7 @@ function SourcePeek({ label, excerpt }: { label: string; excerpt?: string | null
   const [open, setOpen] = useState(false);
   if (!excerpt) {
     return (
-      <span className="mt-2 inline-block rounded border border-line px-2 py-0.5 font-mono text-xs text-ink/60">
+      <span className="mt-2 inline-flex items-center rounded border border-line px-2.5 py-1 font-mono text-xs leading-none text-ink/60">
         {label}
       </span>
     );
@@ -222,7 +234,7 @@ function SourcePeek({ label, excerpt }: { label: string; excerpt?: string | null
         type="button"
         onClick={() => setOpen((v) => !v)}
         aria-expanded={open}
-        className="rounded border border-line px-2 py-0.5 font-mono text-xs text-ink/60 underline decoration-dotted hover:border-ink"
+        className="inline-flex items-center rounded border border-line px-2.5 py-1 font-mono text-xs leading-none text-ink/60 underline decoration-dotted hover:border-ink"
       >
         {label}
       </button>

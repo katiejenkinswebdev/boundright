@@ -23,7 +23,7 @@ export default async function AdminPage() {
   monthStart.setUTCDate(1);
   monthStart.setUTCHours(0, 0, 0, 0);
 
-  const [{ data: agencies }, { data: failures }, { data: costRows }, { data: feedback }, { data: driftChecks }, { data: driftFindings }] =
+  const [{ data: agencies }, { data: failures }, { data: costRows }, { data: feedback }, { data: driftChecks }, { data: driftFindings }, { data: memberRows }] =
     await Promise.all([
       admin
         .from("agencies")
@@ -47,7 +47,38 @@ export default async function AdminPage() {
         .select("check_id, reviewer_action")
         .not("reviewer_action", "is", null)
         .neq("status", "match"),
+      admin.from("profiles").select("agency_id, role"),
     ]);
+
+  const { data: aiRatings } = await admin
+    .from("ai_feedback")
+    .select("target, prompt_version, rating");
+
+  // Members per agency, e.g. "1 admin · 2 user".
+  const members = new Map<string, Map<string, number>>();
+  for (const m of memberRows ?? []) {
+    const byRole = members.get(m.agency_id) ?? new Map<string, number>();
+    byRole.set(m.role, (byRole.get(m.role) ?? 0) + 1);
+    members.set(m.agency_id, byRole);
+  }
+  const memberLabel = (agencyId: string) => {
+    const byRole = members.get(agencyId);
+    if (!byRole) return "—";
+    return ["system_admin", "admin", "manager", "user"]
+      .filter((r) => byRole.has(r))
+      .map((r) => `${byRole.get(r)} ${r.replace("system_admin", "sys admin")}`)
+      .join(" · ");
+  };
+
+  // Thumb ratings per AI surface + prompt version.
+  const ratings = new Map<string, { up: number; down: number }>();
+  for (const r of aiRatings ?? []) {
+    const key = `${r.target} · ${r.prompt_version ?? "unversioned"}`;
+    const entry = ratings.get(key) ?? { up: 0, down: 0 };
+    if (r.rating > 0) entry.up++;
+    else entry.down++;
+    ratings.set(key, entry);
+  }
 
   // Guardrail: reviewer agreement per prompt version. A dismiss-rate spike
   // after a prompt change is the earliest regression signal; the runbook is
@@ -157,6 +188,8 @@ export default async function AdminPage() {
           <thead>
             <tr className="border-b border-line text-left">
               <th className="px-4 py-3 font-semibold">Agency</th>
+              <th className="px-4 py-3 font-semibold">Since</th>
+              <th className="px-4 py-3 font-semibold">Members</th>
               <th className="px-4 py-3 text-right font-semibold">Check min</th>
               <th className="px-4 py-3 text-right font-semibold">Avg premium</th>
               <th className="px-4 py-3 text-right font-semibold">CSR rate</th>
@@ -172,6 +205,10 @@ export default async function AdminPage() {
             {(agencies ?? []).map((a) => (
               <tr key={`cfg-${a.id}`} className="border-b border-line/50">
                 <td className="px-4 py-2 font-medium">{a.name}</td>
+                <td className="px-4 py-2 text-ink/60">
+                  {new Date(a.created_at).toLocaleDateString("en-US", { month: "short", year: "numeric" })}
+                </td>
+                <td className="px-4 py-2 text-xs text-ink/70">{memberLabel(a.id)}</td>
                 <td className="px-4 py-2 text-right font-mono">{a.manual_check_minutes}</td>
                 <td className="px-4 py-2 text-right font-mono">${Number(a.avg_account_premium).toLocaleString()}</td>
                 <td className="px-4 py-2 text-right font-mono">${Number(a.csr_hourly_rate)}</td>
@@ -188,7 +225,7 @@ export default async function AdminPage() {
                   >
                     <button
                       type="submit"
-                      className={`rounded border px-2 py-0.5 font-mono text-xs ${
+                      className={`inline-flex items-center rounded border px-2.5 py-1 font-mono text-xs leading-none ${
                         a.smart_intake_enabled
                           ? "border-verify text-verify"
                           : "border-line text-ink/50 hover:border-ink"
@@ -230,6 +267,44 @@ export default async function AdminPage() {
                   <td className="px-4 py-2 text-right font-mono">{v.confirmed}</td>
                   <td className="px-4 py-2 text-right font-mono">{v.dismissed}</td>
                   <td className={`px-4 py-2 text-right font-mono ${rate > 40 ? "text-flag" : ""}`}>
+                    {rate}%
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </section>
+
+      <h2 className="mb-3 mt-8 font-semibold">AI output ratings (thumbs, by surface + prompt version)</h2>
+      <section className="mb-8 overflow-x-auto rounded-lg border border-line bg-card">
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="border-b border-line text-left">
+              <th className="px-4 py-3 font-semibold">Surface · prompt version</th>
+              <th className="px-4 py-3 text-right font-semibold">Up</th>
+              <th className="px-4 py-3 text-right font-semibold">Down</th>
+              <th className="px-4 py-3 text-right font-semibold">Down rate</th>
+            </tr>
+          </thead>
+          <tbody>
+            {ratings.size === 0 && (
+              <tr>
+                <td className="px-4 py-3 text-ink/60" colSpan={4}>
+                  No ratings yet. Thumbs appear on the correction letter, smart
+                  intake, and report screens.
+                </td>
+              </tr>
+            )}
+            {[...ratings.entries()].map(([key, v]) => {
+              const total = v.up + v.down;
+              const rate = total ? Math.round((v.down / total) * 100) : 0;
+              return (
+                <tr key={key} className="border-b border-line/50">
+                  <td className="px-4 py-2 font-mono text-xs">{key}</td>
+                  <td className="px-4 py-2 text-right font-mono">{v.up}</td>
+                  <td className="px-4 py-2 text-right font-mono">{v.down}</td>
+                  <td className={`px-4 py-2 text-right font-mono ${rate > 40 && total >= 5 ? "text-flag" : ""}`}>
                     {rate}%
                   </td>
                 </tr>

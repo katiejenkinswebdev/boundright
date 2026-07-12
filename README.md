@@ -51,6 +51,7 @@ Policy discrepancy detection for independent commercial insurance agencies. A CS
 
 ### Dashboard & analytics
 - Time-range filter (week / month / 3m / 6m / year / custom) driving all four KPI tiles, the adaptive-bucket trend chart (daily/weekly/monthly, non-overlapping axis labels, table view with severity breakdown), and carrier accuracy (managers+)
+- Carrier issuance accuracy shows a trend per carrier (worsening / improving / steady) comparing the selected range's confirmed-critical rate to the same-length window before it; trends only render with at least 5 checks in both windows
 - Every metric shows its formula with the agency's own inputs on hover; only reviewer-confirmed findings count anywhere
 
 ### Teams & roles
@@ -60,6 +61,8 @@ Policy discrepancy detection for independent commercial insurance agencies. A CS
 ### Configuration, feedback, transparency
 - Settings → Configuration (admins): ROI assumptions, scoring thresholds, reminder timing
 - In-app feedback widget (incl. "a finding was wrong") stored first-party; getting-started checklist for new agencies
+- Thumbs up/down on every generative AI output (correction letter draft, smart intake pairing, check report extraction) recorded in `ai_feedback` with the check's model + prompt version; the ops console rolls ratings up per surface + prompt version so a satisfaction drop after a prompt change is visible immediately
+- Extraction confidence is visible on every finding card (high / medium / low, colored when degraded), not just when low
 - /ai plain-language AI transparency page; prompt-version drift monitoring in the ops console; prompt rollback runbook below
 
 ### Audit trail
@@ -67,7 +70,10 @@ Policy discrepancy detection for independent commercial insurance agencies. A CS
 - System admin exports a per-client audit log CSV from the ops console (the export itself is logged)
 
 ### Billing, ops, platform
-- Stripe trial/checkout/portal/webhooks with honest caps and no overage billing; operator console (agencies, config, AI cost, failures, drift, feedback); cost guardrails; crons (period reset, monthly reports, deletion verification, review reminders, weekly ops digest); Sentry with PII scrubbing; security headers; RLS everywhere; WCAG AA
+- Stripe trial/checkout/portal/webhooks with honest caps and no overage billing; operator console (agencies, config, AI cost, failures, drift, AI output ratings, feedback); cost guardrails; crons (period reset, monthly reports, deletion verification, review reminders, weekly ops digest); Sentry with PII scrubbing; security headers; RLS everywhere; WCAG AA
+- Ops console shows every agency's full setup in one place: plan, billing, member counts by role, signup date, every adjustable assumption/threshold, webhook status, smart intake flag, and the per-client audit CSV
+- `/api/health` uptime probe (200 when app + database respond, 503 otherwise) used by the deploy smoke tests and uptime monitors
+- Test data: `npx tsx scripts/seed-test-agencies.ts` seeds Coastal Risk Partners (founding, smart intake on), Summit Insurance Group (trial), and Heartland Agency Co (standard, past_due) with distinct configurations and weeks of activity; admin logins `admin@coastalrisk.test` / `admin@summitinsurance.test` / `admin@heartlandagency.test`, password `BoundRight-Test-2026`
 
 ## Architecture
 
@@ -167,6 +173,32 @@ Suites: RLS isolation (14 checks), onboarding flow (10), pipeline + deletion + f
 - `supabase/` — SQL migrations (schema, RLS, grants, storage, billing)
 - `.github/workflows/` + `.githooks/` — the QA pipeline
 
+## Environments & release pipeline
+
+Two hosted environments, one pipeline (`.github/workflows/deploy.yml`), build-once-promote:
+
+- **UAT** — its own Vercel project + Supabase project. Every push to `main` that passes QA deploys here automatically (migrations first, then the app, then a `/api/health` smoke test).
+- **Production** — its own Vercel project + Supabase project. The pipeline pauses at the `production` GitHub environment gate; **approving the gate in the Actions run is the promote step**. The same commit is then migrated, deployed, smoke-tested, and announced in Slack.
+
+### One-time setup
+
+1. Create two Vercel projects (uat + prod) and two Supabase projects; set each Vercel project's env vars to point at its own Supabase (plus Stripe test keys on UAT, live keys on prod).
+2. GitHub → Settings → Environments: create `uat` and `production`; on `production` add yourself as a **required reviewer** (this is the approval gate).
+3. GitHub → Settings → Secrets and variables → Actions. Secrets: `VERCEL_TOKEN`, `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID_UAT`, `VERCEL_PROJECT_ID_PROD`, `SUPABASE_DB_URL_UAT`, `SUPABASE_DB_URL_PROD`, `SLACK_OPS_WEBHOOK_URL`. Variables: `UAT_URL`, `PROD_URL`.
+
+### Release flow
+
+1. Push to `main` (pre-push hook runs QA locally; Actions runs it again).
+2. The Deploy workflow migrates + deploys UAT and smoke-tests `/api/health`. Test your feature on UAT.
+3. Open the run in the Actions tab and approve the `production` environment. Same build promotes to production, with a Slack notification either way.
+4. Rollback: Vercel dashboard → Deployments → previous deployment → "Promote to production" (instant); database migrations are forward-only, so write a reverting migration if schema must back out.
+
+### Downtime alerts to Slack
+
+1. In Slack: create a channel (e.g. `#boundright-ops`) → slack.com/apps → Incoming Webhooks → add to that channel → copy the webhook URL into the `SLACK_OPS_WEBHOOK_URL` repo secret. Deploy failures and production deploys already post there.
+2. **Primary monitor (recommended):** Better Stack (betterstack.com, free tier) → create a monitor on `https://<prod-domain>/api/health`, 30-second checks → Integrations → Slack → pick the channel. Do the same for UAT if wanted.
+3. **Built-in fallback:** `.github/workflows/uptime.yml` probes both environments about every 5 minutes and posts to the Slack webhook when either is down. GitHub cron is best-effort (delays are normal), which is why an external monitor is primary.
+
 ## Production launch steps (in order)
 
 1. **Anthropic:** put `ANTHROPIC_API_KEY` in `.env.local` and as a GitHub Actions secret; run `npm run qa:live` — the live eval must pass (every seeded critical found, zero false criticals)
@@ -189,6 +221,7 @@ Suites: RLS isolation (14 checks), onboarding flow (10), pipeline + deletion + f
 - [ ] Golden eval set expanded with real redacted documents; dismiss reasons fed back into prompts; published accuracy stats on /ai
 - [ ] AMS integrations (HawkSoft/EZLynx first), SSO, public API; self-hosted PostHog only if deeper analytics is ever needed
 - [ ] QA suites should clean up their test agencies in the local DB
+- [ ] System admin candidates: read-only view-as-agency impersonation (logged), agency lifecycle controls (suspend, extend trial, plan override, allowance top-up), per-agency prompt-version pinning + staged rollout, webhook delivery log with retry, announcement banner, full agency data export for offboarding, retention-policy overrides, per-agency Anthropic spend budget alerts, support notes on the agency record
 
 ## Standing rules
 

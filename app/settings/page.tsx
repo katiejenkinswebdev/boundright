@@ -47,7 +47,7 @@ export default async function SettingsPage() {
           <div className="space-y-8">
             <p className="text-sm">
               Your role:{" "}
-              <span className="rounded border border-line px-2 py-0.5 font-mono text-xs uppercase">
+              <span className="inline-flex items-center rounded border border-line px-2.5 py-1 font-mono text-xs uppercase leading-none">
                 {profile.role.replace("_", " ")}
               </span>
               <span className="ml-2 text-ink/60">

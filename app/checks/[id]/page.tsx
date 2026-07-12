@@ -8,6 +8,7 @@ import { ReviewFooter } from "./ReviewFooter";
 import { CorrectionLetter } from "./CorrectionLetter";
 import { InfoTip } from "@/app/components/InfoTip";
 import { AssignSelect } from "./AssignSelect";
+import { AiRating } from "@/app/components/AiRating";
 import { BoundRightStamp } from "@/app/components/brand";
 
 const SEVERITY_ORDER = { critical: 0, moderate: 1, minor: 2 } as const;
@@ -238,6 +239,8 @@ async function ReportBody({
           ))}
         </ul>
       </details>
+
+      <AiRating target="report" checkId={checkId} label="Rate the AI extraction on this check" />
 
       {/* Footer actions (spec 4.3.5) */}
       <ReviewFooter

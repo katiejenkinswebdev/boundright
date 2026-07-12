@@ -9,6 +9,7 @@ import {
 } from "@/app/actions/intake";
 import type { ClassifiedDoc, ProposedPair } from "@/lib/intake";
 import { primaryButtonClass } from "@/app/components/ui";
+import { AiRating } from "@/app/components/AiRating";
 
 type Phase = "drop" | "uploading" | "classifying" | "confirm" | "starting" | "done";
 
@@ -116,6 +117,9 @@ export function SmartIntake() {
         >
           Watch progress in Checks
         </Link>
+        <div className="mt-5">
+          <AiRating target="smart_intake" label="Rate the classification and pairing" />
+        </div>
       </div>
     );
   }
@@ -154,11 +158,11 @@ export function SmartIntake() {
             <span className="min-w-0 flex-1">
               <span className="flex flex-wrap items-center gap-2">
                 <span className="font-semibold">{p.label}</span>
-                <span className="rounded border border-line px-2 py-0.5 font-mono text-xs uppercase text-ink/60">
+                <span className="inline-flex items-center rounded border border-line px-2.5 py-1 font-mono text-xs uppercase leading-none text-ink/60">
                   {TYPE_LABEL[p.checkType]}
                 </span>
                 <span
-                  className={`rounded border px-2 py-0.5 font-mono text-xs uppercase ${
+                  className={`inline-flex items-center rounded border px-2.5 py-1 font-mono text-xs uppercase leading-none ${
                     p.confidence === "high"
                       ? "border-verify text-verify"
                       : p.confidence === "medium"

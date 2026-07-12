@@ -1,0 +1,33 @@
+# Built-in downtime alerting: probes /api/health on UAT and production every
+# ~5 minutes and posts to Slack when either is down. GitHub cron is
+# best-effort (delays of several minutes are normal) — use it as the free
+# fallback and Better Stack (see README) as the primary monitor.
+name: Uptime
+
+on:
+  schedule:
+    - cron: "*/5 * * * *"
+  workflow_dispatch:
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Probe both environments
+        run: |
+          fail=""
+          for pair in "production=${{ vars.PROD_URL }}" "uat=${{ vars.UAT_URL }}"; do
+            name="${pair%%=*}"; url="${pair#*=}"
+            [ -z "$url" ] && continue
+            code=$(curl -s -o /dev/null -w "%{http_code}" --max-time 20 "$url/api/health" || echo 000)
+            if [ "$code" != "200" ]; then
+              fail="$fail $name($code)"
+            fi
+          done
+          if [ -n "$fail" ]; then
+            curl -s -X POST -H 'Content-Type: application/json' \
+              -d "{\"text\":\":rotating_light: BoundRight health check failing:$fail\"}" \
+              "${{ secrets.SLACK_OPS_WEBHOOK_URL }}"
+            exit 1
+          fi

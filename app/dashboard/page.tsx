@@ -123,34 +123,71 @@ export default async function DashboardPage({
   const hasAnyChecks = stats.recent.length > 0;
   const analytics = canSeeAnalytics(profile);
 
-  // Per-carrier error rates (managers and admins only).
-  let carrierRows: { carrier: string; checks: number; criticals: number }[] = [];
+  // Per-carrier error rates (managers and admins only), with a trend against
+  // the same-length window immediately before the selected range.
+  type CarrierRow = {
+    carrier: string;
+    checks: number;
+    criticals: number;
+    trend: "worsening" | "improving" | "steady" | null;
+    priorRate: number | null;
+  };
+  let carrierRows: CarrierRow[] = [];
   if (analytics) {
-    const { data: carrierChecks } = await supabase
-      .from("checks")
-      .select("id, carrier")
-      .not("carrier", "is", null)
-      .gte("created_at", range.from.toISOString())
-      .lt("created_at", range.to.toISOString())
-      .in("status", ["ready_for_review", "reviewed"]);
-    const { data: confirmedCriticals } = await supabase
-      .from("findings")
-      .select("check_id")
-      .eq("reviewer_action", "confirmed")
-      .eq("severity", "critical");
+    const priorFrom = new Date(range.from.getTime() - (range.to.getTime() - range.from.getTime()));
+    const [{ data: carrierChecks }, { data: priorChecks }, { data: confirmedCriticals }] =
+      await Promise.all([
+        supabase
+          .from("checks")
+          .select("id, carrier")
+          .not("carrier", "is", null)
+          .gte("created_at", range.from.toISOString())
+          .lt("created_at", range.to.toISOString())
+          .in("status", ["ready_for_review", "reviewed"]),
+        supabase
+          .from("checks")
+          .select("id, carrier")
+          .not("carrier", "is", null)
+          .gte("created_at", priorFrom.toISOString())
+          .lt("created_at", range.from.toISOString())
+          .in("status", ["ready_for_review", "reviewed"]),
+        supabase
+          .from("findings")
+          .select("check_id")
+          .eq("reviewer_action", "confirmed")
+          .eq("severity", "critical"),
+      ]);
     const criticalByCheck = new Map<string, number>();
     for (const fc of confirmedCriticals ?? []) {
       criticalByCheck.set(fc.check_id, (criticalByCheck.get(fc.check_id) ?? 0) + 1);
     }
-    const byCarrier = new Map<string, { checks: number; criticals: number }>();
-    for (const c of carrierChecks ?? []) {
-      const entry = byCarrier.get(c.carrier) ?? { checks: 0, criticals: 0 };
-      entry.checks++;
-      entry.criticals += criticalByCheck.get(c.id) ?? 0;
-      byCarrier.set(c.carrier, entry);
-    }
+    const tally = (rows: { id: string; carrier: string }[] | null) => {
+      const map = new Map<string, { checks: number; criticals: number }>();
+      for (const c of rows ?? []) {
+        const entry = map.get(c.carrier) ?? { checks: 0, criticals: 0 };
+        entry.checks++;
+        entry.criticals += criticalByCheck.get(c.id) ?? 0;
+        map.set(c.carrier, entry);
+      }
+      return map;
+    };
+    const byCarrier = tally(carrierChecks);
+    const priorByCarrier = tally(priorChecks);
     carrierRows = [...byCarrier.entries()]
-      .map(([carrier, v]) => ({ carrier, ...v }))
+      .map(([carrier, v]) => {
+        const prior = priorByCarrier.get(carrier);
+        // A trend needs enough signal on both sides; under 5 checks in
+        // either window stays unrated rather than misleading.
+        if (!prior || prior.checks < 5 || v.checks < 5) {
+          return { carrier, ...v, trend: null, priorRate: null };
+        }
+        const rate = v.criticals / v.checks;
+        const priorRate = prior.criticals / prior.checks;
+        const delta = rate - priorRate;
+        const trend: CarrierRow["trend"] =
+          delta > 0.02 ? "worsening" : delta < -0.02 ? "improving" : "steady";
+        return { carrier, ...v, trend, priorRate };
+      })
       .sort((a, b) => b.criticals - a.criticals)
       .slice(0, 10);
   }
@@ -302,14 +339,22 @@ export default async function DashboardPage({
               <h2 className="mb-1 font-semibold">
                 Carrier issuance accuracy
                 <InfoTip label="How carrier accuracy is measured">
-                  Carrier names are read from the issued policies. Criticals are
-                  counted only after your reviewer confirms them. Small sample
-                  sizes mislead: treat under 10 checks per carrier as anecdote.
+                  <span className="block">
+                    Carrier names are read from the issued policies. Criticals
+                    are counted only after your reviewer confirms them.
+                  </span>
+                  <span className="mt-2 block">
+                    <strong>Trend</strong> compares this range&apos;s critical
+                    rate to the same-length window right before it. It only
+                    shows when both windows have at least 5 checks; small
+                    samples mislead.
+                  </span>
                 </InfoTip>
               </h2>
               <p className="mb-4 text-sm text-ink/60">
-                Confirmed critical findings by issuing carrier. Where the
-                corrections keep going.
+                Confirmed critical findings by issuing carrier, with the
+                direction each carrier is moving. Where the corrections keep
+                going.
               </p>
               <table className="w-full text-sm">
                 <thead>
@@ -317,6 +362,7 @@ export default async function DashboardPage({
                     <th className="py-2 font-semibold">Carrier</th>
                     <th className="py-2 text-right font-semibold">Checks</th>
                     <th className="py-2 text-right font-semibold">Confirmed criticals</th>
+                    <th className="py-2 text-right font-semibold">Trend</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -326,6 +372,24 @@ export default async function DashboardPage({
                       <td className="py-2 text-right font-mono">{r.checks}</td>
                       <td className={`py-2 text-right font-mono ${r.criticals > 0 ? "text-flag" : ""}`}>
                         {r.criticals}
+                      </td>
+                      <td className="py-2 text-right font-mono text-xs">
+                        {r.trend === "worsening" && (
+                          <span className="text-flag" title={`Critical rate up vs the prior window (was ${Math.round((r.priorRate ?? 0) * 100)}%)`}>
+                            ▲ worsening
+                          </span>
+                        )}
+                        {r.trend === "improving" && (
+                          <span className="text-verify" title={`Critical rate down vs the prior window (was ${Math.round((r.priorRate ?? 0) * 100)}%)`}>
+                            ▼ improving
+                          </span>
+                        )}
+                        {r.trend === "steady" && <span className="text-ink/50">→ steady</span>}
+                        {r.trend === null && (
+                          <span className="text-ink/30" title="Needs at least 5 checks in this range and the prior window">
+                            —
+                          </span>
+                        )}
                       </td>
                     </tr>
                   ))}

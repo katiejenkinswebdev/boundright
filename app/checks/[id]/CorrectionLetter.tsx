@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { generateCorrectionLetter } from "@/app/actions/letter";
+import { AiRating } from "@/app/components/AiRating";
 
 export function CorrectionLetter({
   checkId,
@@ -60,6 +61,9 @@ export function CorrectionLetter({
             >
               {pending ? "Redrafting…" : "Redraft"}
             </button>
+          </div>
+          <div className="mt-3">
+            <AiRating target="letter" checkId={checkId} label="Rate this draft" />
           </div>
         </>
       ) : (
