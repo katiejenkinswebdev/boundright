@@ -168,12 +168,12 @@ export async function buildMonthlyReportPdf(
     const row = Math.floor(i / 2);
     const x = 64 + col * 250;
     const yy = startY - row * 72;
-    page.drawText(value, { x, y: yy, size: 26, font: bold, color: i === 2 || i === 4 ? VERIFY : INK });
+    page.drawText(value, { x, y: yy, size: 26, font: bold, color: i === 2 || i === 3 ? VERIFY : INK });
     page.drawText(label, { x, y: yy - 16, size: 10, font: sans, color: MUTED });
   });
   y = startY - Math.ceil(kpis.length / 2) * 72 - 12;
 
-  text("The month in one paragraph", 12, { font: bold });
+  text("The period in one paragraph", 12, { font: bold });
   y -= 2;
   text(summaryParagraph(n, agencyName), 10.5);
   y -= 10;
