@@ -6,29 +6,36 @@ const VERIFY = rgb(0.122, 0.478, 0.361);
 const MUTED = rgb(0.45, 0.45, 0.45);
 
 export type MonthlyNumbers = {
-  monthLabel: string; // "June 2026"
-  monthDate: string; // "2026-06-01"
+  monthLabel: string; // period label: "June 2026" or "the last 3 months"
+  monthDate: string; // period start "2026-06-01" (snapshot key for months)
+  periodDates: string; // exact dates line: "Jun 1, 2026 to Jun 30, 2026"
   checksRun: number;
   findingsConfirmed: number;
   criticalConfirmed: number;
   hoursSaved: number;
+  staffDollars: number;
   exposureFlagged: number;
 };
 
-export async function computeMonthlyNumbers(
+type AgencyNumbers = {
+  id: string;
+  manual_check_minutes: number;
+  avg_account_premium: number;
+  csr_hourly_rate?: number;
+};
+
+/** Numbers for an arbitrary window; the report generator's engine. */
+export async function computeRangeNumbers(
   db: SupabaseClient,
-  agency: {
-    id: string;
-    manual_check_minutes: number;
-    avg_account_premium: number;
-  },
-  monthStart: Date
+  agency: AgencyNumbers,
+  fromDate: Date,
+  toDate: Date,
+  label: string
 ): Promise<MonthlyNumbers> {
-  const monthEnd = new Date(
-    Date.UTC(monthStart.getUTCFullYear(), monthStart.getUTCMonth() + 1, 1)
-  );
-  const from = monthStart.toISOString();
-  const to = monthEnd.toISOString();
+  const from = fromDate.toISOString();
+  const to = toDate.toISOString();
+  const fmt = (d: Date) =>
+    d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", timeZone: "UTC" });
 
   const { data: checks } = await db
     .from("checks")
@@ -52,19 +59,36 @@ export async function computeMonthlyNumbers(
     (f: { severity: string | null }) => f.severity === "critical"
   ).length;
 
+  const hoursSaved = (checksRun * agency.manual_check_minutes) / 60;
   return {
-    monthLabel: monthStart.toLocaleDateString("en-US", {
-      month: "long",
-      year: "numeric",
-      timeZone: "UTC",
-    }),
-    monthDate: monthStart.toISOString().slice(0, 10),
+    monthLabel: label,
+    monthDate: fromDate.toISOString().slice(0, 10),
+    periodDates: `${fmt(fromDate)} to ${fmt(new Date(toDate.getTime() - 1))}`,
     checksRun,
     findingsConfirmed,
     criticalConfirmed,
-    hoursSaved: (checksRun * agency.manual_check_minutes) / 60,
+    hoursSaved,
+    staffDollars: Math.round(hoursSaved * Number(agency.csr_hourly_rate ?? 0)),
     exposureFlagged: criticalConfirmed * Number(agency.avg_account_premium),
   };
+}
+
+/** Calendar-month wrapper used by the monthly cron. */
+export async function computeMonthlyNumbers(
+  db: SupabaseClient,
+  agency: AgencyNumbers,
+  monthStart: Date
+): Promise<MonthlyNumbers> {
+  const monthEnd = new Date(
+    Date.UTC(monthStart.getUTCFullYear(), monthStart.getUTCMonth() + 1, 1)
+  );
+  return computeRangeNumbers(
+    db,
+    agency,
+    monthStart,
+    monthEnd,
+    monthStart.toLocaleDateString("en-US", { month: "long", year: "numeric", timeZone: "UTC" })
+  );
 }
 
 function summaryParagraph(n: MonthlyNumbers, agencyName: string): string {
@@ -119,7 +143,8 @@ export async function buildMonthlyReportPdf(
   };
 
   text(agencyName, 18, { font: bold });
-  text(`Policy check ROI report · ${n.monthLabel}`, 12, { color: MUTED });
+  text(`Policy check report · ${n.monthLabel}`, 12, { color: MUTED });
+  text(`Period: ${n.periodDates}`, 9, { color: MUTED });
   y -= 12;
   page.drawLine({
     start: { x: 64, y },
@@ -133,6 +158,7 @@ export async function buildMonthlyReportPdf(
     ["Checks run", String(n.checksRun)],
     ["Confirmed discrepancies", String(n.findingsConfirmed)],
     ["Critical catches", String(n.criticalConfirmed)],
+    ["Staff time saved (est.)", `$${n.staffDollars.toLocaleString()}`],
     ["Staff hours saved (est.)", n.hoursSaved.toFixed(1)],
     ["Exposure flagged (est.)", `$${n.exposureFlagged.toLocaleString()}`],
   ];

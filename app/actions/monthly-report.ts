@@ -2,47 +2,43 @@
 
 import { requireProfile } from "@/lib/auth";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { buildMonthlyReportPdf, computeMonthlyNumbers } from "@/lib/monthly-report";
+import { buildMonthlyReportPdf, computeRangeNumbers } from "@/lib/monthly-report";
+import { resolveRange } from "@/lib/stats";
 
 export type MonthlyReportResult =
   | { ok: true; pdfBase64: string; filename: string }
   | { ok: false; message: string };
 
-/** Generates the current month's ROI report on demand ("Download"). */
-export async function generateMonthlyReport(): Promise<MonthlyReportResult> {
+/** One-page report for whatever window the dashboard filter has selected. */
+export async function generateRangeReport(params: {
+  range?: string;
+  from?: string;
+  to?: string;
+}): Promise<MonthlyReportResult> {
   const { supabase, agency } = await requireProfile();
+  const range = resolveRange(params);
 
-  const now = new Date();
-  const monthStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
-  const numbers = await computeMonthlyNumbers(supabase, agency, monthStart);
+  const numbers = await computeRangeNumbers(
+    supabase,
+    agency,
+    range.from,
+    range.to,
+    range.label
+  );
   const pdf = await buildMonthlyReportPdf(agency.name, numbers);
 
-  // Snapshot for the retention engine (service role: no user insert policy).
   const admin = createAdminClient();
   if (admin) {
-    await admin.from("monthly_snapshots").upsert(
-      {
-        agency_id: agency.id,
-        month: numbers.monthDate,
-        checks_run: numbers.checksRun,
-        findings_confirmed: numbers.findingsConfirmed,
-        critical_confirmed: numbers.criticalConfirmed,
-        hours_saved: numbers.hoursSaved,
-        exposure_flagged: numbers.exposureFlagged,
-        report_pdf_generated: true,
-      },
-      { onConflict: "agency_id,month" }
-    );
     await admin.from("events").insert({
       agency_id: agency.id,
-      event_name: "monthly_report_generated",
-      metadata: { month: numbers.monthDate },
+      event_name: "range_report_generated",
+      metadata: { label: range.label, from: range.from.toISOString(), to: range.to.toISOString() },
     });
   }
 
   return {
     ok: true,
     pdfBase64: Buffer.from(pdf).toString("base64"),
-    filename: `BoundRight ROI Report - ${numbers.monthLabel}.pdf`,
+    filename: `BoundRight Report - ${numbers.periodDates}.pdf`,
   };
 }

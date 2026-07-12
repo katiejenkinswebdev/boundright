@@ -1,9 +1,14 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { generateMonthlyReport } from "@/app/actions/monthly-report";
+import { generateRangeReport } from "@/app/actions/monthly-report";
 
-export function MonthlyReportButton() {
+/** Exports the currently filtered window as a one-page PDF. */
+export function MonthlyReportButton({
+  rangeParams,
+}: {
+  rangeParams: { range?: string; from?: string; to?: string };
+}) {
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
 
@@ -15,7 +20,7 @@ export function MonthlyReportButton() {
         onClick={() => {
           setError(null);
           startTransition(async () => {
-            const result = await generateMonthlyReport();
+            const result = await generateRangeReport(rangeParams);
             if (!result.ok) {
               setError(result.message);
               return;
@@ -31,7 +36,7 @@ export function MonthlyReportButton() {
         }}
         className="rounded border border-ink px-4 py-2 text-sm font-semibold hover:bg-ink hover:text-paper disabled:opacity-50"
       >
-        {pending ? "Generating…" : "Generate monthly report"}
+        {pending ? "Generating…" : "Generate report"}
       </button>
       {error && (
         <p role="alert" className="mt-2 text-flag text-sm">

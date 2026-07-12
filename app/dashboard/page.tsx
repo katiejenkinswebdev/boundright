@@ -100,7 +100,7 @@ export default async function DashboardPage({
           <h1 className="text-2xl font-semibold">Dashboard</h1>
           <p className="text-sm text-ink/60">{agency.name}</p>
         </div>
-        {analytics && <MonthlyReportButton />}
+        {analytics && <MonthlyReportButton rangeParams={rangeParams} />}
       </div>
 
       {hasAnyChecks && analytics && (

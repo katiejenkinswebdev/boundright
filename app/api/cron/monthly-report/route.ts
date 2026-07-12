@@ -20,7 +20,7 @@ export async function GET(request: Request) {
 
   const { data: agencies } = await admin
     .from("agencies")
-    .select("id, name, manual_check_minutes, avg_account_premium");
+    .select("id, name, manual_check_minutes, avg_account_premium, csr_hourly_rate");
 
   let sent = 0;
   for (const agency of agencies ?? []) {
