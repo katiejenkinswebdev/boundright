@@ -2,7 +2,8 @@ import { notFound } from "next/navigation";
 import { requireProfile } from "@/lib/auth";
 import { isSystemAdmin } from "@/lib/roles";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { toggleSmartIntake, createAnnouncement, endAnnouncement, saveGlobalLetterGuidance, saveAgencyLetterGuidance, uploadAgencyLogoAdmin } from "@/app/actions/admin";
+import { toggleSmartIntake, createAnnouncement, endAnnouncement, uploadAgencyLogoAdmin } from "@/app/actions/admin";
+import { LetterGuidancePanel } from "./LetterGuidancePanel";
 
 /** Ops console: system_admin role (ADMIN_EMAILS env as bootstrap fallback). */
 export default async function AdminPage() {
@@ -301,64 +302,14 @@ export default async function AdminPage() {
           the platform layer applies to every client, a client&apos;s own
           layer applies only to them and wins where they conflict.
         </p>
-        <form action={saveGlobalLetterGuidance} className="mb-6">
-          <label className="block">
-            <span className="mb-1 block text-sm font-semibold">
-              Platform-wide guidance (all clients, one place)
-            </span>
-            <textarea
-              name="guidance"
-              defaultValue={letterConfig?.value ?? ""}
-              rows={3}
-              maxLength={4000}
-              placeholder="Example: Always reference the producer code when known. Close with 'We appreciate your prompt attention.'"
-              className="w-full rounded border border-line bg-paper px-3 py-2 font-mono text-sm"
-            />
-          </label>
-          <button
-            type="submit"
-            className="mt-2 rounded bg-ink px-4 py-2 text-sm font-semibold text-paper hover:bg-ink/90"
-          >
-            Save platform guidance
-          </button>
-        </form>
-
-        <p className="mb-2 text-sm font-semibold">Per-client guidance</p>
-        <div className="space-y-2">
-          {(agencyGuidance ?? []).map((ag) => (
-            <details key={ag.id} className="rounded border border-line p-3">
-              <summary className="cursor-pointer text-sm">
-                <span className="font-medium">{ag.name}</span>
-                <span className="ml-2 font-mono text-xs text-ink/50">
-                  {ag.letter_instructions ? "customized" : "default"}
-                </span>
-              </summary>
-              <form
-                action={async (formData: FormData) => {
-                  "use server";
-                  await saveAgencyLetterGuidance(ag.id, formData);
-                }}
-                className="mt-3"
-              >
-                <textarea
-                  name="guidance"
-                  defaultValue={ag.letter_instructions ?? ""}
-                  rows={3}
-                  maxLength={4000}
-                  placeholder="Example: This agency signs as 'Risk Management Team'. Reference their carrier service center, not underwriting."
-                  className="w-full rounded border border-line bg-paper px-3 py-2 font-mono text-sm"
-                />
-                <button
-                  type="submit"
-                  className="mt-2 rounded border border-ink px-4 py-1.5 text-sm font-semibold hover:bg-ink hover:text-paper"
-                >
-                  Save for this client
-                </button>
-                <span className="ml-3 text-xs text-ink/50">Clear the box and save to return to default.</span>
-              </form>
-            </details>
-          ))}
-        </div>
+        <LetterGuidancePanel
+          globalValue={letterConfig?.value ?? ""}
+          agencies={(agencyGuidance ?? []).map((g) => ({
+            id: g.id,
+            name: g.name,
+            letter_instructions: g.letter_instructions,
+          }))}
+        />
       </section>
 
       <h2 className="mb-3 mt-8 font-semibold">Announcements (banner across the app)</h2>

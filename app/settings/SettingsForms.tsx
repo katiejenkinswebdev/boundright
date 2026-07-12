@@ -207,21 +207,17 @@ export function BillingSection({
             <label className="flex cursor-pointer items-start gap-3 rounded border border-line p-4">
               <input type="radio" name="plan" value="founding" defaultChecked className="mt-1" />
               <span>
-                <span className="font-semibold">
-                  {PLANS.founding.name} · ${PLANS.founding.monthly}/mo
-                </span>
+                <span className="font-semibold">{PLANS.founding.name}</span>
                 <br />
                 <span className="text-sm text-ink/60">
-                  {PLANS.founding.checksPerMonth} checks/mo, founding price locked in
+                  {PLANS.founding.checksPerMonth} checks/mo, founding rate locked in
                 </span>
               </span>
             </label>
             <label className="flex cursor-pointer items-start gap-3 rounded border border-line p-4">
               <input type="radio" name="plan" value="standard" className="mt-1" />
               <span>
-                <span className="font-semibold">
-                  {PLANS.standard.name} · ${PLANS.standard.monthly}/mo
-                </span>
+                <span className="font-semibold">{PLANS.standard.name}</span>
                 <br />
                 <span className="text-sm text-ink/60">
                   {PLANS.standard.checksPerMonth} checks/mo
@@ -229,6 +225,14 @@ export function BillingSection({
               </span>
             </label>
           </div>
+          <p className="text-sm text-ink/60">
+            Current prices are on the{" "}
+            <a href="/#pricing" target="_blank" className="underline">
+              pricing page
+            </a>{" "}
+            and shown at checkout. (Plans and rates live in{" "}
+            <span className="font-mono text-xs">lib/pricing.ts</span>.)
+          </p>
           <button disabled={checkoutPending} className={primaryButtonClass}>
             {checkoutPending ? "Redirecting…" : "Subscribe"}
           </button>
