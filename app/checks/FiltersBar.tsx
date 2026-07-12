@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { Select } from "@/app/components/Select";
 
 const STATUS_OPTIONS = [
   ["all", "All statuses"],
@@ -96,49 +97,31 @@ export function FiltersBar({
           aria-label="Search by client or account name"
           className={`${fieldClass} w-full max-w-60 flex-1`}
         />
-        <select
-          value={status}
-          onChange={(e) => go({ status: e.target.value })}
-          aria-label="Filter by status"
-          className={fieldClass}
-        >
-          {STATUS_OPTIONS.map(([value, label]) => (
-            <option key={value} value={value}>
-              {label}
-            </option>
-          ))}
-        </select>
-        <select
-          value={type}
-          onChange={(e) => go({ type: e.target.value })}
-          aria-label="Filter by check type"
-          className={fieldClass}
-        >
-          {TYPE_OPTIONS.map(([value, label]) => (
-            <option key={value} value={value}>
-              {label}
-            </option>
-          ))}
-        </select>
-        <select
+        <Select
           value={customOpen ? "custom" : dateValue}
-          onChange={(e) => {
-            if (e.target.value === "custom") {
+          options={DATE_OPTIONS}
+          ariaLabel="Filter by date range"
+          onChange={(v) => {
+            if (v === "custom") {
               setCustomOpen(true);
               return;
             }
             setCustomOpen(false);
-            go({ range: e.target.value === "all" ? "" : e.target.value, from: "", to: "" });
+            go({ range: v === "all" ? "" : v, from: "", to: "" });
           }}
-          aria-label="Filter by date range"
-          className={fieldClass}
-        >
-          {DATE_OPTIONS.map(([value, label]) => (
-            <option key={value} value={value}>
-              {label}
-            </option>
-          ))}
-        </select>
+        />
+        <Select
+          value={status}
+          options={STATUS_OPTIONS}
+          ariaLabel="Filter by status"
+          onChange={(v) => go({ status: v })}
+        />
+        <Select
+          value={type}
+          options={TYPE_OPTIONS}
+          ariaLabel="Filter by check type"
+          onChange={(v) => go({ type: v })}
+        />
         {filtered && (
           <button
             type="button"
