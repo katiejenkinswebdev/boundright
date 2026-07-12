@@ -121,7 +121,7 @@ export function FiltersBar({
           ))}
         </select>
         <select
-          value={dateValue}
+          value={customOpen ? "custom" : dateValue}
           onChange={(e) => {
             if (e.target.value === "custom") {
               setCustomOpen(true);

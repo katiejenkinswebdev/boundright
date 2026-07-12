@@ -26,10 +26,12 @@ export function RangeFilter({ allowAll = false }: { allowAll?: boolean }) {
   const router = useRouter();
   const pathname = usePathname();
   const params = useSearchParams();
-  const activeRange = params.get("from")
+  const urlRange = params.get("from")
     ? "custom"
     : (params.get("range") ?? (allowAll ? "all" : "6m"));
   const [showCustom, setShowCustom] = useState(!!params.get("from"));
+  // The Custom chip lights up the moment it is opened, not only after Apply.
+  const activeRange = showCustom ? "custom" : urlRange;
   const [from, setFrom] = useState(params.get("from") ?? "");
   const [to, setTo] = useState(params.get("to") ?? "");
 
