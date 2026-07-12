@@ -2,7 +2,7 @@
 
 import { useActionState } from "react";
 import { inviteMember, setMemberRole, type TeamState } from "@/app/actions/team";
-import { updateIntegrations, type SettingsState } from "@/app/actions/settings";
+import { updateIntegrations, sendTestNotice, type SettingsState } from "@/app/actions/settings";
 import { inputClass, labelClass, secondaryButtonClass } from "@/app/components/ui";
 
 const initial: TeamState = { status: "idle", message: "" };
@@ -107,6 +107,7 @@ export function IntegrationsSection({
   inboundToken: string;
 }) {
   const [state, action, pending] = useActionState(updateIntegrations, settingsInitial);
+  const [testState, testAction, testPending] = useActionState(sendTestNotice, settingsInitial);
   return (
     <div className="space-y-6">
       <form action={action} className="space-y-3">
@@ -127,10 +128,20 @@ export function IntegrationsSection({
             turn it off.
           </p>
         </div>
-        <button disabled={pending} className={secondaryButtonClass}>
-          {pending ? "Saving…" : "Save webhook"}
-        </button>
+        <div className="flex flex-wrap gap-3">
+          <button disabled={pending} className={secondaryButtonClass + " w-auto"}>
+            {pending ? "Saving…" : "Save webhook"}
+          </button>
+          <button
+            formAction={testAction}
+            disabled={testPending || !webhookUrl}
+            className="rounded border border-line px-6 py-3 font-semibold text-ink/70 hover:border-ink disabled:opacity-50"
+          >
+            {testPending ? "Sending…" : "Send test notice"}
+          </button>
+        </div>
         <Msg state={state} />
+        <Msg state={testState} />
       </form>
 
       <div className="border-t border-line pt-4">

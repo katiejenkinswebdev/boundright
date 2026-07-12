@@ -160,7 +160,7 @@ export async function buildMonthlyReportPdf(
     ["Checks run", String(n.checksRun)],
     ["Confirmed discrepancies", String(n.findingsConfirmed)],
     ["Critical catches", String(n.criticalConfirmed)],
-    ["Staff time saved (est.)", `$${n.staffDollars.toLocaleString()}`],
+    ["Staff cost savings (est.)", `$${n.staffDollars.toLocaleString()}`],
     ["Staff hours saved (est.)", n.hoursSaved.toFixed(1)],
     ["Exposure flagged (est.)", `$${n.exposureFlagged.toLocaleString()}`],
   ];

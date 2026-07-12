@@ -121,6 +121,20 @@ export async function updateIntegrations(
   return ok(url ? "Webhook saved. New-check and reminder notices will post there." : "Webhook removed.");
 }
 
+export async function sendTestNotice(
+  _prev: SettingsState,
+  _formData: FormData
+): Promise<SettingsState> {
+  const { agency, profile } = await requireProfile();
+  if (profile.role !== "admin" && profile.role !== "system_admin") {
+    return fail("Only admins can send test notices.");
+  }
+  if (!agency.notify_webhook_url) return fail("Save a webhook URL first.");
+  const { notifyAgency } = await import("@/lib/notify");
+  await notifyAgency(agency.id, `BoundRight test notice for ${agency.name}. You're connected.`);
+  return ok("Test notice sent. Check your channel.");
+}
+
 /** Danger zone: deletes the agency, all its data, and the account. */
 export async function deleteAccount(
   _prev: SettingsState,

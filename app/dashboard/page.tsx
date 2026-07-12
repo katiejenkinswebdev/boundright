@@ -252,8 +252,8 @@ export default async function DashboardPage({
 
             <div className="rounded-lg border border-line bg-card p-5">
               <p className="text-sm text-ink/60">
-                Staff time saved
-                <InfoTip label="How staff time saved is calculated">
+                Staff cost savings
+                <InfoTip label="How staff cost savings are calculated">
                   {stats.trend.reduce((s, p) => s + p.checks, 0)} completed checks
                   in {stats.rangeLabel}, at {agency.manual_check_minutes} minutes of
                   manual review each, comes to {stats.hoursSaved.toFixed(1)} hours.

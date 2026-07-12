@@ -1,15 +1,19 @@
 import { notFound } from "next/navigation";
-import { requireUser } from "@/lib/auth";
+import { requireProfile } from "@/lib/auth";
+import { isSystemAdmin } from "@/lib/roles";
 import { createAdminClient } from "@/lib/supabase/admin";
 
-/** Ops console, route-guarded to the operator (ADMIN_EMAILS env, comma-separated). */
+/** Ops console: system_admin role (ADMIN_EMAILS env as bootstrap fallback). */
 export default async function AdminPage() {
-  const { user } = await requireUser();
+  const { user, profile } = await requireProfile();
   const adminEmails = (process.env.ADMIN_EMAILS ?? "")
     .split(",")
     .map((e) => e.trim().toLowerCase())
     .filter(Boolean);
-  if (!user.email || !adminEmails.includes(user.email.toLowerCase())) notFound();
+  const allowed =
+    isSystemAdmin(profile) ||
+    (!!user.email && adminEmails.includes(user.email.toLowerCase()));
+  if (!allowed) notFound();
 
   const admin = createAdminClient();
   if (!admin) notFound();
@@ -22,7 +26,7 @@ export default async function AdminPage() {
     await Promise.all([
       admin
         .from("agencies")
-        .select("id, name, plan, billing_status, checks_this_period, created_at")
+        .select("id, name, plan, billing_status, checks_this_period, created_at, manual_check_minutes, avg_account_premium, csr_hourly_rate, premium_variance_threshold, renewal_premium_threshold, reminder_hours, notify_webhook_url")
         .order("created_at", { ascending: false }),
       admin
         .from("checks")
@@ -140,6 +144,38 @@ export default async function AdminPage() {
                 </td>
                 <td className="px-4 py-2 font-medium">{f.label}</td>
                 <td className="px-4 py-2 text-ink/80">{f.failure_reason}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </section>
+
+      <h2 className="mb-3 mt-8 font-semibold">Client configuration (as each agency has set it)</h2>
+      <section className="mb-8 overflow-x-auto rounded-lg border border-line bg-card">
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="border-b border-line text-left">
+              <th className="px-4 py-3 font-semibold">Agency</th>
+              <th className="px-4 py-3 text-right font-semibold">Check min</th>
+              <th className="px-4 py-3 text-right font-semibold">Avg premium</th>
+              <th className="px-4 py-3 text-right font-semibold">CSR rate</th>
+              <th className="px-4 py-3 text-right font-semibold">Variance %</th>
+              <th className="px-4 py-3 text-right font-semibold">Renewal %</th>
+              <th className="px-4 py-3 text-right font-semibold">Reminder h</th>
+              <th className="px-4 py-3 font-semibold">Slack/Teams</th>
+            </tr>
+          </thead>
+          <tbody>
+            {(agencies ?? []).map((a) => (
+              <tr key={`cfg-${a.id}`} className="border-b border-line/50">
+                <td className="px-4 py-2 font-medium">{a.name}</td>
+                <td className="px-4 py-2 text-right font-mono">{a.manual_check_minutes}</td>
+                <td className="px-4 py-2 text-right font-mono">${Number(a.avg_account_premium).toLocaleString()}</td>
+                <td className="px-4 py-2 text-right font-mono">${Number(a.csr_hourly_rate)}</td>
+                <td className="px-4 py-2 text-right font-mono">{Number(a.premium_variance_threshold)}</td>
+                <td className="px-4 py-2 text-right font-mono">{Number(a.renewal_premium_threshold)}</td>
+                <td className="px-4 py-2 text-right font-mono">{a.reminder_hours}</td>
+                <td className="px-4 py-2 font-mono text-xs">{a.notify_webhook_url ? "connected" : "—"}</td>
               </tr>
             ))}
           </tbody>

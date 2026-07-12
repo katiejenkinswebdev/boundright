@@ -24,6 +24,8 @@ export function TrendChart({ trend }: { trend: MonthPoint[] }) {
   const barW = Math.min(24, band / 3);
   const y = (v: number) => PAD.top + innerH - (v / max) * innerH;
   const ticks = [0, Math.ceil(max / 2), max];
+  // Never let x labels collide: show at most ~8, evenly skipped.
+  const labelEvery = Math.max(1, Math.ceil(trend.length / 8));
 
   // 4px rounded data-end, square baseline.
   const bar = (x: number, v: number, color: string, key: string) => {
@@ -141,15 +143,17 @@ export function TrendChart({ trend }: { trend: MonthPoint[] }) {
                     onMouseEnter={() => setHover(i)}
                     onMouseLeave={() => setHover(null)}
                   />
-                  <text
-                    x={cx}
-                    y={H - 10}
-                    fontSize={11}
-                    fill="#374151"
-                    textAnchor="middle"
-                  >
-                    {p.month}
-                  </text>
+                  {i % labelEvery === 0 && (
+                    <text
+                      x={cx}
+                      y={H - 10}
+                      fontSize={trend.length > 10 ? 10 : 11}
+                      fill="#374151"
+                      textAnchor="middle"
+                    >
+                      {p.month}
+                    </text>
+                  )}
                 </g>
               );
             })}
