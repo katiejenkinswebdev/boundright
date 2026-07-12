@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { cookies } from "next/headers";
+import { createServerSupabase } from "@/lib/supabase/server";
 import { signOut } from "@/app/actions/auth";
 import type { Agency, Profile } from "@/lib/auth";
 import { AppShellChrome } from "./AppShellChrome";
@@ -28,6 +29,12 @@ export async function AppShell({
 }) {
   const cookieStore = await cookies();
   const initialCollapsed = cookieStore.get("br_sidebar")?.value === "collapsed";
+
+  const supabase = await createServerSupabase();
+  const { count: awaitingCount } = await supabase
+    .from("checks")
+    .select("id", { count: "exact", head: true })
+    .eq("status", "ready_for_review");
 
   const trialDaysLeft = agency.trial_ends_at ? daysUntil(agency.trial_ends_at) : null;
   const cap = agency.plan === "trial" ? 10 : 150;
@@ -82,6 +89,7 @@ export async function AppShell({
   return (
     <AppShellChrome
       active={active}
+      awaitingCount={awaitingCount ?? 0}
       initialCollapsed={initialCollapsed}
       banner={banner}
       sidebarFooter={sidebarFooter}

@@ -6,6 +6,7 @@ import { FindingCard, Badge, type FindingRow } from "./FindingCard";
 import { ReviewFooter } from "./ReviewFooter";
 import { CorrectionLetter } from "./CorrectionLetter";
 import { InfoTip } from "@/app/components/InfoTip";
+import { AssignSelect } from "./AssignSelect";
 
 const SEVERITY_ORDER = { critical: 0, moderate: 1, minor: 2 } as const;
 
@@ -27,6 +28,19 @@ export default async function CheckPage({
   const inProgress = ["queued", "extracting", "comparing"].includes(check.status);
   const scanned = check.doc_a_scanned || check.doc_b_scanned;
 
+  const { data: members } = await supabase
+    .from("profiles")
+    .select("user_id, full_name")
+    .order("full_name");
+  const { data: nextUnreviewed } = await supabase
+    .from("checks")
+    .select("id")
+    .eq("status", "ready_for_review")
+    .neq("id", check.id)
+    .order("created_at", { ascending: true })
+    .limit(1)
+    .maybeSingle();
+
   return (
     <AppShell agency={agency} profile={profile} active="/checks">
       <div className="mx-auto max-w-2xl">
@@ -45,11 +59,20 @@ export default async function CheckPage({
             </span>
           )}
         </p>
-        <p className="mb-6 mt-2 text-xs text-ink/50">
+        <p className="mb-3 mt-2 text-xs text-ink/50">
           BoundRight is a review assistant. It does not provide insurance
           advice, and final determination of coverage accuracy is the
           responsibility of the licensed agent.
         </p>
+        {check.status === "ready_for_review" && (
+          <div className="mb-6">
+            <AssignSelect
+              checkId={check.id}
+              members={members ?? []}
+              assignedTo={check.assigned_to}
+            />
+          </div>
+        )}
 
         {inProgress || check.status === "failed" ? (
           <CheckProgress
@@ -74,6 +97,7 @@ export default async function CheckPage({
               status={check.status}
               reviewedAt={check.reviewed_at}
               correctionLetter={check.correction_letter}
+              nextUnreviewedId={nextUnreviewed?.id ?? null}
             />
           </>
         )}
@@ -87,11 +111,13 @@ async function ReportBody({
   status,
   reviewedAt,
   correctionLetter,
+  nextUnreviewedId,
 }: {
   checkId: string;
   status: string;
   reviewedAt: string | null;
   correctionLetter: string | null;
+  nextUnreviewedId: string | null;
 }) {
   const { supabase } = await requireProfile();
   const { data } = await supabase
@@ -160,6 +186,10 @@ async function ReportBody({
         </div>
       )}
 
+      {status === "reviewed" && issues.some((f) => f.reviewer_action === "confirmed") && (
+        <CorrectionLetter checkId={checkId} initialLetter={correctionLetter} />
+      )}
+
       {/* Matches, collapsed by default (spec 4.3.4) */}
       <details className="rounded-lg border border-line bg-card p-4">
         <summary className="cursor-pointer font-semibold">
@@ -175,16 +205,13 @@ async function ReportBody({
         </ul>
       </details>
 
-      {status === "reviewed" && issues.some((f) => f.reviewer_action === "confirmed") && (
-        <CorrectionLetter checkId={checkId} initialLetter={correctionLetter} />
-      )}
-
       {/* Footer actions (spec 4.3.5) */}
       <ReviewFooter
         checkId={checkId}
         status={status}
         reviewedAt={reviewedAt}
         criticalsRemaining={criticalsRemaining}
+        nextUnreviewedId={nextUnreviewedId}
       />
     </div>
   );

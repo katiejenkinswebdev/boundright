@@ -12,21 +12,45 @@ const STATUS_LABEL: Record<string, string> = {
   failed: "Failed",
 };
 
+const STATUS_FILTERS = [
+  ["all", "All"],
+  ["ready_for_review", "Needs review"],
+  ["reviewed", "Reviewed"],
+  ["failed", "Failed"],
+] as const;
+const TYPE_FILTERS = [
+  ["all", "All types"],
+  ["issuance", "Issuance"],
+  ["renewal", "Renewal"],
+  ["coi", "Certificate"],
+] as const;
+
 export default async function ChecksPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string }>;
+  searchParams: Promise<{ q?: string; status?: string; type?: string }>;
 }) {
-  const { q } = await searchParams;
+  const { q, status: statusFilter = "all", type: typeFilter = "all" } = await searchParams;
   const { supabase, profile, agency } = await requireProfile();
 
   let query = supabase
     .from("checks")
-    .select("id, label, policy_type, status, created_at, exported_at")
+    .select("id, label, policy_type, check_type, status, created_at, exported_at")
     .order("created_at", { ascending: false })
-    .limit(100);
+    .limit(200);
   if (q?.trim()) query = query.ilike("label", `%${q.trim()}%`);
+  if (statusFilter !== "all") query = query.eq("status", statusFilter);
+  if (typeFilter !== "all") query = query.eq("check_type", typeFilter);
   const { data: checks } = await query;
+
+  const filterHref = (s: string, t: string) => {
+    const p = new URLSearchParams();
+    if (q?.trim()) p.set("q", q.trim());
+    if (s !== "all") p.set("status", s);
+    if (t !== "all") p.set("type", t);
+    const qs = p.toString();
+    return `/checks${qs ? `?${qs}` : ""}`;
+  };
 
   // Severity chips per check (single query, grouped client-side).
   const ids = (checks ?? []).map((c) => c.id);
@@ -54,6 +78,32 @@ export default async function ChecksPage({
         >
           New check
         </Link>
+      </div>
+
+      <div className="mb-3 flex flex-wrap items-center gap-2">
+        {STATUS_FILTERS.map(([value, label]) => (
+          <Link
+            key={value}
+            href={filterHref(value, typeFilter)}
+            className={`rounded px-3 py-1 text-sm font-medium ${
+              statusFilter === value ? "bg-ink text-paper" : "border border-line text-ink/70 hover:border-ink"
+            }`}
+          >
+            {label}
+          </Link>
+        ))}
+        <span className="mx-1 text-line">|</span>
+        {TYPE_FILTERS.map(([value, label]) => (
+          <Link
+            key={value}
+            href={filterHref(statusFilter, value)}
+            className={`rounded px-3 py-1 text-sm font-medium ${
+              typeFilter === value ? "bg-ink text-paper" : "border border-line text-ink/70 hover:border-ink"
+            }`}
+          >
+            {label}
+          </Link>
+        ))}
       </div>
 
       <form className="mb-4" action="/checks" method="GET">

@@ -65,12 +65,14 @@ function setSidebarCookie(collapsed: boolean) {
 
 export function AppShellChrome({
   active,
+  awaitingCount = 0,
   initialCollapsed,
   banner,
   sidebarFooter,
   children,
 }: {
   active: string;
+  awaitingCount?: number;
   initialCollapsed: boolean;
   banner: React.ReactNode;
   sidebarFooter: React.ReactNode;
@@ -149,6 +151,11 @@ export function AppShellChrome({
               >
                 <NavIcon name={item.icon} />
                 {!collapsed && <span>{item.label}</span>}
+                {!collapsed && item.href === "/checks" && awaitingCount > 0 && (
+                  <span className={`ml-auto rounded-full px-1.5 font-mono text-xs ${isActive ? "bg-paper text-ink" : "bg-ink/10 text-ink"}`}>
+                    {awaitingCount}
+                  </span>
+                )}
                 {collapsed && <span className="sr-only">{item.label}</span>}
               </Link>
             );

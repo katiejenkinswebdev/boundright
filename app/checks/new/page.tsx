@@ -22,6 +22,10 @@ export default async function NewCheckPage() {
           <Link href="/checks/batch" className="underline">
             Use batch mode
           </Link>
+          . Many certificates against one policy?{" "}
+          <Link href="/checks/coi" className="underline">
+            Use the certificate flow
+          </Link>
           .
         </p>
         <div className="rounded-lg border border-line bg-card p-8">

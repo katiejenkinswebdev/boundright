@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { markReviewed } from "@/app/actions/review";
+import Link from "next/link";
 import { BoundRightStamp } from "@/app/components/brand";
 
 export function ReviewFooter({
@@ -9,11 +10,13 @@ export function ReviewFooter({
   status,
   reviewedAt,
   criticalsRemaining,
+  nextUnreviewedId,
 }: {
   checkId: string;
   status: string;
   reviewedAt: string | null;
   criticalsRemaining: number;
+  nextUnreviewedId: string | null;
 }) {
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
@@ -47,12 +50,22 @@ export function ReviewFooter({
         )}
 
         {reviewed ? (
-          <a
-            href={`/api/checks/${checkId}/report`}
-            className="rounded bg-ink px-6 py-3 font-semibold text-paper hover:bg-ink/90"
-          >
-            Export report (PDF)
-          </a>
+          <span className="flex flex-wrap items-center gap-3">
+            <a
+              href={`/api/checks/${checkId}/report`}
+              className="rounded bg-ink px-6 py-3 font-semibold text-paper hover:bg-ink/90"
+            >
+              Export report (PDF)
+            </a>
+            {nextUnreviewedId && (
+              <Link
+                href={`/checks/${nextUnreviewedId}`}
+                className="rounded border border-ink px-6 py-3 font-semibold text-ink hover:bg-ink hover:text-paper"
+              >
+                Next unreviewed →
+              </Link>
+            )}
+          </span>
         ) : (
           <span className="text-sm text-ink/60">
             {criticalsRemaining > 0

@@ -49,6 +49,44 @@ function RecentOnly({ stats }: { stats: Awaited<ReturnType<typeof getDashboardSt
   );
 }
 
+// Outside the component body: reading the clock in render trips the purity lint.
+function waitingLabel(iso: string): string {
+  const h = Math.floor((Date.now() - new Date(iso).getTime()) / 3_600_000);
+  return h < 24 ? `${h}h` : `${Math.floor(h / 24)}d`;
+}
+
+async function ReviewQueue() {
+  const { supabase } = await requireProfile();
+  const { data: queue } = await supabase
+    .from("checks")
+    .select("id, label, created_at, assigned_to, profiles:assigned_to(full_name)")
+    .eq("status", "ready_for_review")
+    .order("created_at", { ascending: true })
+    .limit(10);
+  if (!queue || queue.length === 0) return null;
+  return (
+    <section className="mb-8 rounded-lg border border-caution/40 bg-card p-6">
+      <h2 className="mb-4 font-semibold">Awaiting review ({queue.length})</h2>
+      <ul className="divide-y divide-line/60">
+        {queue.map((c) => (
+          <li key={c.id}>
+            <Link
+              href={`/checks/${c.id}`}
+              className="flex items-center justify-between gap-4 py-2.5 hover:bg-paper"
+            >
+              <span className="min-w-0 flex-1 truncate font-medium">{c.label}</span>
+              <span className="font-mono text-xs text-ink/50">
+                {(c.profiles as unknown as { full_name: string } | null)?.full_name ?? "unassigned"}
+              </span>
+              <span className="font-mono text-xs text-caution">waiting {waitingLabel(c.created_at)}</span>
+            </Link>
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+}
+
 export default async function DashboardPage({
   searchParams,
 }: {
@@ -127,9 +165,13 @@ export default async function DashboardPage({
           </Link>
         </section>
       ) : !analytics ? (
-        <RecentOnly stats={stats} />
+        <>
+          <ReviewQueue />
+          <RecentOnly stats={stats} />
+        </>
       ) : (
         <>
+          <ReviewQueue />
           {/* KPI row */}
           <section className="mb-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <div className="rounded-lg border border-line bg-card p-5">
