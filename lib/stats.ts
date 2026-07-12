@@ -6,6 +6,9 @@ export type MonthPoint = {
   monthKey: string; // "2026-02"
   checks: number;
   confirmed: number;
+  critical: number;
+  moderate: number;
+  minor: number;
 };
 
 export type DashboardStats = {
@@ -72,12 +75,17 @@ export async function getDashboardStats(
   for (let i = 5; i >= 0; i--) {
     const d = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - i, 1));
     const key = monthKey(d);
+    const monthFindings = confirmed.filter(
+      (f) => monthKey(new Date(f.created_at)) === key
+    );
     trend.push({
       monthKey: key,
       month: d.toLocaleDateString("en-US", { month: "short", timeZone: "UTC" }),
       checks: checks.filter((c) => monthKey(new Date(c.created_at)) === key).length,
-      confirmed: confirmed.filter((f) => monthKey(new Date(f.created_at)) === key)
-        .length,
+      confirmed: monthFindings.length,
+      critical: monthFindings.filter((f) => f.severity === "critical").length,
+      moderate: monthFindings.filter((f) => f.severity === "moderate").length,
+      minor: monthFindings.filter((f) => f.severity === "minor").length,
     });
   }
 

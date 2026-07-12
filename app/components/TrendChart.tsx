@@ -68,7 +68,10 @@ export function TrendChart({ trend }: { trend: MonthPoint[] }) {
             <tr className="border-b border-line text-left">
               <th className="py-1.5 font-semibold">Month</th>
               <th className="py-1.5 text-right font-semibold">Checks run</th>
-              <th className="py-1.5 text-right font-semibold">Confirmed discrepancies</th>
+              <th className="py-1.5 text-right font-semibold">Discrepancies</th>
+              <th className="py-1.5 text-right font-semibold text-flag">Critical</th>
+              <th className="py-1.5 text-right font-semibold text-caution">Moderate</th>
+              <th className="py-1.5 text-right font-semibold text-ink/60">Minor</th>
             </tr>
           </thead>
           <tbody>
@@ -76,9 +79,20 @@ export function TrendChart({ trend }: { trend: MonthPoint[] }) {
               <tr key={p.monthKey} className="border-b border-line/50">
                 <td className="py-1.5">{p.month}</td>
                 <td className="py-1.5 text-right font-mono">{p.checks}</td>
-                <td className="py-1.5 text-right font-mono">{p.confirmed}</td>
+                <td className="py-1.5 text-right font-mono font-semibold">{p.confirmed}</td>
+                <td className={`py-1.5 text-right font-mono ${p.critical ? "text-flag" : "text-ink/30"}`}>{p.critical}</td>
+                <td className={`py-1.5 text-right font-mono ${p.moderate ? "text-caution" : "text-ink/30"}`}>{p.moderate}</td>
+                <td className={`py-1.5 text-right font-mono ${p.minor ? "" : "text-ink/30"}`}>{p.minor}</td>
               </tr>
             ))}
+            <tr className="border-t-2 border-ink/20 font-semibold">
+              <td className="py-1.5">6-month total</td>
+              <td className="py-1.5 text-right font-mono">{trend.reduce((s, p) => s + p.checks, 0)}</td>
+              <td className="py-1.5 text-right font-mono">{trend.reduce((s, p) => s + p.confirmed, 0)}</td>
+              <td className="py-1.5 text-right font-mono text-flag">{trend.reduce((s, p) => s + p.critical, 0)}</td>
+              <td className="py-1.5 text-right font-mono text-caution">{trend.reduce((s, p) => s + p.moderate, 0)}</td>
+              <td className="py-1.5 text-right font-mono">{trend.reduce((s, p) => s + p.minor, 0)}</td>
+            </tr>
           </tbody>
         </table>
       ) : (

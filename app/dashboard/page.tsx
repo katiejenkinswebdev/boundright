@@ -164,19 +164,16 @@ export default async function DashboardPage() {
                 Hours saved
                 <InfoTip label="How hours saved is calculated">
                   {stats.trend.reduce((s, p) => s + p.checks, 0)} completed checks
-                  (last 6 months) × your {agency.manual_check_minutes}-minute
-                  manual review time ÷ 60 = {stats.hoursSaved.toFixed(1)} hours. At
-                  your ${Number(agency.csr_hourly_rate)}/hr loaded CSR rate that is
+                  in the last 6 months, at {agency.manual_check_minutes} minutes of
+                  manual review each, comes to {stats.hoursSaved.toFixed(1)} hours.
+                  At a ${Number(agency.csr_hourly_rate)}/hr loaded CSR rate that is
                   about ${Math.round(stats.hoursSaved * Number(agency.csr_hourly_rate)).toLocaleString()}
-                  {" "}in staff time. Both numbers are yours to edit in Settings.
+                  {" "}in staff time.
                 </InfoTip>
               </p>
               <p className="mt-1 text-3xl font-semibold">{stats.hoursSaved.toFixed(1)}</p>
               <p className="mt-3 text-xs text-ink/60">
-                ≈ ${Math.round(stats.hoursSaved * Number(agency.csr_hourly_rate)).toLocaleString()} in staff time.{" "}
-                <Link href="/settings" className="underline">
-                  Edit assumptions
-                </Link>
+                ≈ ${Math.round(stats.hoursSaved * Number(agency.csr_hourly_rate)).toLocaleString()} in staff time.
               </p>
             </div>
 
