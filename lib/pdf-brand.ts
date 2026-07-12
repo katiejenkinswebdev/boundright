@@ -1,10 +1,11 @@
 import type { PDFFont, PDFPage } from "pdf-lib";
-import { rgb } from "pdf-lib";
+import { degrees, rgb } from "pdf-lib";
 
 /** Shared print branding for every BoundRight PDF. */
 export const PDF_INK = rgb(0.106, 0.165, 0.255);
 export const PDF_MUTED = rgb(0.45, 0.45, 0.45);
 export const PDF_LINE = rgb(0.847, 0.851, 0.831);
+export const PDF_VERIFY = rgb(0.122, 0.478, 0.361);
 export const PDF_MARGIN = 54;
 
 /** The wordmark: "Bound" semibold + "Right" regular, always Ink. */
@@ -20,9 +21,39 @@ export function drawWordmark(
 }
 
 /**
- * The BR monogram seal + wordmark lockup for report headers. Level (not
- * tilted) for print crispness; the tilted stamp remains reserved for
- * verified documents.
+ * The standard header-right mark on every BoundRight PDF: the green tilted
+ * BOUND RIGHT box, no date line. Anchor with the page's top-right corner.
+ */
+export function drawBrandStamp(
+  page: PDFPage,
+  monoBold: PDFFont,
+  opts: { x: number; topY: number }
+): void {
+  const { x, topY } = opts;
+  const rot = degrees(-3);
+  page.drawRectangle({
+    x,
+    y: topY - 46,
+    width: 92,
+    height: 46,
+    borderColor: PDF_VERIFY,
+    borderWidth: 1.6,
+    rotate: rot,
+  });
+  const line = (t: string, dy: number) => {
+    let cx = x + 13;
+    for (const ch of t) {
+      page.drawText(ch, { x: cx, y: topY - dy, size: 11, font: monoBold, color: PDF_VERIFY, rotate: rot });
+      cx += monoBold.widthOfTextAtSize(ch, 11) + 3;
+    }
+  };
+  line("BOUND", 19);
+  line("RIGHT", 33);
+}
+
+/**
+ * The BR monogram seal + wordmark lockup. Level (not tilted) for print
+ * crispness. Kept for non-report surfaces.
  */
 export function drawSealLockup(
   page: PDFPage,

@@ -137,7 +137,6 @@ async function main() {
     runDate: "July 10, 2026",
     reviewerName: "Rita Reviewer",
     reviewedDate: "July 10, 2026",
-    stampDateLine: "07·10·2026",
     modelVersion: "claude-sonnet-5",
     promptVersion: "extract_v1+compare_v1+verify_v1",
     scanned: false,
@@ -180,7 +179,7 @@ async function main() {
     check(
       "HTTP export is a PDF attachment",
       (res.headers.get("content-type") ?? "").includes("application/pdf") &&
-        (res.headers.get("content-disposition") ?? "").includes("BoundRight Report")
+        (res.headers.get("content-disposition") ?? "").includes("BoundRight - Discrepancy Report")
     );
     const body = Buffer.from(await res.arrayBuffer());
     check("HTTP export body is a PDF", body.subarray(0, 5).toString() === "%PDF-");

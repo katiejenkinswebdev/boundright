@@ -1,5 +1,5 @@
 import { PDFDocument, PDFFont, PDFPage, StandardFonts, degrees, rgb } from "pdf-lib";
-import { drawBrandFooter } from "./pdf-brand";
+import { drawBrandFooter, drawBrandStamp } from "./pdf-brand";
 
 // Palette (design tokens, print-friendly)
 const INK = rgb(0.106, 0.165, 0.255);
@@ -49,8 +49,6 @@ export type ReportData = {
   runDate: string;
   reviewerName: string;
   reviewedDate: string;
-  /** MM·DD·YYYY, printed on the stamp's date line. */
-  stampDateLine: string;
   modelVersion: string;
   promptVersion: string;
   scanned: boolean;
@@ -146,29 +144,6 @@ export async function buildReportPdf(data: ReportData): Promise<Uint8Array> {
     return x + w + 8;
   };
 
-  const boundRightStamp = (x: number, topY: number) => {
-    const rot = degrees(-3);
-    page.drawRectangle({
-      x,
-      y: topY - 54,
-      width: 92,
-      height: 54,
-      borderColor: VERIFY,
-      borderWidth: 1.6,
-      rotate: rot,
-    });
-    const line = (t: string, dy: number, size: number, spacing = 3) => {
-      let cx = x + 13;
-      for (const ch of t) {
-        page.drawText(ch, { x: cx, y: topY - dy, size, font: monoBold, color: VERIFY, rotate: rot });
-        cx += monoBold.widthOfTextAtSize(ch, size) + spacing;
-      }
-    };
-    line("BOUND", 20, 11);
-    line("RIGHT", 33, 11);
-    line(data.stampDateLine, 45, 6.5, 1.5);
-  };
-
   newPage();
 
   // Header: logo co-branding when available, else the agency name.
@@ -194,7 +169,7 @@ export async function buildReportPdf(data: ReportData): Promise<Uint8Array> {
     color: MUTED,
     gap: 12,
   });
-  boundRightStamp(PAGE_W - MARGIN - 100, PAGE_H - MARGIN + 6);
+  drawBrandStamp(page, monoBold, { x: PAGE_W - MARGIN - 100, topY: PAGE_H - MARGIN + 2 });
   // Stop the header rule short of the stamp so nothing strikes through it.
   page.drawLine({ start: { x: MARGIN, y }, end: { x: PAGE_W - MARGIN - 125, y }, thickness: 1, color: INK });
   y -= 14;

@@ -36,9 +36,13 @@ export async function generateRangeReport(params: {
     });
   }
 
+  // Naming convention: BoundRight - {Type} - {Client} - {ISO from} to {ISO to}.pdf
+  const safeAgency = agency.name.replace(/[^a-zA-Z0-9 _-]/g, "").slice(0, 60).trim() || "Agency";
+  const fromTag = range.from.toISOString().slice(0, 10);
+  const toTag = new Date(range.to.getTime() - 1).toISOString().slice(0, 10);
   return {
     ok: true,
     pdfBase64: Buffer.from(pdf).toString("base64"),
-    filename: `BoundRight Report - ${numbers.periodDates}.pdf`,
+    filename: `BoundRight - Period Report - ${safeAgency} - ${fromTag} to ${toTag}.pdf`,
   };
 }
