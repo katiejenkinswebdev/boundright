@@ -1,5 +1,28 @@
 #!/usr/bin/env bash
-# Runs the full QA gate before every push. Bypass in an emergency with:
-#   git push --no-verify
+# Two gates before every push:
+#   1. README freshness: if app code changed in the outgoing commits, the
+#      README must change too. It is the source of truth for what works now.
+#   2. The full QA suite.
+# Emergency bypass for both: git push --no-verify
+set -u
+
+range="@{u}..HEAD"
+git rev-parse --abbrev-ref --symbolic-full-name @{u} >/dev/null 2>&1 || range="origin/main..HEAD"
+
+changed=$(git diff --name-only "$range" 2>/dev/null || true)
+if [ -n "$changed" ]; then
+  code_changed=$(echo "$changed" | grep -cE '^(app|lib|prompts|supabase|scripts)/' || true)
+  readme_changed=$(echo "$changed" | grep -c '^README.md$' || true)
+  if [ "$code_changed" -gt 0 ] && [ "$readme_changed" -eq 0 ]; then
+    echo ""
+    echo "✗ README rule: this push changes app code but not README.md."
+    echo "  The README is the source of truth for what works now. Update it"
+    echo "  (features, setup, to-dos) and amend, or bypass with --no-verify"
+    echo "  only for changes with genuinely no user-facing meaning."
+    echo ""
+    exit 1
+  fi
+fi
+
 echo "Running QA gate before push (git push --no-verify to skip)…"
 npm run qa

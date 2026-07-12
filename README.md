@@ -151,6 +151,8 @@ The gate runs automatically in three places:
 2. **GitHub Actions** (`.github/workflows/qa.yml`) on every push and PR; spins up a Supabase stack in the runner. Add an `ANTHROPIC_API_KEY` repo secret to enable the live model eval on main.
 3. **Manually** before any prompt or model change: `npm run qa:live` — the eval harness (`eval/run.ts`) must show every seeded critical found with zero false criticals.
 
+**The README rule:** this file is the source of truth for what works right now. The pre-push hook fails any push that changes app code without touching README.md — every feature, setup step, or to-do change lands here in the same push, after QA passes.
+
 Suites: RLS isolation (14 checks), onboarding flow (10), pipeline + deletion + failure copy (14), report review + PDF export + cross-agency denial (21), sample-check demo (7).
 
 ## Repo layout
@@ -188,6 +190,7 @@ Suites: RLS isolation (14 checks), onboarding flow (10), pipeline + deletion + f
 
 ## Standing rules
 
+- README is the source of truth: code changes ship with their README update in the same push (enforced by the pre-push hook).
 - Buy, don't build: Claude API for AI, Supabase for auth, Stripe for billing. No custom ML, no custom auth.
 - TypeScript strict; no `any` in pipeline code.
 - Ethical design floor: no fake urgency, no shame copy, one-click cancellation, honest usage limits.
