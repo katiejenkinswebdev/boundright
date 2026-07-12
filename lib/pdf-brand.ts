@@ -21,39 +21,41 @@ export function drawWordmark(
 }
 
 /**
- * The standard header-right mark on every BoundRight PDF: the green tilted
- * BOUND RIGHT box, no date line. Anchor with the page's top-right corner.
+ * The BOUND RIGHT verification stamp (brand guide: "the full stamp is not
+ * the logo"). Verify Green, tilted within 4 degrees, date line carries the
+ * review date. Reserved for confirmed reports; never decorative.
  */
-export function drawBrandStamp(
+export function drawVerificationStamp(
   page: PDFPage,
   monoBold: PDFFont,
-  opts: { x: number; topY: number }
+  opts: { x: number; topY: number; dateLine: string }
 ): void {
-  const { x, topY } = opts;
+  const { x, topY, dateLine } = opts;
   const rot = degrees(-3);
   page.drawRectangle({
     x,
-    y: topY - 46,
+    y: topY - 54,
     width: 92,
-    height: 46,
+    height: 54,
     borderColor: PDF_VERIFY,
     borderWidth: 1.6,
     rotate: rot,
   });
-  const line = (t: string, dy: number) => {
+  const line = (t: string, dy: number, size: number, spacing = 3) => {
     let cx = x + 13;
     for (const ch of t) {
-      page.drawText(ch, { x: cx, y: topY - dy, size: 11, font: monoBold, color: PDF_VERIFY, rotate: rot });
-      cx += monoBold.widthOfTextAtSize(ch, 11) + 3;
+      page.drawText(ch, { x: cx, y: topY - dy, size, font: monoBold, color: PDF_VERIFY, rotate: rot });
+      cx += monoBold.widthOfTextAtSize(ch, size) + spacing;
     }
   };
-  line("BOUND", 19);
-  line("RIGHT", 33);
+  line("BOUND", 20, 11);
+  line("RIGHT", 33, 11);
+  line(dateLine, 45, 6.5, 1.5);
 }
 
 /**
- * The BR monogram seal + wordmark lockup. Level (not tilted) for print
- * crispness. Kept for non-report surfaces.
+ * The primary logo lockup (brand guide 02): tilted BR monogram seal +
+ * level wordmark. The header mark for every non-verified BoundRight PDF.
  */
 export function drawSealLockup(
   page: PDFPage,
@@ -61,20 +63,21 @@ export function drawSealLockup(
 ): void {
   const { x, y, bold, regular, mono } = opts;
   const size = 22;
-  // Rounded-square seal border.
+  const rot = degrees(-3);
+  // Rounded-square seal border, tilted per the primary lockup.
   page.drawSvgPath(
     "M 5 0 h 12 a 5 5 0 0 1 5 5 v 12 a 5 5 0 0 1 -5 5 h -12 a 5 5 0 0 1 -5 -5 v -5 -7 a 5 5 0 0 1 5 -5 z",
-    { x, y: y + size, borderColor: PDF_INK, borderWidth: 1.6, color: undefined }
+    { x, y: y + size, borderColor: PDF_INK, borderWidth: 1.6, color: undefined, rotate: rot }
   );
-  const brW = mono.widthOfTextAtSize("BR", 8.5);
   page.drawText("BR", {
-    x: x + (size - brW) / 2,
-    y: y + 7,
+    x: x + 6,
+    y: y + 6.5,
     size: 8.5,
     font: mono,
     color: PDF_INK,
+    rotate: rot,
   });
-  drawWordmark(page, { x: x + size + 7, y: y + 6, size: 12, bold, regular });
+  drawWordmark(page, { x: x + size + 8, y: y + 6, size: 12, bold, regular });
 }
 
 /**

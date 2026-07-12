@@ -12,55 +12,52 @@ Policy discrepancy detection for independent commercial insurance agencies. A CS
 
 | The moment | What goes wrong without BoundRight | What solves it |
 |---|---|---|
-| A policy arrives from the carrier | Nobody checks it line by line; a $1M aggregate ships instead of $2M | Issuance check: field-by-field comparison with page citations, critical findings verified by a second AI pass |
-| Renewal season, 40 policies in a week | Quietly dropped endorsements and raised deductibles slip through | Renewal comparison (expiring vs renewal) + batch mode |
-| A client demands a certificate today | The COI promises coverage the policy doesn't support | Certificate check: every COI claim verified against the policy |
-| A discrepancy is confirmed | The correction email takes 20 minutes to write and forgets "effective inception" | One-click correction request letter, industry conventions built in |
-| The finding is wrong | False positives erode trust silently | Dismiss-with-reason feeds the accuracy dataset; excerpts let reviewers verify without the original document |
-| A report sits unreviewed | Findings never become documented catches | 48h (configurable) reminders by email and Slack/Teams |
-| The CSR lives in Outlook | Uploading is one step too many | Email-in checks: forward the carrier email, the check starts itself |
-| The principal asks "was it worth it?" | Nobody remembers what was caught | ROI dashboard + auto-emailed monthly report, every number showing its math |
+| A policy arrives from the carrier | Nobody checks it line by line; a $1M aggregate ships instead of $2M | Issuance check: cited field-by-field comparison, criticals verified by a second AI pass |
+| Renewal season, 40 policies in a week | Quietly dropped endorsements and raised deductibles slip through | Renewal comparison + batch mode |
+| Dozens of certificates against one policy | The COI promises coverage the policy doesn't support | Certificate flow: one policy, many certs, each verified |
+| Reports pile up unreviewed | Findings never become documented catches | Review queue with assignment, nav badge, "Next unreviewed" flow, configurable reminders |
+| A discrepancy is confirmed | The correction email forgets "effective inception" | One-click correction request letter, industry conventions built in |
+| The finding is wrong | False positives erode trust silently | Dismiss-with-reason feeds the accuracy dataset; source excerpts under every citation |
+| The CSR lives in Outlook / Slack | Uploading is one step too many | Email-in checks; per-client Slack/Teams webhooks with test notices |
+| The principal asks "was it worth it?" | Nobody remembers what was caught | Filterable dashboard (week to year or custom) + period report PDF matching the filter |
 | Renewal negotiations with carriers | No data on who issues wrong | Per-carrier confirmed-critical rates (managers+) |
-| A 20-person agency shares one login | No audit trail of who reviewed what | Roles (admin / manager / user), invites, per-reviewer attribution |
+| A 20-person agency shares one login | No audit trail of who reviewed what | Roles (user / manager / admin / system_admin), invites, per-reviewer attribution |
+| A prospect asks "how does the AI work?" | Hand-waving | /ai plain-language transparency page + data-processing one-pager |
 
 ## Features
 
 ### Checks
-- Three check types: issuance (proposal vs issued policy), renewal comparison (expiring vs renewal), certificate (COI vs policy), each with its own versioned comparison prompt and severity taxonomy
-- Two-step New Check flow with drag-and-drop, directive validation copy, direct-to-storage signed uploads, staged progress, ready emails; batch mode for many pairs at once; email-in via a per-agency tokenized address (`/api/inbound`)
-- Sample check demo mode (free, bundled specimens); failed checks never consume quota
+- Three check types (issuance, renewal, certificate) with typed comparison prompts and per-type document labels; batch mode; certificate volume flow (one policy, many COIs); email-in via per-agency tokenized address; sample check demo mode; failed checks never consume quota
+- Directive validation copy, signed-URL direct uploads, staged progress with ready emails and Slack/Teams notices
 
 ### AI pipeline
-- Claude structured extraction (verbatim values, page citations, ISO form conventions, issuing carrier); comparison with normalization and agency-configurable premium-variance thresholds; second-pass verification of criticals; versioned prompts with model + prompt version stored per check; per-check token/cost logging; PDFs deleted after processing with nightly verification
+- Claude structured extraction (verbatim values, page citations, ISO form conventions, issuing carrier); agency-configurable premium-variance thresholds injected per comparison; second-pass verification of criticals; versioned prompts + model recorded per check; token/cost logging; source-document SHA-256 fingerprints; PDFs deleted after processing with nightly verification
 
-### Review and documentation
-- Findings grouped by severity with confirm/dismiss, reviewer notes, and dismiss reasons (not a discrepancy / wrong extraction / known intentional / duplicate) that build the false-positive dataset
-- Citation chips reveal ~240-character source excerpts, so reviewers can verify without the deleted originals
-- Mark reviewed gated on every critical having a decision; the BOUND RIGHT stamp lands on confirmation
-- Branded PDF export with reviewer attribution, citations, decisions, and the stamp; correction request letter drafted from confirmed findings (enumerated discrepancies, correction effective inception, written confirmation), editable and stored
+### Review workflow
+- Awaiting-review queue on the dashboard (all roles) with assignment and waiting age; count badge on the Checks nav; "Next unreviewed" on report footers; reviewer select per check
+- Confirm/dismiss with notes and dismiss reasons; citation chips reveal stored source excerpts; Mark reviewed gated on criticals; the BOUND RIGHT stamp lands on confirmation
 
-### Teams and roles
-- Admin / manager / user roles: users run and review; managers add agency analytics; admins add configuration, team, integrations, billing, and deletion
-- Email invites with join links; role management in Settings → Team
+### Reports (one brand system: `lib/pdf-brand.ts`)
+- Discrepancy report: agency co-brand + the dated verification stamp, audit trail, document fingerprints, findings as exhibits with excerpts, dismissed-with-reason, reconciliation line, reviewer certification, report ID + pagination
+- Period report from the dashboard: follows the active range filter exactly (presets or custom dates), six KPIs including staff cost savings, auto-written summary; monthly version auto-emailed on the 1st
+- All PDFs share the tilted-seal lockup or stamp per brand rules, wordmark footer, metadata, and the naming convention `BoundRight - {Type} - {Client} - {ISO date(s)}.pdf`
+- Correction request letters drafted from confirmed findings (effective-inception convention), editable, never auto-sent
 
-### Metrics that show their work
-- Every dashboard number carries a "?" explainer with the exact formula and the agency's own inputs; only reviewer-confirmed findings count toward any metric
-- KPI tiles (cap meter, confirmed by severity, hours saved with dollar equivalent, exposure flagged), 6-month trend with table view, per-carrier confirmed-critical rates (managers+, with a small-sample caveat)
-- Monthly ROI report PDF, snapshotted and auto-emailed on the 1st
+### Dashboard & analytics
+- Time-range filter (week / month / 3m / 6m / year / custom) driving all four KPI tiles, the adaptive-bucket trend chart (daily/weekly/monthly, non-overlapping axis labels, table view with severity breakdown), and carrier accuracy (managers+)
+- Every metric shows its formula with the agency's own inputs on hover; only reviewer-confirmed findings count anywhere
 
-### Configuration (Settings → Configuration, admins)
-- ROI assumptions: manual check minutes, average account premium, loaded CSR hourly rate
-- Scoring thresholds: premium variance % (issuance) and renewal premium %, injected into comparisons per agency
-- Workflow: review-reminder timing in hours
+### Teams & roles
+- user → manager (adds analytics) → admin (adds configuration, team, integrations, billing, deletion) → system_admin (operator; database-granted only)
+- Email invites with join links; the ops console shows every client's configuration in one place
 
-### Integrations and feedback
-- Slack/Teams incoming webhook for check-ready and reminder notices; email-in address per agency
-- In-app feedback widget (general / bug / idea / "a finding was wrong") stored first-party and surfaced in the operator console; no third-party analytics
+### Configuration, feedback, transparency
+- Settings → Configuration (admins): ROI assumptions, scoring thresholds, reminder timing
+- In-app feedback widget (incl. "a finding was wrong") stored first-party; getting-started checklist for new agencies
+- /ai plain-language AI transparency page; prompt-version drift monitoring in the ops console; prompt rollback runbook below
 
-### Billing, ops, accessibility
-- 14-day/10-check trial, Stripe checkout + one-click-cancel portal, webhooks with 7-day payment grace and read-only cancellation, honest caps with no overages, burst rate limiting
-- Operator console (agencies, AI cost, failures, feedback), cost guardrails, weekly ops digest, cron jobs (period reset, monthly reports, deletion verification, reminders), Sentry with PII scrubbing, security headers, first-party events only
-- WCAG AA, keyboard reachable, reduced motion respected; "audit ledger, modern" design system with the stamp as the single bold element
+### Billing, ops, platform
+- Stripe trial/checkout/portal/webhooks with honest caps and no overage billing; operator console (agencies, config, AI cost, failures, drift, feedback); cost guardrails; crons (period reset, monthly reports, deletion verification, review reminders, weekly ops digest); Sentry with PII scrubbing; security headers; RLS everywhere; WCAG AA
 
 ## Stack
 
@@ -130,38 +127,25 @@ Suites: RLS isolation (14 checks), onboarding flow (10), pipeline + deletion + f
 - `supabase/` — SQL migrations (schema, RLS, grants, storage, billing)
 - `.github/workflows/` + `.githooks/` — the QA pipeline
 
-## Going live checklist
+## Production launch steps (in order)
 
-1. Vercel project + env vars from `.env.example` (including `CRON_SECRET`, `ADMIN_EMAILS`)
-2. Production Supabase project: `supabase link` + `supabase db push`
-3. `ANTHROPIC_API_KEY`, then `npm run qa:live` must pass
-4. Stripe: prices for both plans, webhook endpoint (`/api/stripe/webhook`), test-mode subscribe/cancel round trip
-5. Resend domain, Sentry DSN
-6. Real Calendly URL on the landing page; real screenshot in the hero; demo video
-7. Attorney pass on Terms and Privacy before the first paid subscription
+1. **Anthropic:** put `ANTHROPIC_API_KEY` in `.env.local` and as a GitHub Actions secret; run `npm run qa:live` — the live eval must pass (every seeded critical found, zero false criticals)
+2. **Supabase (production):** create the project, `supabase link`, `supabase db push` (12 migrations); grant your account `system_admin` (`update profiles set role='system_admin' where user_id = ...`)
+3. **Vercel:** create the project, set every var from `.env.example` (including `CRON_SECRET`, `ADMIN_EMAILS`), deploy; crons come from `vercel.json`
+4. **Stripe:** create Founding ($249) and Standard ($349) prices, set `STRIPE_*` env vars, point the webhook at `/api/stripe/webhook`, run a test-mode subscribe/cancel round trip
+5. **Resend:** verify the sending domain; point an inbound provider (Resend Inbound / SendGrid Parse) at `/api/inbound`
+6. **Sentry:** set `SENTRY_DSN` (server) and `NEXT_PUBLIC_SENTRY_DSN` (client)
+7. **Content:** real Calendly URL and hero screenshot on the landing page; record the 3-minute demo
+8. **Legal:** attorney pass on Terms and Privacy before the first paid subscription
+9. **Smoke test in production:** sample check → review → export; subscribe → cancel; invite a teammate
 
-## To do
+## Roadmap
 
-**Launch blockers (need Katie's accounts/keys):**
-- [ ] `ANTHROPIC_API_KEY` in `.env.local` and as a GitHub secret, then run `npm run qa:live` (activates the live model eval gate)
-- [ ] Vercel project + env vars (`CRON_SECRET`, `ADMIN_EMAILS`, ...); production Supabase (`supabase link` + `db push`)
-- [ ] Stripe: create the two prices, set price IDs + webhook secret, test-mode subscribe/cancel round trip (integration is built)
-- [ ] Resend domain; inbound email provider pointed at `/api/inbound`; Sentry DSN
-- [ ] Real Calendly URL and hero screenshot on the landing page; 3-minute demo video
-- [ ] Attorney pass on Terms/Privacy before the first paid subscription
-
-**AI guardrail roadmap (drift table shipped; remaining):**
-- [ ] Expand the golden eval set with real redacted document pairs, especially scans
-- [ ] Feed dismiss reasons back: per-agency "known intentional differences" list injected into comparison prompts
-- [ ] Publish reviewer-agreement stats on the `/ai` page once volume is meaningful
-
-**Product roadmap:**
 - [ ] Report verification endpoint (`/verify/[id]`) + QR on the PDF; IBM Plex embedding in PDFs
-- [ ] Correction tracking (requested → corrected → verified by re-check) and re-check linking
-- [ ] Renewal radar (expirations approaching without a renewal check)
-- [ ] CSV export of findings/metrics; client-facing plain-language summary letter
-- [ ] AMS integrations (HawkSoft/EZLynx first), SSO, public API
-- [ ] Analytics: events table covers funnels today; if deeper product analytics is ever needed, self-hosted PostHog only (third-party trackers would break the stated first-party-only commitment)
+- [ ] Inline editing of client settings from the ops console (logged, on-behalf-of)
+- [ ] Correction tracking (requested → corrected → verified by re-check); renewal radar; CSV export; client-facing summary letter
+- [ ] Golden eval set expanded with real redacted documents; dismiss reasons fed back into prompts; published accuracy stats on /ai
+- [ ] AMS integrations (HawkSoft/EZLynx first), SSO, public API; self-hosted PostHog only if deeper analytics is ever needed
 - [ ] QA suites should clean up their test agencies in the local DB
 
 ## Standing rules

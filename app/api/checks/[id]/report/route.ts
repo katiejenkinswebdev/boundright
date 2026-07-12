@@ -48,6 +48,11 @@ export async function GET(
     });
 
   const reviewed = check.reviewed_at ? new Date(check.reviewed_at) : new Date();
+  const stampDateLine = [
+    String(reviewed.getMonth() + 1).padStart(2, "0"),
+    String(reviewed.getDate()).padStart(2, "0"),
+    reviewed.getFullYear(),
+  ].join("·");
 
   // Agency logo for co-branding (public bucket).
   let logo: { bytes: Uint8Array; kind: "png" | "jpg" } | null = null;
@@ -91,6 +96,7 @@ export async function GET(
     runDate: fmt(check.created_at),
     reviewerName: reviewer?.full_name ?? "Licensed agent",
     reviewedDate: check.reviewed_at ? fmt(check.reviewed_at) : fmt(reviewed.toISOString()),
+    stampDateLine,
     modelVersion: check.model_version ?? "—",
     promptVersion: check.prompt_version ?? "—",
     scanned: check.doc_a_scanned || check.doc_b_scanned,

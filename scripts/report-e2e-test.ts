@@ -137,6 +137,7 @@ async function main() {
     runDate: "July 10, 2026",
     reviewerName: "Rita Reviewer",
     reviewedDate: "July 10, 2026",
+    stampDateLine: "07·10·2026",
     modelVersion: "claude-sonnet-5",
     promptVersion: "extract_v1+compare_v1+verify_v1",
     scanned: false,

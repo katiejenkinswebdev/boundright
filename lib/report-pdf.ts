@@ -1,5 +1,5 @@
 import { PDFDocument, PDFFont, PDFPage, StandardFonts, degrees, rgb } from "pdf-lib";
-import { drawBrandFooter, drawBrandStamp } from "./pdf-brand";
+import { drawBrandFooter, drawVerificationStamp } from "./pdf-brand";
 
 // Palette (design tokens, print-friendly)
 const INK = rgb(0.106, 0.165, 0.255);
@@ -49,6 +49,8 @@ export type ReportData = {
   runDate: string;
   reviewerName: string;
   reviewedDate: string;
+  /** MM·DD·YYYY, printed on the stamp's date line (brand guide 02). */
+  stampDateLine: string;
   modelVersion: string;
   promptVersion: string;
   scanned: boolean;
@@ -169,7 +171,7 @@ export async function buildReportPdf(data: ReportData): Promise<Uint8Array> {
     color: MUTED,
     gap: 12,
   });
-  drawBrandStamp(page, monoBold, { x: PAGE_W - MARGIN - 100, topY: PAGE_H - MARGIN + 2 });
+  drawVerificationStamp(page, monoBold, { x: PAGE_W - MARGIN - 100, topY: PAGE_H - MARGIN + 6, dateLine: data.stampDateLine });
   // Stop the header rule short of the stamp so nothing strikes through it.
   page.drawLine({ start: { x: MARGIN, y }, end: { x: PAGE_W - MARGIN - 125, y }, thickness: 1, color: INK });
   y -= 14;
