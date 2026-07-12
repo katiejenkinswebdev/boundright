@@ -1,12 +1,13 @@
 import Link from "next/link";
 import { requireProfile } from "@/lib/auth";
-import { getDashboardStats } from "@/lib/stats";
+import { getDashboardStats, resolveRange } from "@/lib/stats";
 import { canSeeAnalytics } from "@/lib/roles";
 import { AppShell } from "@/app/components/AppShell";
 import { TrendChart } from "@/app/components/TrendChart";
 import { MonthlyReportButton } from "./MonthlyReportButton";
 import { SampleCheckButton } from "./SampleCheckButton";
 import { InfoTip } from "@/app/components/InfoTip";
+import { RangeFilter } from "./RangeFilter";
 
 const STATUS_LABEL: Record<string, string> = {
   queued: "Queued",
@@ -48,9 +49,15 @@ function RecentOnly({ stats }: { stats: Awaited<ReturnType<typeof getDashboardSt
   );
 }
 
-export default async function DashboardPage() {
+export default async function DashboardPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ range?: string; from?: string; to?: string }>;
+}) {
+  const rangeParams = await searchParams;
+  const range = resolveRange(rangeParams);
   const { supabase, profile, agency } = await requireProfile();
-  const stats = await getDashboardStats(supabase, agency);
+  const stats = await getDashboardStats(supabase, agency, range);
   const hasAnyChecks = stats.recent.length > 0;
   const analytics = canSeeAnalytics(profile);
 
@@ -61,6 +68,8 @@ export default async function DashboardPage() {
       .from("checks")
       .select("id, carrier")
       .not("carrier", "is", null)
+      .gte("created_at", range.from.toISOString())
+      .lt("created_at", range.to.toISOString())
       .in("status", ["ready_for_review", "reviewed"]);
     const { data: confirmedCriticals } = await supabase
       .from("findings")
@@ -93,6 +102,12 @@ export default async function DashboardPage() {
         </div>
         {analytics && <MonthlyReportButton />}
       </div>
+
+      {hasAnyChecks && analytics && (
+        <div className="mb-6">
+          <RangeFilter />
+        </div>
+      )}
 
       {!hasAnyChecks ? (
         <section className="flex flex-col items-center rounded-lg border border-line bg-card px-8 py-20 text-center">
@@ -164,7 +179,7 @@ export default async function DashboardPage() {
                 Staff time saved
                 <InfoTip label="How staff time saved is calculated">
                   {stats.trend.reduce((s, p) => s + p.checks, 0)} completed checks
-                  in the last 6 months, at {agency.manual_check_minutes} minutes of
+                  in {stats.rangeLabel}, at {agency.manual_check_minutes} minutes of
                   manual review each, comes to {stats.hoursSaved.toFixed(1)} hours.
                   At a ${Number(agency.csr_hourly_rate)}/hr loaded CSR rate that is
                   about ${Math.round(stats.hoursSaved * Number(agency.csr_hourly_rate)).toLocaleString()}
@@ -201,7 +216,7 @@ export default async function DashboardPage() {
 
           {/* Trend */}
           <section className="mb-8 rounded-lg border border-line bg-card p-6">
-            <h2 className="mb-4 font-semibold">Last 6 months</h2>
+            <h2 className="mb-4 font-semibold">Checks and discrepancies in {stats.rangeLabel}</h2>
             <TrendChart trend={stats.trend} />
           </section>
 

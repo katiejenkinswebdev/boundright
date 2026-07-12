@@ -86,7 +86,7 @@ export function TrendChart({ trend }: { trend: MonthPoint[] }) {
               </tr>
             ))}
             <tr className="border-t-2 border-ink/20 font-semibold">
-              <td className="py-1.5">6-month total</td>
+              <td className="py-1.5">Total</td>
               <td className="py-1.5 text-right font-mono">{trend.reduce((s, p) => s + p.checks, 0)}</td>
               <td className="py-1.5 text-right font-mono">{trend.reduce((s, p) => s + p.confirmed, 0)}</td>
               <td className="py-1.5 text-right font-mono text-flag">{trend.reduce((s, p) => s + p.critical, 0)}</td>
