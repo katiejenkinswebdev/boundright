@@ -14,6 +14,7 @@ export type MonthPoint = {
 export type StatsRange = { from: Date; to: Date; label: string };
 
 export type DashboardStats = {
+  checksInRange: number;
   checksThisPeriod: number;
   cap: number;
   confirmedTotal: number;
@@ -180,6 +181,7 @@ export async function getDashboardStats(
   const exposureFlagged = bySeverity.critical * Number(agency.avg_account_premium);
 
   return {
+    checksInRange: checks.length,
     checksThisPeriod: agency.checks_this_period,
     cap: agency.plan === "trial" ? 10 : 150,
     confirmedTotal: confirmed.length,

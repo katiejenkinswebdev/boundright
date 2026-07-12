@@ -133,13 +133,20 @@ export default async function DashboardPage({
           {/* KPI row */}
           <section className="mb-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <div className="rounded-lg border border-line bg-card p-5">
-              <p className="text-sm text-ink/60">Checks this month</p>
-              <p className="mt-1 text-3xl font-semibold">
-                {stats.checksThisPeriod}
-                <span className="text-base font-normal text-ink/50"> of {stats.cap}</span>
+              <p className="text-sm text-ink/60">
+                Checks run
+                <InfoTip label="What counts as a check run">
+                  Completed checks in {stats.rangeLabel}. Failed checks and the
+                  free sample check never count. The bar below is separate: it
+                  tracks your billing period&apos;s allowance, not the filter.
+                </InfoTip>
               </p>
-              {/* cap meter: same-ramp track */}
-              <div className="mt-3 h-2 w-full rounded-full" style={{ background: "#D6E0F0" }}>
+              <p className="mt-1 text-3xl font-semibold">{stats.checksInRange}</p>
+              {/* Billing allowance: pinned to the billing period, not the filter */}
+              <p className="mt-3 text-xs text-ink/60">
+                Billing period: {stats.checksThisPeriod} of {stats.cap} used
+              </p>
+              <div className="mt-1 h-2 w-full rounded-full" style={{ background: "#D6E0F0" }}>
                 <div
                   className="h-2 rounded-full"
                   style={{
