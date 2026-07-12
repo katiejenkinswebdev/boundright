@@ -161,8 +161,8 @@ export default async function DashboardPage() {
 
             <div className="rounded-lg border border-line bg-card p-5">
               <p className="text-sm text-ink/60">
-                Hours saved
-                <InfoTip label="How hours saved is calculated">
+                Staff time saved
+                <InfoTip label="How staff time saved is calculated">
                   {stats.trend.reduce((s, p) => s + p.checks, 0)} completed checks
                   in the last 6 months, at {agency.manual_check_minutes} minutes of
                   manual review each, comes to {stats.hoursSaved.toFixed(1)} hours.
@@ -171,9 +171,11 @@ export default async function DashboardPage() {
                   {" "}in staff time.
                 </InfoTip>
               </p>
-              <p className="mt-1 text-3xl font-semibold">{stats.hoursSaved.toFixed(1)}</p>
+              <p className="mt-1 text-3xl font-semibold">
+                ${Math.round(stats.hoursSaved * Number(agency.csr_hourly_rate)).toLocaleString()}
+              </p>
               <p className="mt-3 text-xs text-ink/60">
-                ≈ ${Math.round(stats.hoursSaved * Number(agency.csr_hourly_rate)).toLocaleString()} in staff time.
+                {stats.hoursSaved.toFixed(1)} hours saved
               </p>
             </div>
 
