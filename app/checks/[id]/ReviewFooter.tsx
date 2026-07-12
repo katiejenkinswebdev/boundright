@@ -3,18 +3,15 @@
 import { useState, useTransition } from "react";
 import { markReviewed } from "@/app/actions/review";
 import Link from "next/link";
-import { BoundRightStamp } from "@/app/components/brand";
 
 export function ReviewFooter({
   checkId,
   status,
-  reviewedAt,
   criticalsRemaining,
   nextUnreviewedId,
 }: {
   checkId: string;
   status: string;
-  reviewedAt: string | null;
   criticalsRemaining: number;
   nextUnreviewedId: string | null;
 }) {
@@ -26,7 +23,9 @@ export function ReviewFooter({
     <div className="sticky bottom-0 -mx-6 border-t border-line bg-paper/95 px-6 py-4 backdrop-blur">
       <div className="mx-auto flex max-w-2xl flex-wrap items-center justify-between gap-3">
         {reviewed ? (
-          <BoundRightStamp reviewedAt={reviewedAt ?? new Date()} />
+          <span className="font-mono text-xs uppercase tracking-wide text-verify">
+            Reviewed
+          </span>
         ) : (
           <button
             type="button"

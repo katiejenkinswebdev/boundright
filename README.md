@@ -39,7 +39,7 @@ Policy discrepancy detection for independent commercial insurance agencies. A CS
 
 ### Review workflow
 - Awaiting-review queue on the dashboard (all roles) with assignment and waiting age; count badge on the Checks nav; "Next unreviewed" on report footers; reviewer select per check
-- Confirm/dismiss with notes and dismiss reasons; citation chips reveal stored source excerpts; Mark reviewed gated on criticals; the BOUND RIGHT stamp lands on confirmation
+- Confirm/dismiss with notes and dismiss reasons; citation chips reveal stored source excerpts; Mark reviewed gated on criticals; the dated BOUND RIGHT stamp lands beside the report title on confirmation, keeping the footer to a compact action row
 
 ### Reports (one brand system: `lib/pdf-brand.ts`)
 - Discrepancy report: agency co-brand + the dated verification stamp, audit trail, document fingerprints, findings as exhibits with excerpts, dismissed-with-reason, reconciliation line, reviewer certification, report ID + pagination

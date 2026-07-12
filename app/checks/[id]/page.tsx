@@ -7,6 +7,7 @@ import { ReviewFooter } from "./ReviewFooter";
 import { CorrectionLetter } from "./CorrectionLetter";
 import { InfoTip } from "@/app/components/InfoTip";
 import { AssignSelect } from "./AssignSelect";
+import { BoundRightStamp } from "@/app/components/brand";
 
 const SEVERITY_ORDER = { critical: 0, moderate: 1, minor: 2 } as const;
 
@@ -45,8 +46,13 @@ export default async function CheckPage({
   return (
     <AppShell agency={agency} profile={profile} active="/checks">
       <div className="mx-auto max-w-2xl">
-        {/* Report header (spec 4.3.1) */}
-        <h1 className="mb-1 text-2xl font-semibold">{check.label}</h1>
+        {/* Report header (spec 4.3.1): stamp sits beside the title once reviewed */}
+        <div className="flex items-start justify-between gap-4">
+          <h1 className="mb-1 text-2xl font-semibold">{check.label}</h1>
+          {check.status === "reviewed" && (
+            <BoundRightStamp reviewedAt={check.reviewed_at ?? new Date()} />
+          )}
+        </div>
         <p className="text-sm text-ink/60">
           {check.policy_type} ·{" "}
           {new Date(check.created_at).toLocaleDateString("en-US", {
@@ -96,7 +102,6 @@ export default async function CheckPage({
             <ReportBody
               checkId={check.id}
               status={check.status}
-              reviewedAt={check.reviewed_at}
               correctionLetter={check.correction_letter}
               nextUnreviewedId={nextUnreviewed?.id ?? null}
             />
@@ -110,13 +115,11 @@ export default async function CheckPage({
 async function ReportBody({
   checkId,
   status,
-  reviewedAt,
   correctionLetter,
   nextUnreviewedId,
 }: {
   checkId: string;
   status: string;
-  reviewedAt: string | null;
   correctionLetter: string | null;
   nextUnreviewedId: string | null;
 }) {
@@ -150,9 +153,6 @@ async function ReportBody({
         <Badge tone="caution">{bySeverity("moderate").length} Moderate</Badge>
         <Badge tone="muted">{bySeverity("minor").length} Minor</Badge>
         <Badge tone="verify">{matches.length} Matches</Badge>
-        <span className="self-center font-mono text-xs text-ink/50" title="Sparkle marks AI output; badges without it are human decisions">
-          ✦ = AI · decisions are human
-        </span>
         <InfoTip label="What the severities mean">
           Critical: wrong named insured, limits, deductibles, dates, or a
           missing form/endorsement. Moderate: premium variance over your
@@ -213,7 +213,6 @@ async function ReportBody({
       <ReviewFooter
         checkId={checkId}
         status={status}
-        reviewedAt={reviewedAt}
         criticalsRemaining={criticalsRemaining}
         nextUnreviewedId={nextUnreviewedId}
       />
