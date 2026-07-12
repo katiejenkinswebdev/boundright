@@ -2,6 +2,7 @@ import Link from "next/link";
 import { requireProfile } from "@/lib/auth";
 import { AppShell } from "@/app/components/AppShell";
 import { DeleteCheckButton } from "./DeleteCheckButton";
+import { ArchiveCheckButton } from "./ArchiveCheckButton";
 
 const STATUS_LABEL: Record<string, string> = {
   queued: "Queued",
@@ -17,6 +18,7 @@ const STATUS_FILTERS = [
   ["ready_for_review", "Needs review"],
   ["reviewed", "Reviewed"],
   ["failed", "Failed"],
+  ["archived", "Archived"],
 ] as const;
 const TYPE_FILTERS = [
   ["all", "All types"],
@@ -51,7 +53,11 @@ export default async function ChecksPage({
     .order("created_at", { ascending: false })
     .limit(200);
   if (q?.trim()) query = query.ilike("label", `%${q.trim()}%`);
-  if (statusFilter !== "all") query = query.eq("status", statusFilter);
+  if (statusFilter === "archived") query = query.not("archived_at", "is", null);
+  else {
+    query = query.is("archived_at", null);
+    if (statusFilter !== "all") query = query.eq("status", statusFilter);
+  }
   if (typeFilter !== "all") query = query.eq("check_type", typeFilter);
   const { data: checks } = await query;
 
@@ -243,6 +249,10 @@ export default async function ChecksPage({
                           Export
                         </a>
                       )}
+                      <ArchiveCheckButton
+                        checkId={c.id}
+                        archived={statusFilter === "archived"}
+                      />
                       <DeleteCheckButton checkId={c.id} label={c.label} />
                     </td>
                   </tr>

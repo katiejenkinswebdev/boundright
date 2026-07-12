@@ -30,6 +30,7 @@ export async function runSampleCheck(
       label: "Sample: Acme Mfg GL Renewal",
       policy_type: "GL",
       status: "queued",
+      source: "sample",
       doc_a_filename: "acme_proposal.pdf",
       doc_b_filename: "acme_issued_policy.pdf",
     })

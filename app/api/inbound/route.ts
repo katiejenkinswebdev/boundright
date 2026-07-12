@@ -65,6 +65,7 @@ export async function POST(request: Request) {
       policy_type: "Other",
       check_type: "issuance",
       status: "queued",
+      source: "email",
       doc_a_filename: docA.filename,
       doc_b_filename: docB.filename,
     })

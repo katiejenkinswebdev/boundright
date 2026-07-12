@@ -36,6 +36,7 @@ export default async function CheckPage({
     .from("checks")
     .select("id")
     .eq("status", "ready_for_review")
+    .is("archived_at", null)
     .neq("id", check.id)
     .order("created_at", { ascending: true })
     .limit(1)

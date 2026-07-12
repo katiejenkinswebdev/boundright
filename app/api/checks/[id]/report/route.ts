@@ -91,6 +91,7 @@ export async function GET(
     },
     receivedAt: check.created_at,
     processedAt: check.processed_at,
+    source: check.source,
     label: check.label,
     policyType: check.policy_type,
     runDate: fmt(check.created_at),

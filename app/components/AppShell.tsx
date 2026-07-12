@@ -34,7 +34,8 @@ export async function AppShell({
   const { count: awaitingCount } = await supabase
     .from("checks")
     .select("id", { count: "exact", head: true })
-    .eq("status", "ready_for_review");
+    .eq("status", "ready_for_review")
+    .is("archived_at", null);
 
   const trialDaysLeft = agency.trial_ends_at ? daysUntil(agency.trial_ends_at) : null;
   const cap = agency.plan === "trial" ? 10 : 150;

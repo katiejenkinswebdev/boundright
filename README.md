@@ -29,6 +29,7 @@ Policy discrepancy detection for independent commercial insurance agencies. A CS
 
 ### Checks
 - **Smart intake (feature-flagged, system_admin enables per agency):** drop up to 30 unlabeled PDFs; a cheap classification pass identifies each document and proposes confidence-scored pairs (issuance/renewal/COI inferred); the human confirms before anything runs; orphans surfaced then deleted; staged files auto-removed in 48h
+- Archive tab on the Checks list: archived checks leave every working view (list, queue, badge, next-unreviewed) but keep counting in metrics, and restore in one click
 - Three check types (issuance, renewal, certificate) with typed comparison prompts and per-type document labels; batch mode; certificate volume flow (one policy, many COIs); email-in via per-agency tokenized address; sample check demo mode; failed checks never consume quota
 - Directive validation copy, signed-URL direct uploads, staged progress with ready emails and Slack/Teams notices
 
@@ -41,6 +42,7 @@ Policy discrepancy detection for independent commercial insurance agencies. A CS
 
 ### Reports (one brand system: `lib/pdf-brand.ts`)
 - Discrepancy report: agency co-brand + the dated verification stamp, audit trail, document fingerprints, findings as exhibits with excerpts, dismissed-with-reason, reconciliation line, reviewer certification, report ID + pagination
+- Reports know their intake: the discrepancy report's audit trail records smart-intake/email arrival (with the pair-confirmed-by-human note), and the period report adds a "How checks arrived" breakdown, only for agencies with the flag on
 - Period report from the dashboard: follows the active range filter exactly (presets or custom dates), six KPIs including staff cost savings, auto-written summary; monthly version auto-emailed on the 1st
 - All PDFs share the tilted-seal lockup or stamp per brand rules, wordmark footer, metadata, and the naming convention `BoundRight - {Type} - {Client} - {ISO date(s)}.pdf`
 - Correction request letters drafted from confirmed findings (effective-inception convention), editable, never auto-sent

@@ -16,6 +16,8 @@ export type MonthlyNumbers = {
   hoursSaved: number;
   staffDollars: number;
   exposureFlagged: number;
+  /** Present only when the agency's smart-intake flag is on. */
+  sources?: { smartIntake: number; email: number; manual: number };
 };
 
 type AgencyNumbers = {
@@ -31,7 +33,8 @@ export async function computeRangeNumbers(
   agency: AgencyNumbers,
   fromDate: Date,
   toDate: Date,
-  label: string
+  label: string,
+  includeSources = false
 ): Promise<MonthlyNumbers> {
   const from = fromDate.toISOString();
   const to = toDate.toISOString();
@@ -61,8 +64,24 @@ export async function computeRangeNumbers(
   ).length;
 
   const hoursSaved = (checksRun * agency.manual_check_minutes) / 60;
+  let sources: MonthlyNumbers["sources"];
+  if (includeSources) {
+    const { data: srcRows } = await db
+      .from("checks")
+      .select("source")
+      .eq("agency_id", agency.id)
+      .in("status", ["ready_for_review", "reviewed"])
+      .gte("created_at", from)
+      .lt("created_at", to);
+    sources = {
+      smartIntake: (srcRows ?? []).filter((r) => r.source === "smart_intake").length,
+      email: (srcRows ?? []).filter((r) => r.source === "email").length,
+      manual: (srcRows ?? []).filter((r) => !["smart_intake", "email"].includes(r.source)).length,
+    };
+  }
   return {
     monthLabel: label,
+    sources,
     monthDate: fromDate.toISOString().slice(0, 10),
     periodDates: `${fmt(fromDate)} to ${fmt(new Date(toDate.getTime() - 1))}`,
     checksRun,
@@ -175,6 +194,17 @@ export async function buildMonthlyReportPdf(
     page.drawText(label, { x, y: yy - 16, size: 10, font: sans, color: MUTED });
   });
   y = startY - Math.ceil(kpis.length / 2) * 78 - 16;
+
+  if (n.sources) {
+    text("How checks arrived", 12, { font: bold });
+    y -= 2;
+    text(
+      `Smart intake: ${n.sources.smartIntake} · Email-in: ${n.sources.email} · Manual: ${n.sources.manual}. Smart-intake pairs were proposed by AI and confirmed by your team before running.`,
+      9.5,
+      { color: MUTED }
+    );
+    y -= 10;
+  }
 
   text("The period in one paragraph", 12, { font: bold });
   y -= 2;

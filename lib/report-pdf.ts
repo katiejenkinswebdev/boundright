@@ -44,6 +44,8 @@ export type ReportData = {
   docB?: DocInfo;
   receivedAt?: string;
   processedAt?: string | null;
+  /** 'smart_intake' | 'email' | 'manual' | 'sample' */
+  source?: string;
   label: string;
   policyType: string;
   runDate: string;
@@ -194,8 +196,14 @@ export async function buildReportPdf(data: ReportData): Promise<Uint8Array> {
         })
       : "n/a";
   text("AUDIT TRAIL", { font: sansBold, size: 9, gap: 4 });
+  const intakeNote =
+    data.source === "smart_intake"
+      ? " · intake: smart intake (AI-proposed pair, confirmed by your team)"
+      : data.source === "email"
+        ? " · intake: email"
+        : "";
   text(
-    `Documents received ${fmtTs(data.receivedAt)} · processed ${fmtTs(data.processedAt)} · reviewed by ${data.reviewerName} on ${data.reviewedDate} · exported ${fmtTs(new Date().toISOString())}`,
+    `Documents received ${fmtTs(data.receivedAt)} · processed ${fmtTs(data.processedAt)} · reviewed by ${data.reviewerName} on ${data.reviewedDate} · exported ${fmtTs(new Date().toISOString())}${intakeNote}`,
     { size: 8.5, color: MUTED, gap: 14 }
   );
 

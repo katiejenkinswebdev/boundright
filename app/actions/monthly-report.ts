@@ -23,7 +23,8 @@ export async function generateRangeReport(params: {
     agency,
     range.from,
     range.to,
-    range.label
+    range.label,
+    agency.smart_intake_enabled
   );
   const pdf = await buildMonthlyReportPdf(agency.name, numbers);
 

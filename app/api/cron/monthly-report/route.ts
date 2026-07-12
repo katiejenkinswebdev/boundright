@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { buildMonthlyReportPdf, computeMonthlyNumbers } from "@/lib/monthly-report";
+import { buildMonthlyReportPdf } from "@/lib/monthly-report";
 import { emailHtml, ownerEmail, sendEmail } from "@/lib/email";
 import { isAuthorizedCron } from "../route-helpers";
 
@@ -20,12 +20,20 @@ export async function GET(request: Request) {
 
   const { data: agencies } = await admin
     .from("agencies")
-    .select("id, name, manual_check_minutes, avg_account_premium, csr_hourly_rate");
+    .select("id, name, manual_check_minutes, avg_account_premium, csr_hourly_rate, smart_intake_enabled");
 
   let sent = 0;
   for (const agency of agencies ?? []) {
     try {
-      const numbers = await computeMonthlyNumbers(admin, agency, priorMonth);
+      const monthEnd = new Date(Date.UTC(priorMonth.getUTCFullYear(), priorMonth.getUTCMonth() + 1, 1));
+      const numbers = await (await import("@/lib/monthly-report")).computeRangeNumbers(
+        admin,
+        agency,
+        priorMonth,
+        monthEnd,
+        priorMonth.toLocaleDateString("en-US", { month: "long", year: "numeric", timeZone: "UTC" }),
+        agency.smart_intake_enabled
+      );
       const pdf = await buildMonthlyReportPdf(agency.name, numbers);
 
       let emailed = false;

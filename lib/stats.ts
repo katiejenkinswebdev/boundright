@@ -146,6 +146,7 @@ export async function getDashboardStats(
     supabase
       .from("checks")
       .select("id, label, policy_type, status, created_at")
+      .is("archived_at", null)
       .order("created_at", { ascending: false })
       .limit(5),
   ]);

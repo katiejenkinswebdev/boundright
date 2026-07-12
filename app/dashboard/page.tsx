@@ -63,6 +63,7 @@ async function ReviewQueue() {
     .from("checks")
     .select("id, label, created_at, assigned_to, profiles:assigned_to(full_name)")
     .eq("status", "ready_for_review")
+    .is("archived_at", null)
     .order("created_at", { ascending: true })
     .limit(10);
   if (!queue || queue.length === 0) return null;

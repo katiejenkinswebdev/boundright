@@ -163,6 +163,7 @@ export async function runIntakePairs(
           : "Other",
         check_type: ["issuance", "renewal", "coi"].includes(p.checkType) ? p.checkType : "issuance",
         status: "queued",
+        source: "smart_intake",
         doc_a_filename: p.aFilename,
         doc_b_filename: p.bFilename,
       })
