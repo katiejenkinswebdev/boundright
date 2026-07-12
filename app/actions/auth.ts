@@ -2,6 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { createServerSupabase } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 export type AuthFormState = {
   status: "idle" | "ok" | "error";
@@ -117,4 +118,32 @@ export async function signOut(): Promise<void> {
   const supabase = await createServerSupabase();
   await supabase.auth.signOut();
   redirect("/login");
+}
+
+/** First-login password replacement for operator-provisioned accounts. */
+export async function completePasswordChange(
+  _prev: AuthFormState,
+  formData: FormData
+): Promise<AuthFormState> {
+  const password = String(formData.get("password") ?? "");
+  const confirm = String(formData.get("confirm") ?? "");
+  if (password.length < 8) return fail("Use a password of at least 8 characters.");
+  if (password !== confirm) return fail("The passwords don't match.");
+
+  const supabase = await createServerSupabase();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) redirect("/login");
+  const { error } = await supabase.auth.updateUser({ password });
+  if (error) return fail(error.message);
+
+  const admin = createAdminClient();
+  if (admin) {
+    await admin
+      .from("profiles")
+      .update({ must_change_password: false })
+      .eq("user_id", user.id);
+  }
+  redirect("/dashboard");
 }

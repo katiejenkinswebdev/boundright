@@ -7,6 +7,7 @@ export type Profile = {
   agency_id: string;
   full_name: string;
   role: string;
+  must_change_password: boolean;
 };
 
 export type Agency = {
@@ -16,7 +17,7 @@ export type Agency = {
   avg_account_premium: number;
   manual_check_minutes: number;
   csr_hourly_rate: number;
-  plan: "trial" | "founding" | "standard";
+  plan: "trial" | "founding" | "standard" | "premium";
   trial_ends_at: string | null;
   checks_this_period: number;
   period_resets_at: string | null;
@@ -59,6 +60,8 @@ export async function requireProfile() {
     .eq("user_id", user.id)
     .maybeSingle<Profile>();
   if (!profile) redirect("/onboarding");
+  // Operator-provisioned accounts must replace their default password first.
+  if (profile.must_change_password) redirect("/change-password");
 
   const { data: agency } = await supabase
     .from("agencies")

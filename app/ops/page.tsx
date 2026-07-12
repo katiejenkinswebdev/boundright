@@ -1,17 +1,24 @@
+import Link from "next/link";
+import { cookies } from "next/headers";
 import { notFound } from "next/navigation";
 import { requireProfile } from "@/lib/auth";
 import { isSystemAdmin } from "@/lib/roles";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { toggleSmartIntake, createAnnouncement, endAnnouncement, setAgencyAllowance, saveLegalDoc, setAgencyWebhook, setAgencyPlan } from "@/app/actions/admin";
-import { PLANS } from "@/lib/pricing";
-import { AdminLogoForm } from "./AdminLogoForm";
-import { planCap } from "@/lib/pricing";
+import { createAnnouncement, endAnnouncement, saveLegalDoc } from "@/app/actions/admin";
+import { AppShell } from "@/app/components/AppShell";
+import { PageSizeSelect } from "@/app/checks/PageSizeSelect";
+import { agencyCap } from "@/lib/pricing";
 import { LetterGuidancePanel } from "./LetterGuidancePanel";
 import { NewClientForm } from "./NewClientForm";
 
 /** Ops console: system_admin role (ADMIN_EMAILS env as bootstrap fallback). */
-export default async function AdminPage() {
-  const { user, profile } = await requireProfile();
+export default async function OpsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ sort?: string; dir?: string; page?: string }>;
+}) {
+  const { sort = "activity", dir = "desc", page: pageParam = "1" } = await searchParams;
+  const { user, profile, agency: myAgency } = await requireProfile();
   const adminEmails = (process.env.ADMIN_EMAILS ?? "")
     .split(",")
     .map((e) => e.trim().toLowerCase())
@@ -139,8 +146,43 @@ export default async function AdminPage() {
     (a) => (costByAgency.get(a.id)?.month ?? 0) > 7500
   );
 
+  // Sorted + paginated clients (in memory; the whole book of clients is small).
+  const cookieStore = await cookies();
+  const pageSize = [10, 25, 50, 100].includes(Number(cookieStore.get("br_rows")?.value))
+    ? Number(cookieStore.get("br_rows")!.value)
+    : 25;
+  const page = Math.max(1, Number(pageParam) || 1);
+  const rows = (agencies ?? []).map((a) => ({
+    ...a,
+    cost: costByAgency.get(a.id) ?? { total: 0, month: 0 },
+    last: lastActivity.get(a.id) ?? "",
+    memberCount: [...(members.get(a.id)?.values() ?? [])].reduce((x, y) => x + y, 0),
+  }));
+  const keyOf = (r: (typeof rows)[number]): string | number => {
+    switch (sort) {
+      case "name": return r.name.toLowerCase();
+      case "plan": return r.plan;
+      case "billing": return r.billing_status;
+      case "checks": return r.checks_this_period;
+      case "cost": return r.cost.month;
+      case "members": return r.memberCount;
+      default: return r.last;
+    }
+  };
+  rows.sort((a, b) => {
+    const [x, y] = [keyOf(a), keyOf(b)];
+    const cmp = typeof x === "number" && typeof y === "number" ? x - y : String(x).localeCompare(String(y));
+    return dir === "asc" ? cmp : -cmp;
+  });
+  const totalPages = Math.max(1, Math.ceil(rows.length / pageSize));
+  const paged = rows.slice((page - 1) * pageSize, page * pageSize);
+  const sortHref = (col: string) =>
+    `/ops?sort=${col}&dir=${sort === col && dir === "asc" ? "desc" : "asc"}`;
+  const arrow = (col: string) => (sort === col ? (dir === "asc" ? " ▲" : " ▼") : "");
+  const pageHref = (p: number) => `/ops?sort=${sort}&dir=${dir}&page=${p}`;
+
   return (
-    <main className="mx-auto w-full max-w-[1100px] flex-1 px-6 py-8">
+    <AppShell agency={myAgency} profile={profile} active="/admin">
       <h1 className="mb-2 text-2xl font-semibold">Ops console</h1>
       <p className="mb-8 text-sm text-ink/60">
         {(agencies ?? []).length} agencies · total AI spend{" "}
@@ -165,64 +207,75 @@ export default async function AdminPage() {
         </div>
       )}
 
-      <section className="mb-8 overflow-x-auto rounded-lg border border-line bg-card">
+      <section className="mb-2 max-h-[70vh] overflow-x-auto overflow-y-auto rounded-lg border border-line bg-card">
         <table className="w-full text-sm">
           <thead>
-            <tr className="border-b border-line text-left">
-              <th className="px-4 py-3 font-semibold">Agency</th>
-              <th className="px-4 py-3 font-semibold">Plan</th>
-              <th className="px-4 py-3 font-semibold">Billing</th>
-              <th className="px-4 py-3 font-semibold">Checks this period</th>
-              <th className="px-4 py-3 font-semibold">AI cost (month / total)</th>
-              <th className="px-4 py-3 font-semibold">Last activity</th>
+            <tr className="sticky top-0 z-10 border-b border-line bg-card text-left">
+              {(
+                [
+                  ["name", "Agency"],
+                  ["plan", "Plan"],
+                  ["billing", "Billing"],
+                  ["checks", "Checks (period)"],
+                  ["cost", "AI cost (mo / total)"],
+                  ["members", "Members"],
+                  ["activity", "Last activity"],
+                ] as const
+              ).map(([col, label]) => (
+                <th key={col} className="px-4 py-3 font-semibold">
+                  <Link href={sortHref(col)} className="hover:underline">
+                    {label}
+                    {arrow(col)}
+                  </Link>
+                </th>
+              ))}
             </tr>
           </thead>
           <tbody>
-            {(agencies ?? []).map((a) => {
-              const cost = costByAgency.get(a.id) ?? { total: 0, month: 0 };
-              const last = lastActivity.get(a.id);
-              return (
-                <tr key={a.id} className="border-b border-line/50">
-                  <td className="px-4 py-2 font-medium">{a.name}</td>
-                  <td className="px-4 py-2">
-                    <form
-                      action={async (formData: FormData) => {
-                        "use server";
-                        await setAgencyPlan(a.id, formData);
-                      }}
-                      className="flex items-center gap-1"
-                    >
-                      <select
-                        name="plan"
-                        defaultValue={a.plan}
-                        className="rounded border border-line bg-paper px-1.5 py-0.5 font-mono text-xs uppercase"
-                        aria-label={`Plan for ${a.name}`}
-                      >
-                        {Object.entries(PLANS).map(([key, p]) => (
-                          <option key={key} value={key}>
-                            {p.name.toLowerCase()}
-                          </option>
-                        ))}
-                      </select>
-                      <button type="submit" className="font-mono text-xs underline">
-                        save
-                      </button>
-                    </form>
-                  </td>
-                  <td className="px-4 py-2 font-mono text-xs">{a.billing_status}</td>
-                  <td className="px-4 py-2">{a.checks_this_period}</td>
-                  <td className="px-4 py-2 font-mono text-xs">
-                    {dollars(cost.month)} / {dollars(cost.total)}
-                  </td>
-                  <td className="px-4 py-2 text-ink/60">
-                    {last ? new Date(last).toLocaleDateString() : "—"}
-                  </td>
-                </tr>
-              );
-            })}
+            {paged.map((a) => (
+              <tr key={a.id} className="border-b border-line/50 hover:bg-paper">
+                <td className="px-4 py-2 font-medium">
+                  <Link href={`/ops/${a.id}`} className="underline decoration-line underline-offset-2 hover:decoration-ink">
+                    {a.name}
+                  </Link>
+                </td>
+                <td className="px-4 py-2 font-mono text-xs uppercase">{a.plan}</td>
+                <td className={`px-4 py-2 font-mono text-xs ${a.billing_status !== "ok" ? "text-caution" : ""}`}>
+                  {a.billing_status}
+                </td>
+                <td className="px-4 py-2 font-mono text-xs">
+                  {a.checks_this_period} / {agencyCap(a)}
+                </td>
+                <td className="px-4 py-2 font-mono text-xs">
+                  {dollars(a.cost.month)} / {dollars(a.cost.total)}
+                </td>
+                <td className="px-4 py-2 text-xs text-ink/70">{memberLabel(a.id)}</td>
+                <td className="px-4 py-2 text-ink/60">
+                  {a.last ? new Date(a.last).toLocaleDateString() : "—"}
+                </td>
+              </tr>
+            ))}
           </tbody>
         </table>
       </section>
+      <div className="mb-8 flex flex-wrap items-center justify-between gap-3">
+        <div className="flex items-center gap-2 text-sm">
+          {page > 1 && (
+            <Link href={pageHref(page - 1)} className="underline">
+              ← Prev
+            </Link>
+          )}
+          <span className="text-ink/60">
+            Page {page} of {totalPages}
+          </span>
+          {page < totalPages && (
+            <Link href={pageHref(page + 1)} className="underline">
+              Next →
+            </Link>
+          )}
+        </div>
+        <PageSizeSelect value={pageSize} baseHref={`/ops?sort=${sort}&dir=${dir}`} />
+      </div>
 
       <h2 className="mb-3 font-semibold">Recent failures</h2>
       <section className="overflow-x-auto rounded-lg border border-line bg-card">
@@ -240,122 +293,6 @@ export default async function AdminPage() {
                 </td>
                 <td className="px-4 py-2 font-medium">{f.label}</td>
                 <td className="px-4 py-2 text-ink/80">{f.failure_reason}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </section>
-
-      <h2 className="mb-3 mt-8 font-semibold">Client configuration (as each agency has set it)</h2>
-      <section className="mb-8 overflow-x-auto rounded-lg border border-line bg-card">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b border-line text-left">
-              <th className="px-4 py-3 font-semibold">Agency</th>
-              <th className="px-4 py-3 font-semibold">Since</th>
-              <th className="px-4 py-3 font-semibold">Members</th>
-              <th className="px-4 py-3 text-right font-semibold">Check min</th>
-              <th className="px-4 py-3 text-right font-semibold">Avg premium</th>
-              <th className="px-4 py-3 text-right font-semibold">CSR rate</th>
-              <th className="px-4 py-3 text-right font-semibold">Variance %</th>
-              <th className="px-4 py-3 text-right font-semibold">Renewal %</th>
-              <th className="px-4 py-3 text-right font-semibold">Reminder h</th>
-              <th className="px-4 py-3 text-right font-semibold">Allowance</th>
-              <th className="px-4 py-3 font-semibold">Slack/Teams</th>
-              <th className="px-4 py-3 font-semibold">Smart intake</th>
-              <th className="px-4 py-3 font-semibold">Logo</th>
-              <th className="px-4 py-3 font-semibold">Audit</th>
-            </tr>
-          </thead>
-          <tbody>
-            {(agencies ?? []).map((a) => (
-              <tr key={`cfg-${a.id}`} className="border-b border-line/50">
-                <td className="px-4 py-2 font-medium">{a.name}</td>
-                <td className="px-4 py-2 text-ink/60">
-                  {new Date(a.created_at).toLocaleDateString("en-US", { month: "short", year: "numeric" })}
-                </td>
-                <td className="px-4 py-2 text-xs text-ink/70">{memberLabel(a.id)}</td>
-                <td className="px-4 py-2 text-right font-mono">{a.manual_check_minutes}</td>
-                <td className="px-4 py-2 text-right font-mono">${Number(a.avg_account_premium).toLocaleString()}</td>
-                <td className="px-4 py-2 text-right font-mono">${Number(a.csr_hourly_rate)}</td>
-                <td className="px-4 py-2 text-right font-mono">{Number(a.premium_variance_threshold)}</td>
-                <td className="px-4 py-2 text-right font-mono">{Number(a.renewal_premium_threshold)}</td>
-                <td className="px-4 py-2 text-right font-mono">{a.reminder_hours}</td>
-                <td className="px-4 py-2 text-right">
-                  <form
-                    action={async (formData: FormData) => {
-                      "use server";
-                      await setAgencyAllowance(a.id, formData);
-                    }}
-                    className="flex items-center justify-end gap-1"
-                  >
-                    <input
-                      name="allowance"
-                      type="number"
-                      min={1}
-                      max={10000}
-                      defaultValue={a.checks_allowance ?? ""}
-                      placeholder={String(planCap(a.plan))}
-                      className="w-16 rounded border border-line bg-paper px-1.5 py-0.5 text-right font-mono text-xs"
-                      aria-label={`Monthly check allowance for ${a.name}`}
-                    />
-                    <button type="submit" className="font-mono text-xs underline">
-                      save
-                    </button>
-                  </form>
-                </td>
-                <td className="px-4 py-2">
-                  <form
-                    action={async (formData: FormData) => {
-                      "use server";
-                      await setAgencyWebhook(a.id, formData);
-                    }}
-                    className="flex items-center gap-1"
-                  >
-                    <input
-                      name="webhook"
-                      type="url"
-                      defaultValue={a.notify_webhook_url ?? ""}
-                      placeholder="https://hooks.slack.com/…"
-                      className="w-36 rounded border border-line bg-paper px-1.5 py-0.5 font-mono text-xs"
-                      aria-label={`Webhook for ${a.name}`}
-                    />
-                    <button type="submit" className="font-mono text-xs underline">
-                      save
-                    </button>
-                  </form>
-                </td>
-                <td className="px-4 py-2">
-                  <form
-                    action={async () => {
-                      "use server";
-                      await toggleSmartIntake(a.id, !a.smart_intake_enabled);
-                    }}
-                  >
-                    <button
-                      type="submit"
-                      className={`inline-flex items-center rounded border px-2.5 py-1 font-mono text-xs leading-none ${
-                        a.smart_intake_enabled
-                          ? "border-verify text-verify"
-                          : "border-line text-ink/50 hover:border-ink"
-                      }`}
-                    >
-                      {a.smart_intake_enabled ? "on" : "off"}
-                    </button>
-                  </form>
-                </td>
-                <td className="px-4 py-2">
-                  <AdminLogoForm
-                    agencyId={a.id}
-                    agencyName={a.name}
-                    logoUrl={(agencyGuidance ?? []).find((g) => g.id === a.id)?.logo_url ?? null}
-                  />
-                </td>
-                <td className="px-4 py-2">
-                  <a href={`/api/admin/audit/${a.id}`} className="text-sm underline">
-                    Audit log (CSV)
-                  </a>
-                </td>
               </tr>
             ))}
           </tbody>
@@ -596,6 +533,6 @@ export default async function AdminPage() {
           </tbody>
         </table>
       </section>
-    </main>
+    </AppShell>
   );
 }

@@ -57,6 +57,8 @@ Each failed check: shows the reason on the check page with "Try again", does NOT
 
 ## 6 · Ops console (system admin, /ops — linked from Admin)
 
+0. New client wizard: create an agency on Premier (smart intake auto-checks and locks), admin Jane Doe + default password, paste two roster lines → success lists account count. Sign in as the new admin with the default password → forced to /change-password → set a new one → lands on dashboard. Click the agency name in the clients table → detail page edits plan/allowance/thresholds/webhook/logo/letter guidance in one place.
+
 1. Client config table: members by role, thresholds, webhook, smart intake toggle, audit CSV per client.
 2. Correction letter prompt: set platform guidance + Coastal-specific guidance → draft a letter on a Coastal check (stub mode echoes both at the bottom); clear them and the echoes disappear.
 3. Announcements: post one ending tomorrow → ink banner on every app page; End now → gone on refresh.
