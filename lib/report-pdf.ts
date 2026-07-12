@@ -200,7 +200,8 @@ export async function buildReportPdf(data: ReportData): Promise<Uint8Array> {
     gap: 12,
   });
   boundRightStamp(PAGE_W - MARGIN - 100, PAGE_H - MARGIN + 6);
-  page.drawLine({ start: { x: MARGIN, y }, end: { x: PAGE_W - MARGIN, y }, thickness: 1, color: INK });
+  // Stop the header rule short of the stamp so nothing strikes through it.
+  page.drawLine({ start: { x: MARGIN, y }, end: { x: PAGE_W - MARGIN - 125, y }, thickness: 1, color: INK });
   y -= 14;
 
   text(data.label, { font: sansBold, size: 13, gap: 6 });

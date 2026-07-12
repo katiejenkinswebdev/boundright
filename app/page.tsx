@@ -163,6 +163,10 @@ export default function LandingPage() {
           ·{" "}
           <Link href="/privacy" className="underline">
             Privacy
+          </Link>{" "}
+          ·{" "}
+          <Link href="/ai" className="underline">
+            How we use AI
           </Link>
         </p>
       </footer>

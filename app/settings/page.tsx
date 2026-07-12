@@ -104,6 +104,11 @@ export default async function SettingsPage() {
               </Link>
             </li>
             <li>
+              <Link href="/ai" className="underline">
+                How we use AI (plain-language transparency page)
+              </Link>
+            </li>
+            <li>
               <a href="/boundright-data-processing.pdf" className="underline">
                 Data processing one-pager (PDF, for due diligence)
               </a>

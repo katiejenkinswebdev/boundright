@@ -34,7 +34,8 @@ export default function PrivacyPage() {
         </p>
         <p>
           <strong>AI processing.</strong> Document text is sent to Anthropic&apos;s
-          Claude API to extract and compare fields. We do not use third-party
+          Claude API to extract and compare fields (plain-language details on
+          our <Link href="/ai" className="underline">How we use AI</Link> page). We do not use third-party
           analytics; usage events stay in our own database.
         </p>
         <p>

@@ -26,6 +26,7 @@ export type Agency = {
   premium_variance_threshold: number;
   renewal_premium_threshold: number;
   reminder_hours: number;
+  onboarding_dismissed_at: string | null;
   notify_webhook_url: string | null;
   inbound_token: string;
 };
