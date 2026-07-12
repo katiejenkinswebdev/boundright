@@ -5,10 +5,10 @@ import { HoverTip } from "@/app/components/InfoTip";
 import { canSeeAnalytics } from "@/lib/roles";
 import { cookies } from "next/headers";
 import { PageSizeSelect } from "./PageSizeSelect";
+import { FiltersBar } from "./FiltersBar";
 import { AppShell } from "@/app/components/AppShell";
 import { DeleteCheckButton } from "./DeleteCheckButton";
 import { ArchiveCheckButton } from "./ArchiveCheckButton";
-import { RangeFilter } from "@/app/dashboard/RangeFilter";
 import { resolveRange } from "@/lib/stats";
 
 const STATUS_LABEL: Record<string, string> = {
@@ -19,20 +19,6 @@ const STATUS_LABEL: Record<string, string> = {
   reviewed: "Reviewed",
   failed: "Failed",
 };
-
-const STATUS_FILTERS = [
-  ["all", "All"],
-  ["ready_for_review", "Needs review"],
-  ["reviewed", "Reviewed"],
-  ["failed", "Failed"],
-  ["archived", "Archived"],
-] as const;
-const TYPE_FILTERS = [
-  ["all", "All types"],
-  ["issuance", "Issuance"],
-  ["renewal", "Renewal"],
-  ["coi", "Certificate"],
-] as const;
 
 export default async function ChecksPage({
   searchParams,
@@ -117,7 +103,6 @@ export default async function ChecksPage({
     const qs = p.toString();
     return `/checks${qs ? `?${qs}` : ""}`;
   };
-  const filterHref = (s: string, t: string) => href({ status: s, type: t, page: "" });
   const sortHref = (col: string) =>
     href({ sort: col, dir: sort === col && dir === "asc" ? "desc" : "asc", page: "" });
   const arrow = (col: string) => (sort === col ? (dir === "asc" ? " ▲" : " ▼") : "");
@@ -162,57 +147,14 @@ export default async function ChecksPage({
         </Link>
       </div>
 
-      <div className="mb-3 flex flex-wrap items-center gap-2">
-        <span className="w-12 text-sm font-semibold text-ink/60">Status</span>
-        {STATUS_FILTERS.map(([value, label]) => (
-          <Link
-            key={value}
-            href={filterHref(value, typeFilter)}
-            className={`rounded px-3 py-1 text-sm font-medium ${
-              statusFilter === value ? "bg-ink text-paper" : "border border-line text-ink/70 hover:border-ink"
-            }`}
-          >
-            {label}
-          </Link>
-        ))}
-      </div>
-      <div className="mb-3 flex flex-wrap items-center gap-2">
-        <span className="w-12 text-sm font-semibold text-ink/60">Type</span>
-        {TYPE_FILTERS.map(([value, label]) => (
-          <Link
-            key={value}
-            href={filterHref(statusFilter, value)}
-            className={`rounded px-3 py-1 text-sm font-medium ${
-              typeFilter === value ? "bg-ink text-paper" : "border border-line text-ink/70 hover:border-ink"
-            }`}
-          >
-            {label}
-          </Link>
-        ))}
-      </div>
-      <div className="mb-3 flex flex-wrap items-center gap-2">
-        <span className="w-12 text-sm font-semibold text-ink/60">Date</span>
-        <RangeFilter allowAll />
-      </div>
-
-      <form className="mb-4" action="/checks" method="GET">
-        {statusFilter !== "all" && <input type="hidden" name="status" value={statusFilter} />}
-        {typeFilter !== "all" && <input type="hidden" name="type" value={typeFilter} />}
-        {range && <input type="hidden" name="range" value={range} />}
-        {from && <input type="hidden" name="from" value={from} />}
-        {to && <input type="hidden" name="to" value={to} />}
-        <label htmlFor="q" className="sr-only">
-          Search by client name
-        </label>
-        <input
-          id="q"
-          name="q"
-          type="search"
-          defaultValue={q ?? ""}
-          placeholder="Search by client or account name…"
-          className="w-full max-w-sm rounded border border-line bg-card px-4 py-2"
-        />
-      </form>
+      <FiltersBar
+        q={q?.trim() ?? ""}
+        status={statusFilter}
+        type={typeFilter}
+        range={range ?? ""}
+        from={from ?? ""}
+        to={to ?? ""}
+      />
 
       {(checks ?? []).length === 0 ? (
         <div className="rounded-lg border border-line bg-card p-12 text-center text-ink/70">
