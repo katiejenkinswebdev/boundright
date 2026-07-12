@@ -14,7 +14,7 @@ import { COMPARE_SYSTEM, compareUserMessage, COMPARE_PROMPT_VERSION } from "@/pr
 import { VERIFY_SYSTEM, verifyUserMessage, VERIFY_PROMPT_VERSION } from "@/prompts/verify_v1";
 import { COMPARE_RENEWAL_SYSTEM, compareRenewalUserMessage, COMPARE_RENEWAL_PROMPT_VERSION } from "@/prompts/compare_renewal_v1";
 import { COMPARE_COI_SYSTEM, compareCoiUserMessage, COMPARE_COI_PROMPT_VERSION } from "@/prompts/compare_coi_v1";
-import { LETTER_SYSTEM, letterUserMessage, LETTER_PROMPT_VERSION } from "@/prompts/letter_v1";
+import { LETTER_SYSTEM, letterUserMessage, LETTER_PROMPT_VERSION } from "@/prompts/letter_v2";
 import { CLASSIFY_SYSTEM, classifyUserMessage } from "@/prompts/classify_v1";
 
 export const MODEL = "claude-sonnet-5";
@@ -172,8 +172,6 @@ export async function compare(
 /** Drafts the carrier correction-request letter from confirmed findings. */
 export async function draftCorrectionLetter(
   input: {
-    agencyName: string;
-    reviewerName: string;
     label: string;
     policyType: string;
     checkType: string;
@@ -194,9 +192,6 @@ export async function draftCorrectionLetter(
       ),
       "",
       "Please issue a correcting endorsement effective inception and confirm in writing.",
-      "",
-      `${input.reviewerName}`,
-      `${input.agencyName}`,
     ].join("\n");
   }
   const response = await client.messages.create({

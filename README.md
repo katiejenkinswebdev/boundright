@@ -50,7 +50,7 @@ Policy discrepancy detection for independent commercial insurance agencies. A CS
 - Reports know their intake: the discrepancy report's audit trail records smart-intake/email arrival (with the pair-confirmed-by-human note), and the period report adds a "How checks arrived" breakdown, only for agencies with the flag on
 - Period report from the dashboard: follows the active range filter exactly (presets or custom dates), six KPIs including staff cost savings, auto-written summary; monthly version auto-emailed on the 1st
 - All PDFs share the tilted-seal lockup or stamp per brand rules, wordmark footer, metadata, and the naming convention `BoundRight - {Type} - {Client} - {ISO date(s)}.pdf`
-- Correction request letters drafted from confirmed findings (effective-inception convention), editable, never auto-sent
+- Correction request letters drafted from confirmed findings (effective-inception convention, prompt letter_v2), editable, never auto-sent; no auto-signature — the sender signs it themselves, and reviewer/agency names are not sent to the model; the AI disclaimer sits directly above the Copy/Redraft buttons
 
 ### Dashboard & analytics
 - Time-range filter (week / month / 3m / 6m / year / custom) driving all four KPI tiles, the adaptive-bucket trend chart (daily/weekly/monthly, non-overlapping axis labels, table view with severity breakdown), and carrier accuracy (managers+)

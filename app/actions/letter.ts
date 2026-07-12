@@ -37,8 +37,6 @@ export async function generateCorrectionLetter(checkId: string): Promise<LetterR
   try {
     const letter = await draftCorrectionLetter(
       {
-        agencyName: agency.name,
-        reviewerName: profile.full_name,
         label: check.label,
         policyType: check.policy_type,
         checkType: check.check_type,
