@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { buildMonthlyReportPdf } from "@/lib/monthly-report";
+import { fetchAgencyLogo } from "@/lib/agency-logo";
 import { emailHtml, ownerEmail, sendEmail } from "@/lib/email";
 import { isAuthorizedCron } from "../route-helpers";
 
@@ -20,7 +21,7 @@ export async function GET(request: Request) {
 
   const { data: agencies } = await admin
     .from("agencies")
-    .select("id, name, manual_check_minutes, avg_account_premium, csr_hourly_rate, smart_intake_enabled");
+    .select("id, name, logo_url, manual_check_minutes, avg_account_premium, csr_hourly_rate, smart_intake_enabled");
 
   let sent = 0;
   for (const agency of agencies ?? []) {
@@ -34,7 +35,7 @@ export async function GET(request: Request) {
         priorMonth.toLocaleDateString("en-US", { month: "long", year: "numeric", timeZone: "UTC" }),
         agency.smart_intake_enabled
       );
-      const pdf = await buildMonthlyReportPdf(agency.name, numbers);
+      const pdf = await buildMonthlyReportPdf(agency.name, numbers, await fetchAgencyLogo(agency.logo_url));
 
       let emailed = false;
       const email = process.env.RESEND_API_KEY ? await ownerEmail(agency.id) : null;

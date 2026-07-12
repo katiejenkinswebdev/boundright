@@ -131,7 +131,8 @@ function summaryParagraph(n: MonthlyNumbers, agencyName: string): string {
 
 export async function buildMonthlyReportPdf(
   agencyName: string,
-  n: MonthlyNumbers
+  n: MonthlyNumbers,
+  logo?: { bytes: Uint8Array; kind: "png" | "jpg" } | null
 ): Promise<Uint8Array> {
   const doc = await PDFDocument.create();
   const sans = await doc.embedFont(StandardFonts.Helvetica);
@@ -164,7 +165,21 @@ export async function buildMonthlyReportPdf(
   };
 
   drawSealLockup(page, { x: 612 - M - 122, y: 792 - M - 20, bold, regular: sans, mono: bold });
-  text(agencyName, 18, { font: bold });
+  // Client co-brand mirrors the discrepancy report: logo above the name.
+  if (logo) {
+    try {
+      const img = logo.kind === "png" ? await doc.embedPng(logo.bytes) : await doc.embedJpg(logo.bytes);
+      const h = 26;
+      const w = Math.min((img.width / img.height) * h, 170);
+      page.drawImage(img, { x: M, y: y - h, width: w, height: h });
+      y -= h + 8;
+      text(agencyName, 12, { font: bold });
+    } catch {
+      text(agencyName, 18, { font: bold });
+    }
+  } else {
+    text(agencyName, 18, { font: bold });
+  }
   text(`Policy check report · ${n.monthLabel}`, 12, { color: MUTED });
   text(`Period: ${n.periodDates}`, 9, { color: MUTED });
   y -= 12;

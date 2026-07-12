@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 import { requireProfile } from "@/lib/auth";
 import { isSystemAdmin } from "@/lib/roles";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { toggleSmartIntake, createAnnouncement, endAnnouncement, saveGlobalLetterGuidance, saveAgencyLetterGuidance } from "@/app/actions/admin";
+import { toggleSmartIntake, createAnnouncement, endAnnouncement, saveGlobalLetterGuidance, saveAgencyLetterGuidance, uploadAgencyLogoAdmin } from "@/app/actions/admin";
 
 /** Ops console: system_admin role (ADMIN_EMAILS env as bootstrap fallback). */
 export default async function AdminPage() {
@@ -60,7 +60,7 @@ export default async function AdminPage() {
     .maybeSingle();
   const { data: agencyGuidance } = await admin
     .from("agencies")
-    .select("id, name, letter_instructions")
+    .select("id, name, letter_instructions, logo_url")
     .order("name");
   const { data: announcements } = await admin
     .from("announcements")
@@ -212,6 +212,7 @@ export default async function AdminPage() {
               <th className="px-4 py-3 text-right font-semibold">Reminder h</th>
               <th className="px-4 py-3 font-semibold">Slack/Teams</th>
               <th className="px-4 py-3 font-semibold">Smart intake</th>
+              <th className="px-4 py-3 font-semibold">Logo</th>
               <th className="px-4 py-3 font-semibold">Audit</th>
             </tr>
           </thead>
@@ -246,6 +247,38 @@ export default async function AdminPage() {
                       }`}
                     >
                       {a.smart_intake_enabled ? "on" : "off"}
+                    </button>
+                  </form>
+                </td>
+                <td className="px-4 py-2">
+                  <form
+                    action={async (formData: FormData) => {
+                      "use server";
+                      await uploadAgencyLogoAdmin(a.id, formData);
+                    }}
+                    className="flex items-center gap-2"
+                  >
+                    {(agencyGuidance ?? []).find((g) => g.id === a.id)?.logo_url ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={(agencyGuidance ?? []).find((g) => g.id === a.id)!.logo_url!}
+                        alt={`${a.name} logo`}
+                        className="h-6 w-auto rounded border border-line bg-white p-0.5"
+                      />
+                    ) : (
+                      <span className="font-mono text-xs text-ink/40">none</span>
+                    )}
+                    <label className="cursor-pointer font-mono text-xs underline">
+                      set
+                      <input
+                        type="file"
+                        name="logo"
+                        accept="image/png,image/jpeg"
+                        className="sr-only"
+                      />
+                    </label>
+                    <button type="submit" className="font-mono text-xs underline">
+                      save
                     </button>
                   </form>
                 </td>

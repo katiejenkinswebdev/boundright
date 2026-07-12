@@ -126,6 +126,7 @@ export async function AppShell({
       awaitingCount={awaitingCount ?? 0}
       initialCollapsed={initialCollapsed}
       banner={banner}
+      coBrand={{ logoUrl: agency.logo_url, name: agency.name }}
       sidebarFooter={sidebarFooter}
     >
       {children}

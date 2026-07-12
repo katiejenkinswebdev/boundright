@@ -111,16 +111,16 @@ export function FiltersBar({
           }}
         />
         <Select
-          value={status}
-          options={STATUS_OPTIONS}
-          ariaLabel="Filter by status"
-          onChange={(v) => go({ status: v })}
-        />
-        <Select
           value={type}
           options={TYPE_OPTIONS}
           ariaLabel="Filter by check type"
           onChange={(v) => go({ type: v })}
+        />
+        <Select
+          value={status}
+          options={STATUS_OPTIONS}
+          ariaLabel="Filter by status"
+          onChange={(v) => go({ status: v })}
         />
         {filtered && (
           <button

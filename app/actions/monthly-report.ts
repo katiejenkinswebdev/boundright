@@ -4,6 +4,7 @@ import { requireProfile } from "@/lib/auth";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { buildMonthlyReportPdf, computeRangeNumbers } from "@/lib/monthly-report";
 import { resolveRange } from "@/lib/stats";
+import { fetchAgencyLogo } from "@/lib/agency-logo";
 
 export type MonthlyReportResult =
   | { ok: true; pdfBase64: string; filename: string }
@@ -26,7 +27,7 @@ export async function generateRangeReport(params: {
     range.label,
     agency.smart_intake_enabled
   );
-  const pdf = await buildMonthlyReportPdf(agency.name, numbers);
+  const pdf = await buildMonthlyReportPdf(agency.name, numbers, await fetchAgencyLogo(agency.logo_url));
 
   const admin = createAdminClient();
   if (admin) {

@@ -68,6 +68,7 @@ export function AppShellChrome({
   awaitingCount = 0,
   initialCollapsed,
   banner,
+  coBrand,
   sidebarFooter,
   children,
 }: {
@@ -75,6 +76,7 @@ export function AppShellChrome({
   awaitingCount?: number;
   initialCollapsed: boolean;
   banner: React.ReactNode;
+  coBrand?: { logoUrl: string | null; name: string };
   sidebarFooter: React.ReactNode;
   children: React.ReactNode;
 }) {
@@ -105,6 +107,22 @@ export function AppShellChrome({
             </Link>
           )}
         </div>
+
+        {/* Client co-brand: their logo runs the workspace; ours stays above. */}
+        {!collapsed && coBrand && (
+          <div className="mb-4 border-b border-line px-2 pb-4">
+            {coBrand.logoUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={coBrand.logoUrl}
+                alt={`${coBrand.name} logo`}
+                className="h-9 w-auto max-w-full rounded border border-line bg-white object-contain p-1"
+              />
+            ) : (
+              <p className="truncate text-sm font-semibold">{coBrand.name}</p>
+            )}
+          </div>
+        )}
 
         <button
           type="button"

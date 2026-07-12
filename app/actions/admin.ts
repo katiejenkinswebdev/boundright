@@ -95,3 +95,29 @@ export async function saveAgencyLetterGuidance(agencyId: string, formData: FormD
   });
   revalidatePath("/admin");
 }
+
+/** System admin only: set a client's logo on their behalf (co-branding). */
+export async function uploadAgencyLogoAdmin(agencyId: string, formData: FormData): Promise<void> {
+  const { profile } = await requireProfile();
+  if (!isSystemAdmin(profile)) throw new Error("System admin only.");
+  const admin = createAdminClient();
+  if (!admin) return;
+  const file = formData.get("logo");
+  if (!(file instanceof File) || file.size === 0) return;
+  if (!["image/png", "image/jpeg"].includes(file.type) || file.size > 2 * 1024 * 1024) return;
+  const ext = file.type === "image/png" ? "png" : "jpg";
+  const path = `${agencyId}/logo.${ext}`;
+  const { error } = await admin.storage
+    .from("logos")
+    .upload(path, Buffer.from(await file.arrayBuffer()), { contentType: file.type, upsert: true });
+  if (error) return;
+  const { data: pub } = admin.storage.from("logos").getPublicUrl(path);
+  await admin.from("agencies").update({ logo_url: pub.publicUrl }).eq("id", agencyId);
+  await admin.from("events").insert({
+    agency_id: agencyId,
+    user_id: profile.user_id,
+    event_name: "logo_set_by_operator",
+    metadata: {},
+  });
+  revalidatePath("/admin");
+}
