@@ -39,7 +39,22 @@ export function ProfileForm({ fullName, email }: { fullName: string; email: stri
         </label>
         <input id="full_name" name="full_name" defaultValue={fullName} required className={inputClass} />
       </div>
-      <p className="text-sm text-ink/60">Signed in as {email}</p>
+      <div>
+        <label htmlFor="profile_email" className={labelClass}>
+          Login email
+        </label>
+        <input
+          id="profile_email"
+          name="email"
+          type="email"
+          defaultValue={email}
+          className={inputClass}
+        />
+        <p className="mt-1 text-sm text-ink/60">
+          Changing it sends confirmation links to the old and new address; the
+          change applies once confirmed.
+        </p>
+      </div>
       <button disabled={pending} className={secondaryButtonClass}>
         {pending ? "Saving…" : "Save profile"}
       </button>

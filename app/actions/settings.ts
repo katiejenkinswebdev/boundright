@@ -15,14 +15,25 @@ export async function updateProfile(
   _prev: SettingsState,
   formData: FormData
 ): Promise<SettingsState> {
-  const { supabase, profile } = await requireProfile();
+  const { supabase, profile, user } = await requireProfile();
   const fullName = String(formData.get("full_name") ?? "").trim();
+  const email = String(formData.get("email") ?? "").trim().toLowerCase();
   if (!fullName) return fail("Enter your name.");
   const { error } = await supabase
     .from("profiles")
     .update({ full_name: fullName })
     .eq("id", profile.id);
   if (error) return fail("Couldn't save. Try again.");
+
+  if (email && email !== (user.email ?? "").toLowerCase()) {
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return fail("Enter a valid email.");
+    const { error: eErr } = await supabase.auth.updateUser({ email });
+    if (eErr) return fail(`Couldn't change the email: ${eErr.message}`);
+    revalidatePath("/settings");
+    return ok(
+      "Profile saved. Check both your old and new inboxes for confirmation links; the email changes once you confirm."
+    );
+  }
   revalidatePath("/settings");
   return ok("Profile saved.");
 }
@@ -85,8 +96,10 @@ export async function uploadLogo(
     });
   if (error) return fail("Upload failed. Try again.");
   const { data: pub } = admin.storage.from("logos").getPublicUrl(path);
-  await admin.from("agencies").update({ logo_url: pub.publicUrl }).eq("id", agency.id);
-  revalidatePath("/settings");
+  // Same path every upload: version the URL or every cache keeps the old image.
+  const url = `${pub.publicUrl}?v=${Date.now()}`;
+  await admin.from("agencies").update({ logo_url: url }).eq("id", agency.id);
+  revalidatePath("/", "layout");
   return ok("Logo uploaded.");
 }
 

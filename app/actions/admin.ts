@@ -116,7 +116,8 @@ export async function uploadAgencyLogoAdmin(
     .upload(path, Buffer.from(await file.arrayBuffer()), { contentType: file.type, upsert: true });
   if (error) return { ok: false, message: `Upload failed: ${error.message}` };
   const { data: pub } = admin.storage.from("logos").getPublicUrl(path);
-  await admin.from("agencies").update({ logo_url: pub.publicUrl }).eq("id", agencyId);
+  // Same path every upload: version the URL or every cache keeps the old image.
+  await admin.from("agencies").update({ logo_url: `${pub.publicUrl}?v=${Date.now()}` }).eq("id", agencyId);
   await admin.from("events").insert({
     agency_id: agencyId,
     user_id: profile.user_id,

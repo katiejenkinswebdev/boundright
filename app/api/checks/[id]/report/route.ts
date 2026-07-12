@@ -68,7 +68,7 @@ export async function GET(
       if (res.ok) {
         logo = {
           bytes: new Uint8Array(await res.arrayBuffer()),
-          kind: agencyFull.logo_url.endsWith(".png") ? "png" : "jpg",
+          kind: new URL(agencyFull.logo_url).pathname.endsWith(".png") ? "png" : "jpg",
         };
       }
     } catch {
