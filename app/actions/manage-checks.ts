@@ -15,6 +15,10 @@ export async function deleteCheck(checkId: string): Promise<DeleteResult> {
     return { ok: false, message: "Ask a manager or admin to delete checks." };
   }
   const { data: pre } = await supabase.from("checks").select("label").eq("id", checkId).maybeSingle();
+  const { count: findingCount } = await supabase
+    .from("findings")
+    .select("id", { count: "exact", head: true })
+    .eq("check_id", checkId);
   const { data, error } = await supabase
     .from("checks")
     .delete()
@@ -23,7 +27,7 @@ export async function deleteCheck(checkId: string): Promise<DeleteResult> {
   if (error || !data || data.length === 0) {
     return { ok: false, message: "Couldn't delete that check. Try again." };
   }
-  await auditLog({ agencyId: agency.id, checkId, checkLabel: pre?.label, userId: profile.user_id, action: "deleted" });
+  await auditLog({ agencyId: agency.id, checkId, checkLabel: pre?.label, userId: profile.user_id, action: "deleted", detail: { findings_destroyed: findingCount ?? 0 } });
   revalidatePath("/checks");
   revalidatePath("/dashboard");
   return { ok: true };

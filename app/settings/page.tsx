@@ -45,6 +45,21 @@ export default async function SettingsPage() {
       <div className="grid max-w-3xl gap-6">
         <Section title="Profile">
           <div className="space-y-8">
+            <p className="text-sm">
+              Your role:{" "}
+              <span className="rounded border border-line px-2 py-0.5 font-mono text-xs uppercase">
+                {profile.role.replace("_", " ")}
+              </span>
+              <span className="ml-2 text-ink/60">
+                {profile.role === "system_admin"
+                  ? "Operator: everything, plus the ops console."
+                  : profile.role === "admin"
+                    ? "Everything in your agency: configuration, team, billing."
+                    : profile.role === "manager"
+                      ? "Runs and reviews checks, plus agency analytics."
+                      : "Runs and reviews checks."}
+              </span>
+            </p>
             <ProfileForm fullName={profile.full_name} email={user.email ?? ""} />
             <PasswordForm />
           </div>

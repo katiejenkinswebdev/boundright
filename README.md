@@ -54,7 +54,7 @@ Policy discrepancy detection for independent commercial insurance agencies. A CS
 
 ### Teams & roles
 - user → manager (adds analytics) → admin (adds configuration, team, integrations, billing, deletion) → system_admin (operator; database-granted only)
-- Email invites with join links; the ops console shows every client's configuration in one place
+- Email invites with join links; each user's role (and what it grants) shown in Settings; the ops console shows every client's configuration in one place
 
 ### Configuration, feedback, transparency
 - Settings → Configuration (admins): ROI assumptions, scoring thresholds, reminder timing
@@ -183,7 +183,7 @@ Suites: RLS isolation (14 checks), onboarding flow (10), pipeline + deletion + f
 - [ ] Report verification endpoint (`/verify/[id]`) + QR on the PDF; IBM Plex embedding in PDFs
 - [ ] Inline editing of client settings from the ops console (logged, on-behalf-of)
 - [ ] Email-in checks (endpoint built at /api/inbound but dormant behind EMAIL_INTAKE_ENABLED=1; validating demand with users first)
-- [ ] Mobile layout (verify need with users first); MFA for admin roles
+- [ ] Mobile layout (verify need with users first); MFA for admin roles; soft-delete trash (30-day restore for deleted checks, system_admin)
 - [ ] Correction tracking (requested → corrected → verified by re-check); renewal radar; CSV export; client-facing summary letter
 - [ ] Golden eval set expanded with real redacted documents; dismiss reasons fed back into prompts; published accuracy stats on /ai
 - [ ] AMS integrations (HawkSoft/EZLynx first), SSO, public API; self-hosted PostHog only if deeper analytics is ever needed
