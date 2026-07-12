@@ -13,6 +13,9 @@ export default function LandingPage() {
       <header className="flex items-center justify-between py-6">
         <Lockup />
         <div className="flex items-center gap-4">
+          <a href="#features" className="mr-4 text-sm underline">
+            Features
+          </a>
           <a href="#pricing" className="text-sm underline">
             Pricing
           </a>
@@ -84,6 +87,57 @@ export default function LandingPage() {
             <p className="mt-2 text-ink/80">{step.body}</p>
           </div>
         ))}
+      </section>
+
+      {/* Features → outcomes, organized by the job the agency is doing */}
+      <section id="features" className="pb-16">
+        <h2 className="text-2xl font-semibold">Built for the work, measured in outcomes</h2>
+        <p className="mt-2 max-w-2xl text-ink/70">
+          Every feature exists to close one of four gaps in the E&amp;O story.
+          AI proposes; your licensed reviewer decides. AI can make mistakes.
+          Verify important information.
+        </p>
+        <div className="mt-6 grid gap-6 sm:grid-cols-2">
+          {[
+            {
+              use: "Catch issuance errors before your client does",
+              features:
+                "Field-by-field comparison of proposal and issued policy across 40+ fields, a second AI verification pass on every critical, extraction confidence on each finding, and page-cited source excerpts.",
+              outcome:
+                "Wrong limits, missing endorsements, and bad dates surface in about two minutes instead of at claim time.",
+            },
+            {
+              use: "Prove the account was bound right",
+              features:
+                "Reviewer confirm/dismiss decisions with recorded reasons, exported reports with document SHA-256 fingerprints, a full audit trail, reviewer certification, and your agency logo co-branded on every page.",
+              outcome:
+                "A dated, defensible E&O file for every account, generated as a by-product of work you already do.",
+            },
+            {
+              use: "Fix what the carrier got wrong",
+              features:
+                "Correction request letters drafted from your confirmed findings in carrier-standard language, corrections requested effective inception, editable before anything is sent.",
+              outcome:
+                "The follow-up letter that used to take an hour is a two-minute review and paste.",
+            },
+            {
+              use: "Run the whole book, not one file at a time",
+              features:
+                "Smart intake classifies and pairs a whole pile of unlabeled PDFs, renewal and certificate checks, carrier accuracy trends, date-range analytics, and monthly co-branded summary reports.",
+              outcome:
+                "Renewal season stops being a triage problem; leadership sees hours and dollars saved per period.",
+            },
+          ].map((card) => (
+            <div key={card.use} className="rounded-lg border border-line bg-card p-6">
+              <h3 className="font-semibold">{card.use}</h3>
+              <p className="mt-2 text-sm text-ink/80">{card.features}</p>
+              <p className="mt-3 text-sm">
+                <span className="font-mono text-xs uppercase tracking-wide text-verify">Outcome</span>{" "}
+                <span className="text-ink/90">{card.outcome}</span>
+              </p>
+            </div>
+          ))}
+        </div>
       </section>
 
       {/* Pricing — public, never behind a demo call */}

@@ -3,7 +3,7 @@ import { cookies } from "next/headers";
 import { createServerSupabase } from "@/lib/supabase/server";
 import { signOut } from "@/app/actions/auth";
 import type { Agency, Profile } from "@/lib/auth";
-import { planCap } from "@/lib/pricing";
+import { agencyCap } from "@/lib/pricing";
 import { AppShellChrome } from "./AppShellChrome";
 import { AnalyticsIdentify } from "./Analytics";
 import { FeedbackWidget } from "./FeedbackWidget";
@@ -50,7 +50,7 @@ export async function AppShell({
   ]);
 
   const trialDaysLeft = agency.trial_ends_at ? daysUntil(agency.trial_ends_at) : null;
-  const cap = planCap(agency.plan);
+  const cap = agencyCap(agency);
   const graceActive =
     agency.billing_status === "past_due" &&
     agency.billing_grace_until &&

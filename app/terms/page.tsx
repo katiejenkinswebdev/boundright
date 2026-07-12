@@ -1,9 +1,18 @@
 import Link from "next/link";
 import { Lockup } from "@/app/components/brand";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 export const metadata = { title: "Terms of Service · BoundRight" };
 
-export default function TermsPage() {
+export default async function TermsPage() {
+  // Ops-console override (platform_config['legal_terms']); falls back to the
+  // built-in document when unset.
+  const admin = createAdminClient();
+  const { data } = admin
+    ? await admin.from("platform_config").select("value").eq("key", "legal_terms").maybeSingle()
+    : { data: null };
+  const override = data?.value?.trim() || null;
+
   return (
     <main className="mx-auto w-full max-w-2xl flex-1 px-6 py-12">
       <Link href="/">
@@ -13,6 +22,13 @@ export default function TermsPage() {
       <p className="mt-2 text-sm text-ink/60">
         Draft, under attorney review. Effective upon publication.
       </p>
+      {override ? (
+        <div className="mt-6 space-y-4 text-[15px] leading-relaxed text-ink/90">
+          {override.split(/\n\s*\n/).map((para: string, i: number) => (
+            <p key={i} className="whitespace-pre-line">{para}</p>
+          ))}
+        </div>
+      ) : (
       <div className="mt-6 space-y-4 text-[15px] leading-relaxed text-ink/90">
         <p>
           <strong>1. The service.</strong> BoundRight compares insurance
@@ -50,6 +66,7 @@ export default function TermsPage() {
           the claim.
         </p>
       </div>
+      )}
     </main>
   );
 }

@@ -134,7 +134,6 @@ async function main() {
         agency_id: agencyId,
         full_name: cfg.fullName,
         role: "admin",
-        onboarded_at: new Date().toISOString(),
       },
       { onConflict: "user_id" }
     );

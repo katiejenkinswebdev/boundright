@@ -1,7 +1,16 @@
 "use client";
 
 import { useActionState } from "react";
-import { inviteMember, setMemberRole, type TeamState } from "@/app/actions/team";
+import {
+  inviteMember,
+  setMemberRole,
+  updateMemberProfile,
+  sendMemberPasswordReset,
+  setMemberAccess,
+  removeMember,
+  revokeInvite,
+  type TeamState,
+} from "@/app/actions/team";
 import { updateIntegrations, sendTestNotice, type SettingsState } from "@/app/actions/settings";
 import { inputClass, labelClass, secondaryButtonClass } from "@/app/components/ui";
 import { InfoTip } from "@/app/components/InfoTip";
@@ -27,48 +36,174 @@ const ROLES = [
   ["admin", "Admin · everything, including billing and team"],
 ] as const;
 
+export type MemberRow = {
+  id: string;
+  full_name: string;
+  role: string;
+  email: string;
+  lastSignIn: string | null;
+  suspended: boolean;
+  manageable: boolean;
+};
+
+function ManageMember({ member }: { member: MemberRow }) {
+  const [profileState, profileAction, profilePending] = useActionState(updateMemberProfile, initial);
+  const [resetState, resetAction, resetPending] = useActionState(sendMemberPasswordReset, initial);
+  const [accessState, accessAction, accessPending] = useActionState(setMemberAccess, initial);
+  const [removeState, removeAction, removePending] = useActionState(removeMember, initial);
+
+  return (
+    <details className="mt-2 rounded border border-line bg-paper p-3">
+      <summary className="cursor-pointer text-sm text-ink/70 hover:text-ink">Manage</summary>
+      <div className="mt-3 space-y-4">
+        <form action={profileAction} className="space-y-2">
+          <input type="hidden" name="member_id" value={member.id} />
+          <div className="grid gap-2 sm:grid-cols-2">
+            <label className="block">
+              <span className={labelClass}>Name</span>
+              <input name="full_name" defaultValue={member.full_name} className={inputClass} />
+            </label>
+            <label className="block">
+              <span className={labelClass}>Login email</span>
+              <input name="email" type="email" defaultValue={member.email} className={inputClass} />
+            </label>
+          </div>
+          <button disabled={profilePending} className="rounded border border-ink px-4 py-1.5 text-sm font-semibold hover:bg-ink hover:text-paper disabled:opacity-50">
+            {profilePending ? "Saving…" : "Save changes"}
+          </button>
+          <Msg state={profileState} />
+        </form>
+
+        <div className="flex flex-wrap items-center gap-3 border-t border-line pt-3">
+          <form action={resetAction}>
+            <input type="hidden" name="member_id" value={member.id} />
+            <button disabled={resetPending} className="text-sm underline disabled:opacity-50">
+              {resetPending ? "Sending…" : "Send password reset"}
+            </button>
+          </form>
+          <form action={accessAction}>
+            <input type="hidden" name="member_id" value={member.id} />
+            <input type="hidden" name="suspend" value={member.suspended ? "false" : "true"} />
+            <button
+              disabled={accessPending}
+              className={`text-sm underline disabled:opacity-50 ${member.suspended ? "text-verify" : "text-caution"}`}
+            >
+              {accessPending ? "Working…" : member.suspended ? "Restore access" : "Suspend access"}
+            </button>
+          </form>
+          <form
+            action={removeAction}
+            onSubmit={(e) => {
+              if (!confirm(`Remove ${member.full_name} from the agency? Their login is deleted; their review history stays in the audit log.`)) {
+                e.preventDefault();
+              }
+            }}
+          >
+            <input type="hidden" name="member_id" value={member.id} />
+            <button disabled={removePending} className="text-sm text-flag underline disabled:opacity-50">
+              {removePending ? "Removing…" : "Remove from agency"}
+            </button>
+          </form>
+        </div>
+        <Msg state={resetState} />
+        <Msg state={accessState} />
+        <Msg state={removeState} />
+      </div>
+    </details>
+  );
+}
+
 export function TeamSection({
   members,
   selfId,
+  viewerIsAdmin,
+  pendingInvites,
 }: {
-  members: { id: string; full_name: string; role: string }[];
+  members: MemberRow[];
   selfId: string;
+  viewerIsAdmin: boolean;
+  pendingInvites: { id: string; email: string; role: string; created_at: string }[];
 }) {
   const [inviteState, inviteAction, invitePending] = useActionState(inviteMember, initial);
   const [roleState, roleAction] = useActionState(setMemberRole, initial);
+  const [revokeState, revokeAction] = useActionState(revokeInvite, initial);
 
   return (
     <div className="space-y-6">
       <ul className="divide-y divide-line/60">
         {members.map((m) => (
-          <li key={m.id} className="flex items-center justify-between gap-3 py-2">
-            <span className="font-medium">
-              {m.full_name}
-              {m.id === selfId && <span className="text-ink/50"> (you)</span>}
-            </span>
-            <form action={roleAction} className="flex items-center gap-2">
-              <input type="hidden" name="member_id" value={m.id} />
-              <select
-                name="role"
-                defaultValue={m.role}
-                className="rounded border border-line bg-card px-2 py-1 text-sm"
-                aria-label={`Role for ${m.full_name}`}
-              >
-                {ROLES.map(([value]) => (
-                  <option key={value} value={value}>
-                    {value}
-                  </option>
-                ))}
-              </select>
-              <button type="submit" className="text-sm underline">
-                Save
-              </button>
-            </form>
+          <li key={m.id} className="py-3">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <span className="min-w-0">
+                <span className="font-medium">
+                  {m.full_name}
+                  {m.id === selfId && <span className="text-ink/50"> (you)</span>}
+                </span>
+                {m.suspended && (
+                  <span className="ml-2 inline-flex items-center rounded border border-caution px-2 py-0.5 font-mono text-xs uppercase leading-none text-caution">
+                    suspended
+                  </span>
+                )}
+                <span className="block truncate font-mono text-xs text-ink/60">
+                  {m.email}
+                  {m.lastSignIn
+                    ? ` · last sign-in ${new Date(m.lastSignIn).toLocaleDateString("en-US", { month: "short", day: "numeric" })}`
+                    : " · never signed in"}
+                </span>
+              </span>
+              {viewerIsAdmin ? (
+                <form action={roleAction} className="flex items-center gap-2">
+                  <input type="hidden" name="member_id" value={m.id} />
+                  <select
+                    name="role"
+                    defaultValue={m.role}
+                    className="rounded border border-line bg-card px-2 py-1 text-sm"
+                    aria-label={`Role for ${m.full_name}`}
+                  >
+                    {ROLES.map(([value]) => (
+                      <option key={value} value={value}>
+                        {value}
+                      </option>
+                    ))}
+                  </select>
+                  <button type="submit" className="text-sm underline">
+                    Save
+                  </button>
+                </form>
+              ) : (
+                <span className="font-mono text-xs uppercase text-ink/60">{m.role.replace("_", " ")}</span>
+              )}
+            </div>
+            {m.manageable && <ManageMember member={m} />}
           </li>
         ))}
       </ul>
       <Msg state={roleState} />
 
+      {viewerIsAdmin && pendingInvites.length > 0 && (
+        <div className="border-t border-line pt-4">
+          <p className="mb-2 font-semibold">Pending invites</p>
+          <ul className="space-y-1">
+            {pendingInvites.map((inv) => (
+              <li key={inv.id} className="flex flex-wrap items-center justify-between gap-2 text-sm">
+                <span className="font-mono text-xs">
+                  {inv.email} · {inv.role} · sent{" "}
+                  {new Date(inv.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                </span>
+                <form action={revokeAction}>
+                  <input type="hidden" name="invite_id" value={inv.id} />
+                  <button type="submit" className="text-sm underline">
+                    Revoke
+                  </button>
+                </form>
+              </li>
+            ))}
+          </ul>
+          <Msg state={revokeState} />
+        </div>
+      )}
+
+      {viewerIsAdmin && (
       <form action={inviteAction} className="space-y-3 border-t border-line pt-4">
         <p className="font-semibold">Invite a teammate</p>
         <div className="grid gap-3 sm:grid-cols-[2fr_1fr]">
@@ -111,6 +246,7 @@ export function TeamSection({
         </button>
         <Msg state={inviteState} />
       </form>
+      )}
     </div>
   );
 }

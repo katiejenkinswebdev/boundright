@@ -207,21 +207,19 @@ export function BillingSection({
             <label className="flex cursor-pointer items-start gap-3 rounded border border-line p-4">
               <input type="radio" name="plan" value="founding" defaultChecked className="mt-1" />
               <span>
-                <span className="font-semibold">{PLANS.founding.name}</span>
+                <span className="font-semibold">{PLANS.founding.checksPerMonth} checks a month</span>
                 <br />
                 <span className="text-sm text-ink/60">
-                  {PLANS.founding.checksPerMonth} checks/mo, founding rate locked in
+                  Early-supporter rate, locked in for as long as you subscribe
                 </span>
               </span>
             </label>
             <label className="flex cursor-pointer items-start gap-3 rounded border border-line p-4">
               <input type="radio" name="plan" value="standard" className="mt-1" />
               <span>
-                <span className="font-semibold">{PLANS.standard.name}</span>
+                <span className="font-semibold">{PLANS.standard.checksPerMonth} checks a month</span>
                 <br />
-                <span className="text-sm text-ink/60">
-                  {PLANS.standard.checksPerMonth} checks/mo
-                </span>
+                <span className="text-sm text-ink/60">Current standard rate</span>
               </span>
             </label>
           </div>

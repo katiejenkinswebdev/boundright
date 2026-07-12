@@ -2,7 +2,9 @@ import { notFound } from "next/navigation";
 import { requireProfile } from "@/lib/auth";
 import { isSystemAdmin } from "@/lib/roles";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { toggleSmartIntake, createAnnouncement, endAnnouncement, uploadAgencyLogoAdmin } from "@/app/actions/admin";
+import { toggleSmartIntake, createAnnouncement, endAnnouncement, setAgencyAllowance, saveLegalDoc } from "@/app/actions/admin";
+import { AdminLogoForm } from "./AdminLogoForm";
+import { planCap } from "@/lib/pricing";
 import { LetterGuidancePanel } from "./LetterGuidancePanel";
 
 /** Ops console: system_admin role (ADMIN_EMAILS env as bootstrap fallback). */
@@ -28,7 +30,7 @@ export default async function AdminPage() {
     await Promise.all([
       admin
         .from("agencies")
-        .select("id, name, plan, billing_status, checks_this_period, created_at, manual_check_minutes, avg_account_premium, csr_hourly_rate, premium_variance_threshold, renewal_premium_threshold, reminder_hours, notify_webhook_url, smart_intake_enabled")
+        .select("id, name, plan, billing_status, checks_this_period, checks_allowance, created_at, manual_check_minutes, avg_account_premium, csr_hourly_rate, premium_variance_threshold, renewal_premium_threshold, reminder_hours, notify_webhook_url, smart_intake_enabled")
         .order("created_at", { ascending: false }),
       admin
         .from("checks")
@@ -54,6 +56,16 @@ export default async function AdminPage() {
   const { data: aiRatings } = await admin
     .from("ai_feedback")
     .select("target, prompt_version, rating");
+  const { data: legalTerms } = await admin
+    .from("platform_config")
+    .select("value")
+    .eq("key", "legal_terms")
+    .maybeSingle();
+  const { data: legalPrivacy } = await admin
+    .from("platform_config")
+    .select("value")
+    .eq("key", "legal_privacy")
+    .maybeSingle();
   const { data: letterConfig } = await admin
     .from("platform_config")
     .select("value")
@@ -211,6 +223,7 @@ export default async function AdminPage() {
               <th className="px-4 py-3 text-right font-semibold">Variance %</th>
               <th className="px-4 py-3 text-right font-semibold">Renewal %</th>
               <th className="px-4 py-3 text-right font-semibold">Reminder h</th>
+              <th className="px-4 py-3 text-right font-semibold">Allowance</th>
               <th className="px-4 py-3 font-semibold">Slack/Teams</th>
               <th className="px-4 py-3 font-semibold">Smart intake</th>
               <th className="px-4 py-3 font-semibold">Logo</th>
@@ -231,6 +244,29 @@ export default async function AdminPage() {
                 <td className="px-4 py-2 text-right font-mono">{Number(a.premium_variance_threshold)}</td>
                 <td className="px-4 py-2 text-right font-mono">{Number(a.renewal_premium_threshold)}</td>
                 <td className="px-4 py-2 text-right font-mono">{a.reminder_hours}</td>
+                <td className="px-4 py-2 text-right">
+                  <form
+                    action={async (formData: FormData) => {
+                      "use server";
+                      await setAgencyAllowance(a.id, formData);
+                    }}
+                    className="flex items-center justify-end gap-1"
+                  >
+                    <input
+                      name="allowance"
+                      type="number"
+                      min={1}
+                      max={10000}
+                      defaultValue={a.checks_allowance ?? ""}
+                      placeholder={String(planCap(a.plan))}
+                      className="w-16 rounded border border-line bg-paper px-1.5 py-0.5 text-right font-mono text-xs"
+                      aria-label={`Monthly check allowance for ${a.name}`}
+                    />
+                    <button type="submit" className="font-mono text-xs underline">
+                      save
+                    </button>
+                  </form>
+                </td>
                 <td className="px-4 py-2 font-mono text-xs">{a.notify_webhook_url ? "connected" : "—"}</td>
                 <td className="px-4 py-2">
                   <form
@@ -252,36 +288,11 @@ export default async function AdminPage() {
                   </form>
                 </td>
                 <td className="px-4 py-2">
-                  <form
-                    action={async (formData: FormData) => {
-                      "use server";
-                      await uploadAgencyLogoAdmin(a.id, formData);
-                    }}
-                    className="flex items-center gap-2"
-                  >
-                    {(agencyGuidance ?? []).find((g) => g.id === a.id)?.logo_url ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img
-                        src={(agencyGuidance ?? []).find((g) => g.id === a.id)!.logo_url!}
-                        alt={`${a.name} logo`}
-                        className="h-6 w-auto rounded border border-line bg-white p-0.5"
-                      />
-                    ) : (
-                      <span className="font-mono text-xs text-ink/40">none</span>
-                    )}
-                    <label className="cursor-pointer font-mono text-xs underline">
-                      set
-                      <input
-                        type="file"
-                        name="logo"
-                        accept="image/png,image/jpeg"
-                        className="sr-only"
-                      />
-                    </label>
-                    <button type="submit" className="font-mono text-xs underline">
-                      save
-                    </button>
-                  </form>
+                  <AdminLogoForm
+                    agencyId={a.id}
+                    agencyName={a.name}
+                    logoUrl={(agencyGuidance ?? []).find((g) => g.id === a.id)?.logo_url ?? null}
+                  />
                 </td>
                 <td className="px-4 py-2">
                   <a href={`/api/admin/audit/${a.id}`} className="text-sm underline">
@@ -310,6 +321,39 @@ export default async function AdminPage() {
             letter_instructions: g.letter_instructions,
           }))}
         />
+      </section>
+
+      <h2 className="mb-3 mt-8 font-semibold">Legal documents</h2>
+      <section className="mb-8 rounded-lg border border-line bg-card p-6">
+        <p className="mb-4 text-sm text-ink/70">
+          Live at /terms and /privacy the moment you save. Blank fields fall
+          back to the built-in documents. Plain text; blank lines separate
+          paragraphs. Run substantive changes past your attorney.
+        </p>
+        {([
+          ["legal_terms", "Terms of Service", legalTerms?.value ?? ""],
+          ["legal_privacy", "Privacy Policy", legalPrivacy?.value ?? ""],
+        ] as const).map(([key, label, value]) => (
+          <form key={key} action={saveLegalDoc} className="mb-6 last:mb-0">
+            <input type="hidden" name="doc" value={key} />
+            <label className="block">
+              <span className="mb-1 block text-sm font-semibold">{label}</span>
+              <textarea
+                name="content"
+                defaultValue={value}
+                rows={6}
+                placeholder="Blank = the built-in document ships as is."
+                className="w-full rounded border border-line bg-paper px-3 py-2 font-mono text-xs leading-relaxed"
+              />
+            </label>
+            <button
+              type="submit"
+              className="mt-2 rounded border border-ink px-4 py-1.5 text-sm font-semibold hover:bg-ink hover:text-paper"
+            >
+              Save {label}
+            </button>
+          </form>
+        ))}
       </section>
 
       <h2 className="mb-3 mt-8 font-semibold">Announcements (banner across the app)</h2>

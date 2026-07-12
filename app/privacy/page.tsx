@@ -1,9 +1,18 @@
 import Link from "next/link";
 import { Lockup } from "@/app/components/brand";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 export const metadata = { title: "Privacy Policy · BoundRight" };
 
-export default function PrivacyPage() {
+export default async function PrivacyPage() {
+  // Ops-console override (platform_config['legal_privacy']); falls back to the
+  // built-in document when unset.
+  const admin = createAdminClient();
+  const { data } = admin
+    ? await admin.from("platform_config").select("value").eq("key", "legal_privacy").maybeSingle()
+    : { data: null };
+  const override = data?.value?.trim() || null;
+
   return (
     <main className="mx-auto w-full max-w-2xl flex-1 px-6 py-12">
       <Link href="/">
@@ -13,6 +22,13 @@ export default function PrivacyPage() {
       <p className="mt-2 text-sm text-ink/60">
         Draft, under attorney review. Effective upon publication.
       </p>
+      {override ? (
+        <div className="mt-6 space-y-4 text-[15px] leading-relaxed text-ink/90">
+          {override.split(/\n\s*\n/).map((para: string, i: number) => (
+            <p key={i} className="whitespace-pre-line">{para}</p>
+          ))}
+        </div>
+      ) : (
       <div className="mt-6 space-y-4 text-[15px] leading-relaxed text-ink/90">
         <p>
           <strong>Documents.</strong> We process your uploaded documents and
@@ -60,6 +76,7 @@ export default function PrivacyPage() {
           Questions? <a className="underline" href="mailto:help@boundright.app">help@boundright.app</a>
         </p>
       </div>
+      )}
     </main>
   );
 }

@@ -10,7 +10,8 @@ import {
   DangerZone,
 } from "./SettingsForms";
 import { TeamSection, IntegrationsSection } from "./TeamSection";
-import { isAdmin } from "@/lib/roles";
+import { isAdmin, canManageUsers, roleRank } from "@/lib/roles";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 function Section({
   id,
@@ -32,12 +33,44 @@ function Section({
 export default async function SettingsPage() {
   const { supabase, profile, agency, user } = await requireProfile();
   const admin = isAdmin(profile);
-  const { data: members } = admin
+  const managesUsers = canManageUsers(profile);
+  const { data: members } = managesUsers
     ? await supabase
         .from("profiles")
-        .select("id, full_name, role")
+        .select("id, user_id, full_name, role, suspended_at")
         .order("created_at", { ascending: true })
     : { data: null };
+
+  // Login email + last sign-in come from auth (service role, server only).
+  const authInfo = new Map<string, { email: string; lastSignIn: string | null }>();
+  let pendingInvites: { id: string; email: string; role: string; created_at: string }[] = [];
+  if (managesUsers) {
+    const svc = createAdminClient();
+    if (svc) {
+      const { data: list } = await svc.auth.admin.listUsers({ perPage: 1000 });
+      for (const u of list?.users ?? []) {
+        authInfo.set(u.id, { email: u.email ?? "", lastSignIn: u.last_sign_in_at ?? null });
+      }
+      if (admin) {
+        const { data: inv } = await svc
+          .from("invites")
+          .select("id, email, role, created_at")
+          .eq("agency_id", agency.id)
+          .is("accepted_at", null)
+          .order("created_at", { ascending: false });
+        pendingInvites = inv ?? [];
+      }
+    }
+  }
+  const enrichedMembers = (members ?? []).map((m) => ({
+    id: m.id,
+    full_name: m.full_name,
+    role: m.role,
+    suspended: !!m.suspended_at,
+    email: authInfo.get(m.user_id)?.email ?? "",
+    lastSignIn: authInfo.get(m.user_id)?.lastSignIn ?? null,
+    manageable: roleRank(m.role) < roleRank(profile.role) && m.id !== profile.id,
+  }));
 
   return (
     <AppShell agency={agency} profile={profile} active="/settings">
@@ -65,9 +98,14 @@ export default async function SettingsPage() {
           </div>
         </Section>
 
-        {admin && (
+        {managesUsers && (
         <Section title="Team">
-          <TeamSection members={members ?? []} selfId={profile.id} />
+          <TeamSection
+            members={enrichedMembers}
+            selfId={profile.id}
+            viewerIsAdmin={admin}
+            pendingInvites={pendingInvites}
+          />
         </Section>
         )}
 

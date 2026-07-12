@@ -1,7 +1,7 @@
 "use server";
 
 import { after } from "next/server";
-import { PLANS } from "@/lib/pricing";
+import { agencyCap } from "@/lib/pricing";
 import { requireProfile } from "@/lib/auth";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { runCheck, docPaths } from "@/lib/pipeline/run";
@@ -9,8 +9,7 @@ import { auditLog } from "@/lib/audit";
 
 const POLICY_TYPES = ["GL", "Property", "WC", "Auto", "Umbrella", "Package", "Other"];
 const CHECK_TYPES = ["issuance", "renewal", "coi"];
-const TRIAL_CHECK_LIMIT = 10;
-const PAID_CHECK_LIMIT = PLANS.standard.checksPerMonth;
+
 
 export type CreateCheckResult =
   | {
@@ -67,13 +66,13 @@ export async function createCheck(formData: FormData): Promise<CreateCheckResult
         message: "Your trial has ended. Subscribe in Settings to keep running checks.",
       };
     }
-    if (agency.checks_this_period >= TRIAL_CHECK_LIMIT) {
+    if (agency.checks_this_period >= agencyCap(agency)) {
       return {
         ok: false,
-        message: `You've used your ${TRIAL_CHECK_LIMIT} trial checks. Subscribe in Settings to keep going.`,
+        message: `You've used your ${agencyCap(agency)} trial checks. Subscribe in Settings to keep going.`,
       };
     }
-  } else if (agency.checks_this_period >= PAID_CHECK_LIMIT) {
+  } else if (agency.checks_this_period >= agencyCap(agency)) {
     const resetDate = agency.period_resets_at
       ? new Date(agency.period_resets_at).toLocaleDateString("en-US", {
           month: "long",
@@ -82,7 +81,7 @@ export async function createCheck(formData: FormData): Promise<CreateCheckResult
       : "the 1st";
     return {
       ok: false,
-      message: `You've used this month's ${PAID_CHECK_LIMIT} checks. They reset on ${resetDate}, or reply to any email from us to talk about a higher limit.`,
+      message: `You've used this month's ${agencyCap(agency)} checks. They reset on ${resetDate}, or reply to any email from us to talk about a higher limit.`,
     };
   }
 

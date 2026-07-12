@@ -16,3 +16,13 @@ export function isAdmin(profile: Profile): boolean {
 export function isSystemAdmin(profile: Profile): boolean {
   return profile.role === "system_admin";
 }
+
+/** Numeric rank for "who may manage whom": manage only strictly lower ranks. */
+export function roleRank(role: string): number {
+  return { user: 1, manager: 2, admin: 3, system_admin: 4 }[role as Role] ?? 0;
+}
+
+/** Managers and above manage team members (below their own rank). */
+export function canManageUsers(profile: Profile): boolean {
+  return canSeeAnalytics(profile);
+}

@@ -34,3 +34,8 @@ export function planCap(plan: string): number {
   return (PLANS as Record<string, { checksPerMonth: number }>)[plan]?.checksPerMonth
     ?? PLANS.standard.checksPerMonth;
 }
+
+/** Effective allowance: operator override first, then the plan default. */
+export function agencyCap(agency: { plan: string; checks_allowance?: number | null }): number {
+  return agency.checks_allowance ?? planCap(agency.plan);
+}

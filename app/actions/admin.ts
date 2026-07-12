@@ -97,20 +97,24 @@ export async function saveAgencyLetterGuidance(agencyId: string, formData: FormD
 }
 
 /** System admin only: set a client's logo on their behalf (co-branding). */
-export async function uploadAgencyLogoAdmin(agencyId: string, formData: FormData): Promise<void> {
+export async function uploadAgencyLogoAdmin(
+  agencyId: string,
+  formData: FormData
+): Promise<{ ok: boolean; message: string }> {
   const { profile } = await requireProfile();
   if (!isSystemAdmin(profile)) throw new Error("System admin only.");
   const admin = createAdminClient();
-  if (!admin) return;
+  if (!admin) return { ok: false, message: "Server not configured." };
   const file = formData.get("logo");
-  if (!(file instanceof File) || file.size === 0) return;
-  if (!["image/png", "image/jpeg"].includes(file.type) || file.size > 2 * 1024 * 1024) return;
+  if (!(file instanceof File) || file.size === 0) return { ok: false, message: "Choose an image file." };
+  if (!["image/png", "image/jpeg"].includes(file.type)) return { ok: false, message: "Use a PNG or JPEG." };
+  if (file.size > 2 * 1024 * 1024) return { ok: false, message: "Keep the logo under 2 MB." };
   const ext = file.type === "image/png" ? "png" : "jpg";
   const path = `${agencyId}/logo.${ext}`;
   const { error } = await admin.storage
     .from("logos")
     .upload(path, Buffer.from(await file.arrayBuffer()), { contentType: file.type, upsert: true });
-  if (error) return;
+  if (error) return { ok: false, message: `Upload failed: ${error.message}` };
   const { data: pub } = admin.storage.from("logos").getPublicUrl(path);
   await admin.from("agencies").update({ logo_url: pub.publicUrl }).eq("id", agencyId);
   await admin.from("events").insert({
@@ -119,5 +123,39 @@ export async function uploadAgencyLogoAdmin(agencyId: string, formData: FormData
     event_name: "logo_set_by_operator",
     metadata: {},
   });
+  revalidatePath("/admin");
+  return { ok: true, message: "Logo updated." };
+}
+
+/** System admin only: override a client's monthly check allowance (null = plan default). */
+export async function setAgencyAllowance(agencyId: string, formData: FormData): Promise<void> {
+  const { profile } = await requireProfile();
+  if (!isSystemAdmin(profile)) throw new Error("System admin only.");
+  const admin = createAdminClient();
+  if (!admin) return;
+  const raw = String(formData.get("allowance") ?? "").trim();
+  const value = raw === "" ? null : Math.max(1, Math.min(10_000, Number(raw) || 0)) || null;
+  await admin.from("agencies").update({ checks_allowance: value }).eq("id", agencyId);
+  await admin.from("events").insert({
+    agency_id: agencyId,
+    user_id: profile.user_id,
+    event_name: "allowance_overridden",
+    metadata: { allowance: value },
+  });
+  revalidatePath("/admin");
+}
+
+/** System admin only: edit a legal document (terms or privacy). */
+export async function saveLegalDoc(formData: FormData): Promise<void> {
+  const { profile } = await requireProfile();
+  if (!isSystemAdmin(profile)) throw new Error("System admin only.");
+  const admin = createAdminClient();
+  if (!admin) return;
+  const key = String(formData.get("doc") ?? "");
+  if (!["legal_terms", "legal_privacy"].includes(key)) return;
+  const value = String(formData.get("content") ?? "").slice(0, 100_000);
+  await admin.from("platform_config").upsert({ key, value, updated_at: new Date().toISOString() });
+  revalidatePath("/terms");
+  revalidatePath("/privacy");
   revalidatePath("/admin");
 }
