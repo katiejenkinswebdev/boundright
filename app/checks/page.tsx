@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { requireProfile } from "@/lib/auth";
 import { canSeeAnalytics } from "@/lib/roles";
+import { cookies } from "next/headers";
+import { PageSizeSelect } from "./PageSizeSelect";
 import { AppShell } from "@/app/components/AppShell";
 import { DeleteCheckButton } from "./DeleteCheckButton";
 import { ArchiveCheckButton } from "./ArchiveCheckButton";
@@ -37,6 +39,7 @@ export default async function ChecksPage({
     type?: string;
     sort?: string;
     dir?: string;
+    page?: string;
   }>;
 }) {
   const {
@@ -45,14 +48,31 @@ export default async function ChecksPage({
     type: typeFilter = "all",
     sort = "date",
     dir = "desc",
+    page: pageParam = "1",
   } = await searchParams;
   const { supabase, profile, agency } = await requireProfile();
 
+  const cookieStore = await cookies();
+  const pageSize = [10, 25, 50, 100].includes(Number(cookieStore.get("br_rows")?.value))
+    ? Number(cookieStore.get("br_rows")!.value)
+    : 25;
+  const page = Math.max(1, Number(pageParam) || 1);
+
+  // Findings-severity sorting happens within the page (fetched rows only);
+  // every other column sorts in the database across all pages.
+  const dbSort: Record<string, string> = {
+    label: "label",
+    type: "check_type",
+    date: "created_at",
+    status: "status",
+  };
   let query = supabase
     .from("checks")
-    .select("id, label, policy_type, check_type, status, created_at, exported_at")
-    .order("created_at", { ascending: false })
-    .limit(200);
+    .select("id, label, policy_type, check_type, status, created_at, exported_at", {
+      count: "exact",
+    })
+    .order(dbSort[sort] ?? "created_at", { ascending: dir === "asc" })
+    .range((page - 1) * pageSize, page * pageSize - 1);
   if (q?.trim()) query = query.ilike("label", `%${q.trim()}%`);
   if (statusFilter === "archived") query = query.not("archived_at", "is", null);
   else {
@@ -60,7 +80,7 @@ export default async function ChecksPage({
     if (statusFilter !== "all") query = query.eq("status", statusFilter);
   }
   if (typeFilter !== "all") query = query.eq("check_type", typeFilter);
-  const { data: checks } = await query;
+  const { data: checks, count: totalCount } = await query;
 
   const href = (over: Record<string, string>) => {
     const p = new URLSearchParams();
@@ -69,6 +89,7 @@ export default async function ChecksPage({
     if (typeFilter !== "all") p.set("type", typeFilter);
     if (sort !== "date") p.set("sort", sort);
     if (dir !== "desc") p.set("dir", dir);
+    if (page > 1) p.set("page", String(page));
     for (const [k, v] of Object.entries(over)) {
       if (v === "" || (k === "status" && v === "all") || (k === "type" && v === "all")) p.delete(k);
       else p.set(k, v);
@@ -76,9 +97,9 @@ export default async function ChecksPage({
     const qs = p.toString();
     return `/checks${qs ? `?${qs}` : ""}`;
   };
-  const filterHref = (s: string, t: string) => href({ status: s, type: t });
+  const filterHref = (s: string, t: string) => href({ status: s, type: t, page: "" });
   const sortHref = (col: string) =>
-    href({ sort: col, dir: sort === col && dir === "asc" ? "desc" : "asc" });
+    href({ sort: col, dir: sort === col && dir === "asc" ? "desc" : "asc", page: "" });
   const arrow = (col: string) => (sort === col ? (dir === "asc" ? " ▲" : " ▼") : "");
 
   // Severity chips per check (single query, grouped client-side).
@@ -97,23 +118,17 @@ export default async function ChecksPage({
     sevByCheck.set(f.check_id, entry);
   }
 
-  const sorted = [...(checks ?? [])].sort((a, b) => {
-    const sevScore = (id: string) => {
-      const v = sevByCheck.get(id);
-      return v ? v.critical * 10_000 + v.moderate * 100 + v.minor : -1;
-    };
-    const cmp =
-      sort === "label"
-        ? a.label.localeCompare(b.label)
-        : sort === "type"
-          ? a.check_type.localeCompare(b.check_type)
-          : sort === "status"
-            ? a.status.localeCompare(b.status)
-            : sort === "findings"
-              ? sevScore(a.id) - sevScore(b.id)
-              : new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
-    return dir === "asc" ? cmp : -cmp;
-  });
+  const sevScore = (id: string) => {
+    const v = sevByCheck.get(id);
+    return v ? v.critical * 10_000 + v.moderate * 100 + v.minor : -1;
+  };
+  const sorted =
+    sort === "findings"
+      ? [...(checks ?? [])].sort((a, b) =>
+          dir === "asc" ? sevScore(a.id) - sevScore(b.id) : sevScore(b.id) - sevScore(a.id)
+        )
+      : (checks ?? []);
+  const totalPages = Math.max(1, Math.ceil((totalCount ?? 0) / pageSize));
 
   return (
     <AppShell agency={agency} profile={profile} active="/checks">
@@ -261,6 +276,31 @@ export default async function ChecksPage({
               })}
             </tbody>
           </table>
+        </div>
+      )}
+
+      {(checks ?? []).length > 0 && (
+        <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-3 text-sm">
+            {page > 1 ? (
+              <Link href={href({ page: String(page - 1) })} className="underline">
+                ← Previous
+              </Link>
+            ) : (
+              <span className="text-ink/30">← Previous</span>
+            )}
+            <span className="font-mono text-xs text-ink/60">
+              Page {page} of {totalPages} · {totalCount ?? 0} checks
+            </span>
+            {page < totalPages ? (
+              <Link href={href({ page: String(page + 1) })} className="underline">
+                Next →
+              </Link>
+            ) : (
+              <span className="text-ink/30">Next →</span>
+            )}
+          </div>
+          <PageSizeSelect value={pageSize} baseHref={href({})} />
         </div>
       )}
     </AppShell>

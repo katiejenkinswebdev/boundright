@@ -29,6 +29,7 @@ Policy discrepancy detection for independent commercial insurance agencies. A CS
 
 ### Checks
 - **Smart intake (feature-flagged, system_admin enables per agency):** drop up to 30 unlabeled PDFs; a cheap classification pass identifies each document and proposes confidence-scored pairs (issuance/renewal/COI inferred); the human confirms before anything runs; orphans surfaced then deleted; staged files auto-removed in 48h
+- Checks list is paginated (Previous/Next below the table, database-sorted across pages) with a per-user rows-per-page setting (10/25/50/100, cookie-remembered); the findings-severity sort orders within the current page
 - Archive tab on the Checks list: archived checks leave every working view (list, queue, badge, next-unreviewed) but keep counting in metrics, and restore in one click
 - Three check types (issuance, renewal, certificate) with typed comparison prompts and per-type document labels; batch mode; certificate volume flow (one policy, many COIs); sample check demo mode; failed checks never consume quota
 - Directive validation copy, signed-URL direct uploads, staged progress with ready emails and Slack/Teams notices
