@@ -30,8 +30,7 @@ export function CorrectionLetter({
       <p className="mt-1 text-sm text-ink/70">
         Drafts a request to the carrier from your confirmed findings:
         enumerated discrepancies, correction effective inception, written
-        confirmation requested. AI can make mistakes. Review and edit before
-        sending; it goes out under your name.
+        confirmation requested.
       </p>
 
       {letter ? (
@@ -42,6 +41,9 @@ export function CorrectionLetter({
             rows={14}
             className="mt-4 w-full rounded border border-line bg-paper p-3 font-mono text-sm"
           />
+          <p className="mt-3 text-sm text-ink/70">
+            AI can make mistakes. Review and edit before sending.
+          </p>
           <div className="mt-3 flex gap-3">
             <button
               type="button"
