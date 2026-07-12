@@ -165,6 +165,7 @@ export default async function AdminPage() {
               <th className="px-4 py-3 text-right font-semibold">Reminder h</th>
               <th className="px-4 py-3 font-semibold">Slack/Teams</th>
               <th className="px-4 py-3 font-semibold">Smart intake</th>
+              <th className="px-4 py-3 font-semibold">Audit</th>
             </tr>
           </thead>
           <tbody>
@@ -196,6 +197,11 @@ export default async function AdminPage() {
                       {a.smart_intake_enabled ? "on" : "off"}
                     </button>
                   </form>
+                </td>
+                <td className="px-4 py-2">
+                  <a href={`/api/admin/audit/${a.id}`} className="text-sm underline">
+                    Audit log (CSV)
+                  </a>
                 </td>
               </tr>
             ))}

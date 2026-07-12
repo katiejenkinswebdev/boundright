@@ -18,7 +18,7 @@ Policy discrepancy detection for independent commercial insurance agencies. A CS
 | Reports pile up unreviewed | Findings never become documented catches | Review queue with assignment, nav badge, "Next unreviewed" flow, configurable reminders |
 | A discrepancy is confirmed | The correction email forgets "effective inception" | One-click correction request letter, industry conventions built in |
 | The finding is wrong | False positives erode trust silently | Dismiss-with-reason feeds the accuracy dataset; source excerpts under every citation |
-| The CSR lives in Outlook / Slack | Uploading is one step too many | Email-in checks; per-client Slack/Teams webhooks with test notices |
+| The CSR lives in Slack/Teams | Nobody sees a report is ready | Per-client incoming webhooks with test notices |
 | The principal asks "was it worth it?" | Nobody remembers what was caught | Filterable dashboard (week to year or custom) + period report PDF matching the filter |
 | Renewal negotiations with carriers | No data on who issues wrong | Per-carrier confirmed-critical rates (managers+) |
 | A 20-person agency shares one login | No audit trail of who reviewed what | Roles (user / manager / admin / system_admin), invites, per-reviewer attribution |
@@ -30,7 +30,7 @@ Policy discrepancy detection for independent commercial insurance agencies. A CS
 ### Checks
 - **Smart intake (feature-flagged, system_admin enables per agency):** drop up to 30 unlabeled PDFs; a cheap classification pass identifies each document and proposes confidence-scored pairs (issuance/renewal/COI inferred); the human confirms before anything runs; orphans surfaced then deleted; staged files auto-removed in 48h
 - Archive tab on the Checks list: archived checks leave every working view (list, queue, badge, next-unreviewed) but keep counting in metrics, and restore in one click
-- Three check types (issuance, renewal, certificate) with typed comparison prompts and per-type document labels; batch mode; certificate volume flow (one policy, many COIs); email-in via per-agency tokenized address; sample check demo mode; failed checks never consume quota
+- Three check types (issuance, renewal, certificate) with typed comparison prompts and per-type document labels; batch mode; certificate volume flow (one policy, many COIs); sample check demo mode; failed checks never consume quota
 - Directive validation copy, signed-URL direct uploads, staged progress with ready emails and Slack/Teams notices
 
 ### AI pipeline
@@ -59,6 +59,10 @@ Policy discrepancy detection for independent commercial insurance agencies. A CS
 - Settings → Configuration (admins): ROI assumptions, scoring thresholds, reminder timing
 - In-app feedback widget (incl. "a finding was wrong") stored first-party; getting-started checklist for new agencies
 - /ai plain-language AI transparency page; prompt-version drift monitoring in the ops console; prompt rollback runbook below
+
+### Audit trail
+- Append-only check_audit table (no update/delete grants): ingestion with source and documents, processing start/failure, initial results with severity counts and engine version, every confirm/dismiss with reasons, assignment, mark-reviewed, letter drafts, exports, archive/restore, deletion — each with actor and UTC timestamp
+- System admin exports a per-client audit log CSV from the ops console (the export itself is logged)
 
 ### Billing, ops, platform
 - Stripe trial/checkout/portal/webhooks with honest caps and no overage billing; operator console (agencies, config, AI cost, failures, drift, feedback); cost guardrails; crons (period reset, monthly reports, deletion verification, review reminders, weekly ops digest); Sentry with PII scrubbing; security headers; RLS everywhere; WCAG AA
@@ -147,6 +151,7 @@ Suites: RLS isolation (14 checks), onboarding flow (10), pipeline + deletion + f
 
 - [ ] Report verification endpoint (`/verify/[id]`) + QR on the PDF; IBM Plex embedding in PDFs
 - [ ] Inline editing of client settings from the ops console (logged, on-behalf-of)
+- [ ] Email-in checks (endpoint built at /api/inbound but dormant behind EMAIL_INTAKE_ENABLED=1; validating demand with users first)
 - [ ] Correction tracking (requested → corrected → verified by re-check); renewal radar; CSV export; client-facing summary letter
 - [ ] Golden eval set expanded with real redacted documents; dismiss reasons fed back into prompts; published accuracy stats on /ai
 - [ ] AMS integrations (HawkSoft/EZLynx first), SSO, public API; self-hosted PostHog only if deeper analytics is ever needed

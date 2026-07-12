@@ -58,10 +58,7 @@ export default async function SettingsPage() {
 
         {admin && (
         <Section title="Integrations">
-          <IntegrationsSection
-            webhookUrl={agency.notify_webhook_url}
-            inboundToken={agency.inbound_token}
-          />
+          <IntegrationsSection webhookUrl={agency.notify_webhook_url} />
         </Section>
         )}
 

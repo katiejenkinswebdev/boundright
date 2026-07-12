@@ -2,12 +2,14 @@
 
 import { revalidatePath } from "next/cache";
 import { requireProfile } from "@/lib/auth";
+import { auditLog } from "@/lib/audit";
 
 export type DeleteResult = { ok: true } | { ok: false; message: string };
 
 /** Deletes a check; findings cascade, dashboard stats adjust automatically. */
 export async function deleteCheck(checkId: string): Promise<DeleteResult> {
-  const { supabase } = await requireProfile();
+  const { supabase, profile, agency } = await requireProfile();
+  const { data: pre } = await supabase.from("checks").select("label").eq("id", checkId).maybeSingle();
   const { data, error } = await supabase
     .from("checks")
     .delete()
@@ -16,6 +18,7 @@ export async function deleteCheck(checkId: string): Promise<DeleteResult> {
   if (error || !data || data.length === 0) {
     return { ok: false, message: "Couldn't delete that check. Try again." };
   }
+  await auditLog({ agencyId: agency.id, checkId, checkLabel: pre?.label, userId: profile.user_id, action: "deleted" });
   revalidatePath("/checks");
   revalidatePath("/dashboard");
   return { ok: true };
@@ -26,7 +29,7 @@ export async function setCheckArchived(
   checkId: string,
   archived: boolean
 ): Promise<DeleteResult> {
-  const { supabase } = await requireProfile();
+  const { supabase, profile, agency } = await requireProfile();
   const { data, error } = await supabase
     .from("checks")
     .update({ archived_at: archived ? new Date().toISOString() : null })
@@ -35,6 +38,7 @@ export async function setCheckArchived(
   if (error || !data || data.length === 0) {
     return { ok: false, message: "Couldn't update that check. Try again." };
   }
+  await auditLog({ agencyId: agency.id, checkId, userId: profile.user_id, action: archived ? "archived" : "restored" });
   revalidatePath("/checks");
   revalidatePath("/dashboard");
   return { ok: true };

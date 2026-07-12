@@ -101,10 +101,8 @@ export function TeamSection({
 
 export function IntegrationsSection({
   webhookUrl,
-  inboundToken,
 }: {
   webhookUrl: string | null;
-  inboundToken: string;
 }) {
   const [state, action, pending] = useActionState(updateIntegrations, settingsInitial);
   const [testState, testAction, testPending] = useActionState(sendTestNotice, settingsInitial);
@@ -146,11 +144,9 @@ export function IntegrationsSection({
 
       <div className="border-t border-line pt-4">
         <p className={labelClass}>Email-in checks</p>
-        <p className="font-mono text-sm break-all">checks+{inboundToken}@in.boundright.app</p>
-        <p className="mt-1 text-sm text-ink/60">
-          Forward a carrier email with the proposal and issued policy attached
-          (2 PDFs) and the check starts itself. Treat this address like a
-          password; email help@boundright.app to rotate it.
+        <p className="text-sm text-ink/60">
+          Coming soon: forward a carrier email with both PDFs attached and the
+          check starts itself. Tell us via Send feedback if you&apos;d use it.
         </p>
       </div>
     </div>

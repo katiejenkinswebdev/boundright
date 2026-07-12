@@ -1,6 +1,7 @@
 import { createServerSupabase } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { buildReportPdf, type ReportFinding } from "@/lib/report-pdf";
+import { auditLog } from "@/lib/audit";
 
 /** Exports the reviewed check as a branded PDF. RLS scopes access. */
 export async function GET(
@@ -117,6 +118,7 @@ export async function GET(
       event_name: "report_exported",
       metadata: { check_id: id },
     });
+    await auditLog({ agencyId: check.agency_id, checkId: id, checkLabel: check.label, userId: user.id, action: "report_exported" });
   }
 
   // Naming convention: BoundRight - {Type} - {Client} - {ISO date(s)}.pdf

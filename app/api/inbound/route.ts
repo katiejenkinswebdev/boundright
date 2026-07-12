@@ -13,6 +13,10 @@ import { runCheck, docPaths } from "@/lib/pipeline/run";
  * The first two PDF attachments become document A and B of an issuance check.
  */
 export async function POST(request: Request) {
+  // Roadmap feature: endpoint stays dormant until explicitly enabled.
+  if (process.env.EMAIL_INTAKE_ENABLED !== "1") {
+    return NextResponse.json({ error: "email intake is not enabled" }, { status: 503 });
+  }
   const admin = createAdminClient();
   if (!admin) return NextResponse.json({ error: "not configured" }, { status: 503 });
 

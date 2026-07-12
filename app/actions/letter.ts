@@ -5,6 +5,7 @@ import { requireProfile } from "@/lib/auth";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { draftCorrectionLetter, emptyUsage } from "@/lib/pipeline/claude";
 import type { PipelineFinding } from "@/lib/pipeline/schemas";
+import { auditLog } from "@/lib/audit";
 
 export type LetterResult = { ok: true; letter: string } | { ok: false; message: string };
 
@@ -60,6 +61,7 @@ export async function generateCorrectionLetter(checkId: string): Promise<LetterR
         metadata: { check_id: checkId, cost_cents: Math.round(usage.costCents) },
       });
     }
+    await auditLog({ agencyId: agency.id, checkId, checkLabel: check.label, userId: profile.user_id, action: "correction_letter_drafted" });
     revalidatePath(`/checks/${checkId}`);
     return { ok: true, letter };
   } catch {

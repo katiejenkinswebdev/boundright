@@ -4,6 +4,7 @@ import { after } from "next/server";
 import { requireProfile } from "@/lib/auth";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { runCheck, docPaths } from "@/lib/pipeline/run";
+import { auditLog } from "@/lib/audit";
 
 const POLICY_TYPES = ["GL", "Property", "WC", "Auto", "Umbrella", "Package", "Other"];
 const CHECK_TYPES = ["issuance", "renewal", "coi"];
@@ -134,6 +135,14 @@ export async function createCheck(formData: FormData): Promise<CreateCheckResult
     user_id: profile.user_id,
     event_name: "check_created",
     metadata: { check_id: check.id, policy_type: policyType },
+  });
+  await auditLog({
+    agencyId: agency.id,
+    checkId: check.id,
+    checkLabel: label,
+    userId: profile.user_id,
+    action: "ingested",
+    detail: { source: "manual", check_type: checkType, doc_a: docAName, doc_b: docBName },
   });
 
   return {

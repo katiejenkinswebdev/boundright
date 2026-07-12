@@ -8,6 +8,7 @@ import { ingestPdf } from "@/lib/pipeline/pdf";
 import { classifyDocument, emptyUsage } from "@/lib/pipeline/claude";
 import { runCheck, docPaths } from "@/lib/pipeline/run";
 import { pairDocuments, type ClassifiedDoc, type ProposedPair } from "@/lib/intake";
+import { auditLog } from "@/lib/audit";
 
 const MAX_INTAKE_FILES = 30;
 
@@ -183,6 +184,14 @@ export async function runIntakePairs(
       }
     }
     checkIds.push(check.id);
+    await auditLog({
+      agencyId: agency.id,
+      checkId: check.id,
+      checkLabel: p.label,
+      userId: profile.user_id,
+      action: "ingested",
+      detail: { source: "smart_intake", pair_confirmed_by: profile.user_id, doc_a: p.aFilename, doc_b: p.bFilename },
+    });
   }
 
   if (discardPaths.length > 0) {

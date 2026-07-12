@@ -15,6 +15,7 @@ import {
 import type { PipelineFinding } from "./schemas";
 import { sendCheckReadyEmail } from "@/lib/email";
 import { notifyAgency } from "@/lib/notify";
+import { auditLog } from "@/lib/audit";
 
 /**
  * A short source excerpt around the cited value: the citation preview that
@@ -74,6 +75,8 @@ export async function runCheck(checkId: string): Promise<void> {
       .from("checks")
       .update({ status: "failed", failure_reason: reason })
       .eq("id", checkId);
+    const { data: c2 } = await admin.from("checks").select("agency_id, label").eq("id", checkId).single();
+    if (c2) await auditLog({ agencyId: c2.agency_id, checkId, checkLabel: c2.label, action: "processing_failed", detail: { reason } });
   };
 
   try {
@@ -85,6 +88,7 @@ export async function runCheck(checkId: string): Promise<void> {
     if (!check) return;
 
     await admin.from("checks").update({ status: "extracting" }).eq("id", checkId);
+    await auditLog({ agencyId: check.agency_id, checkId, checkLabel: check.label, action: "processing_started" });
 
     // --- Ingest both documents ---
     const docs: Record<DocSide, { bytes: Uint8Array; ingest: PdfIngestResult }> =
@@ -230,6 +234,20 @@ export async function runCheck(checkId: string): Promise<void> {
       });
     }
 
+    await auditLog({
+      agencyId: check.agency_id,
+      checkId,
+      checkLabel: check.label,
+      action: "results_ready",
+      detail: {
+        findings: findings.length,
+        critical: findings.filter((x) => x.severity === "critical" && x.status !== "match").length,
+        moderate: findings.filter((x) => x.severity === "moderate" && x.status !== "match").length,
+        minor: findings.filter((x) => x.severity === "minor" && x.status !== "match").length,
+        model: MODEL,
+        prompt_version: promptVersionFor(checkType),
+      },
+    });
     await sendCheckReadyEmail(check.agency_id, checkId, check.label);
     await notifyAgency(
       check.agency_id,

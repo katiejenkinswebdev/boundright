@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { requireProfile } from "@/lib/auth";
+import { auditLog } from "@/lib/audit";
 
 export type ReviewResult = { ok: true } | { ok: false; message: string };
 
@@ -36,6 +37,14 @@ export async function setFindingReview(
     .select("id, check_id")
     .maybeSingle();
   if (error || !data) return { ok: false, message: "Couldn't save that. Try again." };
+  const { profile: p2, agency: a2 } = await requireProfile();
+  await auditLog({
+    agencyId: a2.id,
+    checkId: data.check_id,
+    userId: p2.user_id,
+    action: action === "confirmed" ? "finding_confirmed" : "finding_dismissed",
+    detail: { finding_id: findingId, dismiss_reason: reason ?? undefined },
+  });
   revalidatePath(`/checks/${data.check_id}`);
   return { ok: true };
 }
@@ -75,6 +84,8 @@ export async function markReviewed(checkId: string): Promise<ReviewResult> {
     return { ok: false, message: "Couldn't mark this check reviewed. Try again." };
   }
 
+  const { profile: p3, agency: a3 } = await requireProfile();
+  await auditLog({ agencyId: a3.id, checkId, userId: p3.user_id, action: "marked_reviewed" });
   revalidatePath(`/checks/${checkId}`);
   return { ok: true };
 }
