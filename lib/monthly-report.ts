@@ -1,5 +1,5 @@
 import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
-import { drawBrandFooter, PDF_MARGIN } from "./pdf-brand";
+import { drawBrandFooter, drawSealLockup, PDF_MARGIN } from "./pdf-brand";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 const INK = rgb(0.106, 0.165, 0.255);
@@ -144,6 +144,7 @@ export async function buildMonthlyReportPdf(
     if (line) flush();
   };
 
+  drawSealLockup(page, { x: 612 - M - 96, y: 792 - M - 20, bold, regular: sans, mono: sans });
   text(agencyName, 18, { font: bold });
   text(`Policy check report · ${n.monthLabel}`, 12, { color: MUTED });
   text(`Period: ${n.periodDates}`, 9, { color: MUTED });

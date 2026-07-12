@@ -2,7 +2,7 @@
 // hands to whoever asks "where does our data go?" during due diligence.
 // Usage: npx tsx scripts/generate-one-pager.ts   -> public/boundright-data-processing.pdf
 import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
-import { drawBrandFooter, drawWordmark } from "../lib/pdf-brand";
+import { drawBrandFooter, drawSealLockup, drawWordmark } from "../lib/pdf-brand";
 import fs from "node:fs";
 import path from "node:path";
 
@@ -55,8 +55,8 @@ function section(title: string, items: string[]) {
 }
 
 // Header
-drawWordmark(page, { x: M, y: y - 18, size: 18, bold, regular: sans });
-y -= 24;
+drawSealLockup(page, { x: M, y: y - 22, bold, regular: sans, mono: sans });
+y -= 30;
 text("Data processing overview · for agency due diligence · v1.0, July 2026", 9, {
   color: MUTED,
   gap: 14,

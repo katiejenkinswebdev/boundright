@@ -20,6 +20,33 @@ export function drawWordmark(
 }
 
 /**
+ * The BR monogram seal + wordmark lockup for report headers. Level (not
+ * tilted) for print crispness; the tilted stamp remains reserved for
+ * verified documents.
+ */
+export function drawSealLockup(
+  page: PDFPage,
+  opts: { x: number; y: number; bold: PDFFont; regular: PDFFont; mono: PDFFont }
+): void {
+  const { x, y, bold, regular, mono } = opts;
+  const size = 22;
+  // Rounded-square seal border.
+  page.drawSvgPath(
+    "M 5 0 h 12 a 5 5 0 0 1 5 5 v 12 a 5 5 0 0 1 -5 5 h -12 a 5 5 0 0 1 -5 -5 v -5 -7 a 5 5 0 0 1 5 -5 z",
+    { x, y: y + size, borderColor: PDF_INK, borderWidth: 1.6, color: undefined }
+  );
+  const brW = mono.widthOfTextAtSize("BR", 8.5);
+  page.drawText("BR", {
+    x: x + (size - brW) / 2,
+    y: y + 7,
+    size: 8.5,
+    font: mono,
+    color: PDF_INK,
+  });
+  drawWordmark(page, { x: x + size + 7, y: y + 6, size: 12, bold, regular });
+}
+
+/**
  * The standard report footer: wordmark + tagline on the left, an optional
  * right-aligned tag (report id, pagination). Returns nothing; draws at the
  * bottom of the given page. Keep every report on this footer.
