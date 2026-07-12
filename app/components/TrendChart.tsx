@@ -175,6 +175,15 @@ export function TrendChart({ trend }: { trend: MonthPoint[] }) {
               <p>
                 <span style={{ color: CONFIRMED_COLOR }}>■</span> {trend[hover].confirmed} confirmed
               </p>
+              {trend[hover].confirmed > 0 && (
+                <p className="mt-1 border-t border-line pt-1 font-mono">
+                  <span className="text-flag">{trend[hover].critical} critical</span>
+                  {" · "}
+                  <span className="text-caution">{trend[hover].moderate} moderate</span>
+                  {" · "}
+                  <span className="text-ink/60">{trend[hover].minor} minor</span>
+                </p>
+              )}
             </div>
           )}
         </div>

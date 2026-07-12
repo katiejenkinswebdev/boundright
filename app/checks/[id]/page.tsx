@@ -7,6 +7,7 @@ import { FindingCard, Badge, type FindingRow } from "./FindingCard";
 import { ReviewFooter } from "./ReviewFooter";
 import { CorrectionLetter } from "./CorrectionLetter";
 import { InfoTip } from "@/app/components/InfoTip";
+import { SEVERITY_DEF } from "@/lib/severity";
 import { AssignSelect } from "./AssignSelect";
 import { AiRating } from "@/app/components/AiRating";
 import { BoundRightStamp } from "@/app/components/brand";
@@ -175,16 +176,13 @@ async function ReportBody({
         <Badge tone="verify">{matches.length} Matches</Badge>
         <InfoTip label="What the severities mean">
           <span className="block">
-            <strong className="text-flag">Critical</strong> — wrong named
-            insured, limits, deductibles, dates, or a missing form or
-            endorsement.
+            <strong className="text-flag">Critical</strong> — {SEVERITY_DEF.critical}
           </span>
           <span className="mt-2 block">
-            <strong className="text-caution">Moderate</strong> — premium
-            variance over your threshold, form edition-date changes.
+            <strong className="text-caution">Moderate</strong> — {SEVERITY_DEF.moderate}
           </span>
           <span className="mt-2 block">
-            <strong>Minor</strong> — formatting and small premium variance.
+            <strong>Minor</strong> — {SEVERITY_DEF.minor}
           </span>
           <span className="mt-2 block">
             <strong>Confidence</strong> — how sure the extraction is. Low
@@ -201,6 +199,7 @@ async function ReportBody({
           <section key={sev}>
             <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-ink/60">
               {sev} findings
+              <InfoTip label={`What counts as ${sev}`}>{SEVERITY_DEF[sev]}</InfoTip>
             </h2>
             <ul className="space-y-4">
               {group.map((f) => (

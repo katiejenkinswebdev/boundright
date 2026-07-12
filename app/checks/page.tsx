@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { requireProfile } from "@/lib/auth";
+import { SEVERITY_DEF } from "@/lib/severity";
 import { canSeeAnalytics } from "@/lib/roles";
 import { cookies } from "next/headers";
 import { PageSizeSelect } from "./PageSizeSelect";
@@ -327,14 +328,17 @@ function SeverityPills({
   if (!done) return <span className="text-ink/40">—</span>;
   const counts = sev ?? { critical: 0, moderate: 0, minor: 0 };
   const pills = [
-    { n: counts.critical, word: "critical", cls: "border-flag text-flag" },
-    { n: counts.moderate, word: "moderate", cls: "border-caution text-caution" },
-    { n: counts.minor, word: "minor", cls: "border-line text-ink/60" },
+    { n: counts.critical, word: "critical" as const, cls: "border-flag text-flag" },
+    { n: counts.moderate, word: "moderate" as const, cls: "border-caution text-caution" },
+    { n: counts.minor, word: "minor" as const, cls: "border-line text-ink/60" },
   ].filter((p) => p.n > 0);
 
   if (pills.length === 0) {
     return (
-      <span className="inline-block rounded-full border border-verify px-2 py-0.5 font-mono text-xs text-verify">
+      <span
+        title="Every extracted field matched between the two documents."
+        className="inline-block cursor-help rounded-full border border-verify px-2 py-0.5 font-mono text-xs text-verify"
+      >
         all matched
       </span>
     );
@@ -344,7 +348,8 @@ function SeverityPills({
       {pills.map((p) => (
         <span
           key={p.word}
-          className={`inline-block whitespace-nowrap rounded-full border px-2 py-0.5 font-mono text-xs ${p.cls}`}
+          title={`${SEVERITY_DEF[p.word]} Counts every ${p.word} finding on the check, before review decisions.`}
+          className={`inline-block cursor-help whitespace-nowrap rounded-full border px-2 py-0.5 font-mono text-xs ${p.cls}`}
         >
           {p.n} {p.word}
         </span>

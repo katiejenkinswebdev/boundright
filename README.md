@@ -54,7 +54,8 @@ Policy discrepancy detection for independent commercial insurance agencies. A CS
 ### Dashboard & analytics
 - Time-range filter (week / month / 3m / 6m / year / custom) driving all four KPI tiles, the adaptive-bucket trend chart (daily/weekly/monthly, non-overlapping axis labels, table view with severity breakdown), and carrier accuracy (managers+)
 - Carrier issuance accuracy shows a trend per carrier (worsening / improving / steady) comparing the selected range's confirmed-critical rate to the same-length window before it; trends only render with at least 5 checks in both windows
-- Every metric shows its formula with the agency's own inputs on hover; only reviewer-confirmed findings count anywhere
+- Every metric shows its formula with the agency's own inputs on hover; only reviewer-confirmed findings count anywhere; the trend chart's hover card breaks confirmed discrepancies down by severity
+- Severity definitions live in `lib/severity.ts` and feed every tooltip: the checks-list finding pills, the report summary explainer, and each severity group heading on the report
 
 ### Teams & roles
 - user → manager (adds analytics) → admin (adds configuration, team, integrations, billing, deletion) → system_admin (operator; database-granted only)
