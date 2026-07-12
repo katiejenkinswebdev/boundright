@@ -150,6 +150,9 @@ async function ReportBody({
         <Badge tone="caution">{bySeverity("moderate").length} Moderate</Badge>
         <Badge tone="muted">{bySeverity("minor").length} Minor</Badge>
         <Badge tone="verify">{matches.length} Matches</Badge>
+        <span className="self-center font-mono text-xs text-ink/50" title="Sparkle marks AI output; badges without it are human decisions">
+          ✦ = AI · decisions are human
+        </span>
         <InfoTip label="What the severities mean">
           Critical: wrong named insured, limits, deductibles, dates, or a
           missing form/endorsement. Moderate: premium variance over your

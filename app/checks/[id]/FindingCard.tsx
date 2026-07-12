@@ -80,6 +80,15 @@ export function FindingCard({ finding }: { finding: FindingRow }) {
           </span>
         </div>
         <div className="flex items-center gap-2">
+          {!finding.reviewer_action && (
+            <span
+              title="AI finding, awaiting a human decision"
+              aria-label="AI finding, awaiting a human decision"
+              className="font-mono text-xs text-ink/50"
+            >
+              ✦ AI
+            </span>
+          )}
           {finding.severity && <Badge tone={severityTone}>{finding.severity}</Badge>}
           {finding.reviewer_action && (
             <Badge tone={finding.reviewer_action === "confirmed" ? "verify" : "muted"}>

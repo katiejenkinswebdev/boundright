@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { requireProfile } from "@/lib/auth";
+import { canSeeAnalytics } from "@/lib/roles";
 import { AppShell } from "@/app/components/AppShell";
 import { DeleteCheckButton } from "./DeleteCheckButton";
 import { ArchiveCheckButton } from "./ArchiveCheckButton";
@@ -173,10 +174,10 @@ export default async function ChecksPage({
           {q ? `No checks match “${q}”.` : "No checks yet. Run your first one."}
         </div>
       ) : (
-        <div className="overflow-x-auto rounded-lg border border-line bg-card">
+        <div className="max-h-[70vh] overflow-x-auto overflow-y-auto rounded-lg border border-line bg-card">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-line text-left">
+              <tr className="sticky top-0 z-10 border-b border-line bg-card text-left">
                 {(
                   [
                     ["label", "Client / account"],
@@ -253,7 +254,7 @@ export default async function ChecksPage({
                         checkId={c.id}
                         archived={statusFilter === "archived"}
                       />
-                      <DeleteCheckButton checkId={c.id} label={c.label} />
+                      {canSeeAnalytics(profile) && <DeleteCheckButton checkId={c.id} label={c.label} />}
                     </td>
                   </tr>
                 );

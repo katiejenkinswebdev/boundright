@@ -165,7 +165,7 @@ export function SmartIntake() {
                         : "border-flag text-flag"
                   }`}
                 >
-                  {p.confidence} confidence
+                  ✦ {p.confidence} confidence
                 </span>
               </span>
               <span className="mt-1 block font-mono text-xs text-ink/60">

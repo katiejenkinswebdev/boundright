@@ -17,7 +17,7 @@ export function CorrectionLetter({
 
   return (
     <section className="rounded-lg border border-line bg-card p-6">
-      <h2 className="font-semibold">Correction request</h2>
+      <h2 className="font-semibold">Correction request <span className="ml-1 font-mono text-xs font-normal text-ink/50" title="AI-drafted; you edit and send it">✦ AI draft</span></h2>
       <p className="mt-1 text-sm text-ink/70">
         Drafts a request to the carrier from your confirmed findings:
         enumerated discrepancies, correction effective inception, written

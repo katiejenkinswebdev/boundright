@@ -67,6 +67,34 @@ Policy discrepancy detection for independent commercial insurance agencies. A CS
 ### Billing, ops, platform
 - Stripe trial/checkout/portal/webhooks with honest caps and no overage billing; operator console (agencies, config, AI cost, failures, drift, feedback); cost guardrails; crons (period reset, monthly reports, deletion verification, review reminders, weekly ops digest); Sentry with PII scrubbing; security headers; RLS everywhere; WCAG AA
 
+## Architecture
+
+Next.js App Router monolith on Vercel. Server components read through a cookie-backed Supabase client (RLS applies to every query); mutations are server actions; the AI pipeline runs post-response via `after()`. Postgres (15 migrations) holds agencies → profiles/checks/findings with per-agency row-level security enforced in the database, an append-only `check_audit` table, and first-party `events`. Documents flow: signed-URL upload to a private bucket → text extraction (vision fallback for scans) → versioned prompts against Claude with structured outputs → findings persisted with excerpts and SHA-256 fingerprints → files deleted (nightly-verified). PDFs are generated with pdf-lib through a shared brand kit. Crons (Vercel): period reset, monthly reports, deletion verification, review reminders, retention, weekly ops. Stub mode (`CLAUDE_STUB_DIR`) swaps the model for fixtures so the entire product runs keyless in dev/CI; the QA gate (lint, typecheck, build, 5 E2E suites) runs on every push locally and in Actions.
+
+### Permissions matrix
+
+| Capability | user | manager | admin | system_admin |
+|---|---|---|---|---|
+| Run checks, review findings, export reports, archive | ✓ | ✓ | ✓ | ✓ |
+| Delete checks | — | ✓ | ✓ | ✓ |
+| Dashboard analytics, carrier rates, period reports | — | ✓ | ✓ | ✓ |
+| Configuration, team, integrations, billing, danger zone | — | — | ✓ | ✓ |
+| Ops console, feature flags, client config view, audit log export | — | — | — | ✓ |
+
+Suggested future restrictions (not yet enforced): mark-reviewed limited to licensed reviewers (a flag on the profile), correction-letter sending workflows, and role-change notifications to all admins.
+
+### AI transparency in the UI
+
+AI output is marked with a sparkle (✦): unreviewed findings carry "✦ AI" until a human decides, smart-intake pair confidence is sparkled, and the correction letter is labeled "✦ AI draft". Anything without a sparkle — confirm/dismiss badges, the stamp, reviewer notes — is a human decision. The report page carries the legend ("✦ = AI · decisions are human"), and `/ai` explains the whole system in plain language. Human-in-the-loop gates: finding decisions, mark-reviewed, smart-intake pair confirmation, and letter sending are always human.
+
+### Compliance checklist
+
+Built: append-only audit trail with CSV export; RLS isolation (tested); document deletion with nightly verification; 90-day post-cancellation retention cron with two warning emails; excerpt retention disclosed; AI decisions human-gated and marked; per-check engine/prompt version. Outstanding (attorney/ops): MFA for admins (Supabase TOTP), countersigned DPAs with subprocessors, breach-notification runbook, audit-log retention policy (recommend 7 years), audit coverage begins at feature launch (note in ToS).
+
+### Browser support
+
+Browser-based, desktop-first: latest Chrome, Firefox, Safari, and Edge. Tablet width works; a dedicated mobile layout is on the roadmap pending user demand.
+
 ## Stack
 
 | Layer | Choice |
@@ -152,6 +180,7 @@ Suites: RLS isolation (14 checks), onboarding flow (10), pipeline + deletion + f
 - [ ] Report verification endpoint (`/verify/[id]`) + QR on the PDF; IBM Plex embedding in PDFs
 - [ ] Inline editing of client settings from the ops console (logged, on-behalf-of)
 - [ ] Email-in checks (endpoint built at /api/inbound but dormant behind EMAIL_INTAKE_ENABLED=1; validating demand with users first)
+- [ ] Mobile layout (verify need with users first); MFA for admin roles
 - [ ] Correction tracking (requested → corrected → verified by re-check); renewal radar; CSV export; client-facing summary letter
 - [ ] Golden eval set expanded with real redacted documents; dismiss reasons fed back into prompts; published accuracy stats on /ai
 - [ ] AMS integrations (HawkSoft/EZLynx first), SSO, public API; self-hosted PostHog only if deeper analytics is ever needed

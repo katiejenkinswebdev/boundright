@@ -3,12 +3,17 @@
 import { revalidatePath } from "next/cache";
 import { requireProfile } from "@/lib/auth";
 import { auditLog } from "@/lib/audit";
+import { canSeeAnalytics } from "@/lib/roles";
 
 export type DeleteResult = { ok: true } | { ok: false; message: string };
 
 /** Deletes a check; findings cascade, dashboard stats adjust automatically. */
 export async function deleteCheck(checkId: string): Promise<DeleteResult> {
   const { supabase, profile, agency } = await requireProfile();
+  // Deletion is destructive and adjusts metrics: managers and above only.
+  if (!canSeeAnalytics(profile)) {
+    return { ok: false, message: "Ask a manager or admin to delete checks." };
+  }
   const { data: pre } = await supabase.from("checks").select("label").eq("id", checkId).maybeSingle();
   const { data, error } = await supabase
     .from("checks")
