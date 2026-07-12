@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { track } from "@/lib/analytics";
 import { deleteCheck } from "@/app/actions/manage-checks";
 
 export function DeleteCheckButton({ checkId, label }: { checkId: string; label: string }) {
@@ -28,7 +29,12 @@ export function DeleteCheckButton({ checkId, label }: { checkId: string; label: 
       <button
         type="button"
         disabled={pending}
-        onClick={() => startTransition(async () => void (await deleteCheck(checkId)))}
+        onClick={() =>
+          startTransition(async () => {
+            await deleteCheck(checkId);
+            track("check_deleted");
+          })
+        }
         className="font-semibold text-flag underline disabled:opacity-50"
       >
         {pending ? "Deleting…" : "Yes, delete"}

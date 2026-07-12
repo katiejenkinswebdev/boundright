@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { rateAiOutput } from "@/app/actions/ai-feedback";
+import { track } from "@/lib/analytics";
 
 /**
  * Thumbs up/down on an AI output. One tap, optional note on a thumbs down.
@@ -32,6 +33,7 @@ export function AiRating({
   const send = (rating: 1 | -1, withNote?: string) =>
     startTransition(async () => {
       await rateAiOutput({ target, rating, checkId, note: withNote });
+      track("ai_rated", { target, rating });
       setState("done");
     });
 

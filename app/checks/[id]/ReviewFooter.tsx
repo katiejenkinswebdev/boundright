@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { markReviewed } from "@/app/actions/review";
+import { track } from "@/lib/analytics";
 import Link from "next/link";
 
 export function ReviewFooter({
@@ -40,6 +41,7 @@ export function ReviewFooter({
               startTransition(async () => {
                 const result = await markReviewed(checkId);
                 if (!result.ok) setError(result.message);
+                else track("check_marked_reviewed");
               });
             }}
             className="rounded bg-ink px-6 py-3 font-semibold text-paper hover:bg-ink/90 disabled:opacity-50"
@@ -52,6 +54,7 @@ export function ReviewFooter({
           <span className="flex flex-wrap items-center gap-3">
             <a
               href={`/api/checks/${checkId}/report`}
+              onClick={() => track("report_exported")}
               className="rounded bg-ink px-6 py-3 font-semibold text-paper hover:bg-ink/90"
             >
               Export report (PDF)

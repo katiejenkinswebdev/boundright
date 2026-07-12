@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
+import { track } from "@/lib/analytics";
 import { runSampleCheck, type SampleCheckState } from "@/app/actions/sample-check";
 
 const initial: SampleCheckState = { status: "idle", message: "" };
@@ -8,7 +9,7 @@ const initial: SampleCheckState = { status: "idle", message: "" };
 export function SampleCheckButton() {
   const [state, action, pending] = useActionState(runSampleCheck, initial);
   return (
-    <form action={action} className="flex flex-col items-center">
+    <form action={action} onSubmit={() => track("sample_check_started")} className="flex flex-col items-center">
       <button
         type="submit"
         disabled={pending}

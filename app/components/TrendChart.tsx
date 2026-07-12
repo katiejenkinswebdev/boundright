@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import type { MonthPoint } from "@/lib/stats";
+import { HoverTip } from "@/app/components/InfoTip";
+import { SEVERITY_DEF } from "@/lib/severity";
 
 // Chart series colors — brand-adjacent hues validated for lightness band,
 // chroma floor, CVD separation (ΔE 58 deutan / 24 tritan) and 3:1 contrast
@@ -71,9 +73,21 @@ export function TrendChart({ trend }: { trend: MonthPoint[] }) {
               <th className="py-1.5 font-semibold">Month</th>
               <th className="py-1.5 text-right font-semibold">Checks run</th>
               <th className="py-1.5 text-right font-semibold">Discrepancies</th>
-              <th className="py-1.5 text-right font-semibold text-flag">Critical</th>
-              <th className="py-1.5 text-right font-semibold text-caution">Moderate</th>
-              <th className="py-1.5 text-right font-semibold text-ink/60">Minor</th>
+              <th className="py-1.5 text-right font-semibold text-flag">
+                <HoverTip tip={SEVERITY_DEF.critical}>
+                  <span className="cursor-help">Critical</span>
+                </HoverTip>
+              </th>
+              <th className="py-1.5 text-right font-semibold text-caution">
+                <HoverTip tip={SEVERITY_DEF.moderate}>
+                  <span className="cursor-help">Moderate</span>
+                </HoverTip>
+              </th>
+              <th className="py-1.5 text-right font-semibold text-ink/60">
+                <HoverTip tip={SEVERITY_DEF.minor}>
+                  <span className="cursor-help">Minor</span>
+                </HoverTip>
+              </th>
             </tr>
           </thead>
           <tbody>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { track } from "@/lib/analytics";
 import { generateRangeReport } from "@/app/actions/monthly-report";
 
 /** Exports the currently filtered window as a one-page PDF. */
@@ -21,6 +22,7 @@ export function MonthlyReportButton({
           setError(null);
           startTransition(async () => {
             const result = await generateRangeReport(rangeParams);
+            track("period_report_generated");
             if (!result.ok) {
               setError(result.message);
               return;

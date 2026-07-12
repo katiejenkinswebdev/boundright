@@ -1,6 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { track } from "@/lib/analytics";
 
 /** Rows-per-page, remembered per user via cookie. */
 export function PageSizeSelect({ value, baseHref }: { value: number; baseHref: string }) {
@@ -12,6 +13,7 @@ export function PageSizeSelect({ value, baseHref }: { value: number; baseHref: s
         value={value}
         onChange={(e) => {
           document.cookie = `br_rows=${e.target.value}; path=/; max-age=31536000; samesite=lax`;
+          track("table_page_size_changed", { rows: Number(e.target.value) });
           const url = new URL(baseHref, window.location.origin);
           url.searchParams.delete("page");
           router.push(url.pathname + url.search);

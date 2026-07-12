@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
+import { track } from "@/lib/analytics";
 import { useRouter } from "next/navigation";
 import { createCheck, startCheck } from "@/app/actions/checks";
 import { inputClass, labelClass, primaryButtonClass } from "@/app/components/ui";
@@ -161,6 +162,7 @@ export function NewCheckForm() {
         setPhase("idle");
         return;
       }
+      track("check_created");
       router.push(`/checks/${created.checkId}`);
     } catch {
       setErrors((prev) => ({

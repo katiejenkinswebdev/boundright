@@ -2,6 +2,9 @@
 
 import { useState, useTransition } from "react";
 import { setFindingReview } from "@/app/actions/review";
+import { HoverTip } from "@/app/components/InfoTip";
+import { SEVERITY_DEF, TERM_DEF, confidenceTip } from "@/lib/severity";
+import { track } from "@/lib/analytics";
 
 export type FindingRow = {
   id: string;
@@ -27,9 +30,11 @@ export type FindingRow = {
  */
 export function Badge({
   tone,
+  tip,
   children,
 }: {
   tone: "flag" | "caution" | "verify" | "muted";
+  tip?: React.ReactNode;
   children: React.ReactNode;
 }) {
   const cls = {
@@ -38,13 +43,16 @@ export function Badge({
     verify: "border-verify text-verify",
     muted: "border-line text-ink/60",
   }[tone];
-  return (
+  const badge = (
     <span
-      className={`inline-flex items-center rounded border px-2.5 py-1.5 font-mono text-xs font-medium uppercase leading-none tracking-wide ${cls}`}
+      className={`inline-flex items-center rounded border px-2.5 py-1.5 font-mono text-xs font-medium uppercase leading-none tracking-wide ${
+        tip ? "cursor-help" : ""
+      } ${cls}`}
     >
       {children}
     </span>
   );
+  return tip ? <HoverTip tip={tip}>{badge}</HoverTip> : badge;
 }
 
 export function FindingCard({ finding }: { finding: FindingRow }) {
@@ -60,6 +68,10 @@ export function FindingCard({ finding }: { finding: FindingRow }) {
     startTransition(async () => {
       const result = await setFindingReview(finding.id, action, note, reason);
       if (!result.ok) setError(result.message);
+      else track(action === "confirmed" ? "finding_confirmed" : "finding_dismissed", {
+        severity: finding.severity,
+        reason: reason ?? null,
+      });
     });
   };
 
@@ -81,29 +93,38 @@ export function FindingCard({ finding }: { finding: FindingRow }) {
         </div>
         <div className="flex items-center gap-2">
           {!finding.reviewer_action && (
-            <span
-              title="AI finding, awaiting a human decision"
-              aria-label="AI finding, awaiting a human decision"
-              className="font-mono text-xs text-ink/50"
-            >
-              ✦ AI
-            </span>
+            <HoverTip tip={TERM_DEF.ai}>
+              <span aria-label={TERM_DEF.ai} className="cursor-help font-mono text-xs text-ink/50">
+                ✦ AI
+              </span>
+            </HoverTip>
           )}
-          <span
-            title="How sure the extraction is. Low means verify against the source document."
-            className={`font-mono text-xs uppercase ${
-              finding.confidence === "low"
-                ? "text-flag"
-                : finding.confidence === "medium"
-                  ? "text-caution"
-                  : "text-ink/40"
-            }`}
-          >
-            {finding.confidence} confidence
-          </span>
-          {finding.severity && <Badge tone={severityTone}>{finding.severity}</Badge>}
+          <HoverTip tip={confidenceTip(finding.confidence)}>
+            <span
+              className={`cursor-help font-mono text-xs uppercase ${
+                finding.confidence === "low"
+                  ? "text-flag"
+                  : finding.confidence === "medium"
+                    ? "text-caution"
+                    : "text-ink/40"
+              }`}
+            >
+              {finding.confidence} confidence
+            </span>
+          </HoverTip>
+          {finding.severity && (
+            <Badge
+              tone={severityTone}
+              tip={SEVERITY_DEF[finding.severity as keyof typeof SEVERITY_DEF]}
+            >
+              {finding.severity}
+            </Badge>
+          )}
           {finding.reviewer_action && (
-            <Badge tone={finding.reviewer_action === "confirmed" ? "verify" : "muted"}>
+            <Badge
+              tone={finding.reviewer_action === "confirmed" ? "verify" : "muted"}
+              tip={TERM_DEF[finding.reviewer_action]}
+            >
               {finding.reviewer_action}
             </Badge>
           )}

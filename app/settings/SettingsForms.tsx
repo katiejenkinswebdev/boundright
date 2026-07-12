@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
+import { track } from "@/lib/analytics";
 import { PLANS } from "@/lib/pricing";
 import {
   updateProfile,
@@ -201,7 +202,7 @@ export function BillingSection({
           <Msg state={portalState} />
         </form>
       ) : (
-        <form action={checkoutAction} className="space-y-3">
+        <form action={checkoutAction} onSubmit={(e) => track("checkout_started", { plan: new FormData(e.currentTarget).get("plan") })} className="space-y-3">
           <div className="grid gap-3 sm:grid-cols-2">
             <label className="flex cursor-pointer items-start gap-3 rounded border border-line p-4">
               <input type="radio" name="plan" value="founding" defaultChecked className="mt-1" />

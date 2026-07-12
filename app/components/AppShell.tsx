@@ -5,6 +5,7 @@ import { signOut } from "@/app/actions/auth";
 import type { Agency, Profile } from "@/lib/auth";
 import { planCap } from "@/lib/pricing";
 import { AppShellChrome } from "./AppShellChrome";
+import { AnalyticsIdentify } from "./Analytics";
 import { FeedbackWidget } from "./FeedbackWidget";
 
 // Server-rendered per request; reading the clock here (outside the component
@@ -112,6 +113,14 @@ export async function AppShell({
   );
 
   return (
+    <>
+    <AnalyticsIdentify
+      userId={profile.user_id}
+      agencyId={agency.id}
+      agencyName={agency.name}
+      plan={agency.plan}
+      role={profile.role}
+    />
     <AppShellChrome
       active={active}
       awaitingCount={awaitingCount ?? 0}
@@ -121,5 +130,6 @@ export async function AppShell({
     >
       {children}
     </AppShellChrome>
+    </>
   );
 }

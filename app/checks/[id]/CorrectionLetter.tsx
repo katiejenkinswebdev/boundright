@@ -3,6 +3,9 @@
 import { useState, useTransition } from "react";
 import { generateCorrectionLetter } from "@/app/actions/letter";
 import { AiRating } from "@/app/components/AiRating";
+import { HoverTip } from "@/app/components/InfoTip";
+import { TERM_DEF } from "@/lib/severity";
+import { track } from "@/lib/analytics";
 
 export function CorrectionLetter({
   checkId,
@@ -18,7 +21,12 @@ export function CorrectionLetter({
 
   return (
     <section className="rounded-lg border border-line bg-card p-6">
-      <h2 className="font-semibold">Correction request <span className="ml-1 font-mono text-xs font-normal text-ink/50" title="AI-drafted; you edit and send it">✦ AI draft</span></h2>
+      <h2 className="font-semibold">
+        Correction request{" "}
+        <HoverTip tip={TERM_DEF.ai_draft}>
+          <span className="ml-1 cursor-help font-mono text-xs font-normal text-ink/50">✦ AI draft</span>
+        </HoverTip>
+      </h2>
       <p className="mt-1 text-sm text-ink/70">
         Drafts a request to the carrier from your confirmed findings:
         enumerated discrepancies, correction effective inception, written
@@ -39,6 +47,7 @@ export function CorrectionLetter({
               type="button"
               onClick={async () => {
                 await navigator.clipboard.writeText(letter);
+                track("letter_copied");
                 setCopied(true);
                 setTimeout(() => setCopied(false), 2000);
               }}
@@ -53,8 +62,10 @@ export function CorrectionLetter({
                 setError(null);
                 startTransition(async () => {
                   const result = await generateCorrectionLetter(checkId);
-                  if (result.ok) setLetter(result.letter);
-                  else setError(result.message);
+                  if (result.ok) {
+                    setLetter(result.letter);
+                    track("letter_drafted");
+                  } else setError(result.message);
                 });
               }}
               className="rounded border border-ink px-4 py-2 text-sm font-semibold hover:bg-ink hover:text-paper disabled:opacity-50"

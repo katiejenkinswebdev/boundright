@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { requireProfile } from "@/lib/auth";
-import { SEVERITY_DEF } from "@/lib/severity";
+import { SEVERITY_DEF, STATUS_DEF } from "@/lib/severity";
+import { HoverTip } from "@/app/components/InfoTip";
 import { canSeeAnalytics } from "@/lib/roles";
 import { cookies } from "next/headers";
 import { PageSizeSelect } from "./PageSizeSelect";
@@ -237,8 +238,9 @@ export default async function ChecksPage({
                       })}
                     </td>
                     <td className="px-4 py-3">
+                      <HoverTip tip={STATUS_DEF[c.status] ?? c.status}>
                       <span
-                        className={`font-mono text-xs uppercase tracking-wide ${
+                        className={`cursor-help font-mono text-xs uppercase tracking-wide ${
                           c.status === "failed"
                             ? "text-flag"
                             : c.status === "reviewed"
@@ -256,6 +258,7 @@ export default async function ChecksPage({
                         )}
                         {STATUS_LABEL[c.status] ?? c.status}
                       </span>
+                      </HoverTip>
                     </td>
                     <td className="px-4 py-3">
                       <SeverityPills
@@ -335,24 +338,26 @@ function SeverityPills({
 
   if (pills.length === 0) {
     return (
-      <span
-        title="Every extracted field matched between the two documents."
-        className="inline-block cursor-help rounded-full border border-verify px-2 py-0.5 font-mono text-xs text-verify"
-      >
-        all matched
-      </span>
+      <HoverTip tip="Every extracted field matched between the two documents.">
+        <span className="inline-block cursor-help rounded-full border border-verify px-2 py-0.5 font-mono text-xs text-verify">
+          all matched
+        </span>
+      </HoverTip>
     );
   }
   return (
     <span className="flex flex-wrap gap-1">
       {pills.map((p) => (
-        <span
+        <HoverTip
           key={p.word}
-          title={`${SEVERITY_DEF[p.word]} Counts every ${p.word} finding on the check, before review decisions.`}
-          className={`inline-block cursor-help whitespace-nowrap rounded-full border px-2 py-0.5 font-mono text-xs ${p.cls}`}
+          tip={`${SEVERITY_DEF[p.word]} Counts every ${p.word} finding on the check, before review decisions.`}
         >
-          {p.n} {p.word}
-        </span>
+          <span
+            className={`inline-block cursor-help whitespace-nowrap rounded-full border px-2 py-0.5 font-mono text-xs ${p.cls}`}
+          >
+            {p.n} {p.word}
+          </span>
+        </HoverTip>
       ))}
     </span>
   );

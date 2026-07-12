@@ -6,8 +6,8 @@ import { CheckProgress } from "./CheckProgress";
 import { FindingCard, Badge, type FindingRow } from "./FindingCard";
 import { ReviewFooter } from "./ReviewFooter";
 import { CorrectionLetter } from "./CorrectionLetter";
-import { InfoTip } from "@/app/components/InfoTip";
-import { SEVERITY_DEF } from "@/lib/severity";
+import { InfoTip, HoverTip } from "@/app/components/InfoTip";
+import { SEVERITY_DEF, TERM_DEF, STATUS_DEF } from "@/lib/severity";
 import { AssignSelect } from "./AssignSelect";
 import { AiRating } from "@/app/components/AiRating";
 import { BoundRightStamp } from "@/app/components/brand";
@@ -53,7 +53,15 @@ export default async function CheckPage({
         <div className="flex items-start justify-between gap-4">
           <h1 className="mb-1 text-2xl font-semibold">{check.label}</h1>
           {check.status === "reviewed" && (
-            <BoundRightStamp reviewedAt={check.reviewed_at ?? new Date()} />
+            <div className="flex flex-col items-end gap-2">
+              <BoundRightStamp reviewedAt={check.reviewed_at ?? new Date()} />
+              <a
+                href={`/api/checks/${check.id}/report`}
+                className="rounded border border-ink px-3 py-1.5 text-sm font-semibold hover:bg-ink hover:text-paper"
+              >
+                Export report (PDF)
+              </a>
+            </div>
           )}
         </div>
         <p className="text-sm text-ink/60">
@@ -63,6 +71,20 @@ export default async function CheckPage({
             day: "numeric",
             year: "numeric",
           })}
+          {" · "}
+          <HoverTip tip={STATUS_DEF[check.status] ?? check.status}>
+            <span
+              className={`cursor-help font-mono text-xs uppercase tracking-wide ${
+                check.status === "reviewed"
+                  ? "text-verify"
+                  : check.status === "failed"
+                    ? "text-flag"
+                    : "text-ink/60"
+              }`}
+            >
+              {check.status.replaceAll("_", " ")}
+            </span>
+          </HoverTip>
         </p>
         <p className="mt-2 text-xs text-ink/50">
           BoundRight is a review assistant and AI can make mistakes. It does
@@ -170,10 +192,10 @@ async function ReportBody({
     <div className="space-y-8 pb-24">
       {/* Summary strip (spec 4.3.2) */}
       <div className="flex flex-wrap gap-2">
-        <Badge tone="flag">{bySeverity("critical").length} Critical</Badge>
-        <Badge tone="caution">{bySeverity("moderate").length} Moderate</Badge>
-        <Badge tone="muted">{bySeverity("minor").length} Minor</Badge>
-        <Badge tone="verify">{matches.length} Matches</Badge>
+        <Badge tone="flag" tip={SEVERITY_DEF.critical}>{bySeverity("critical").length} Critical</Badge>
+        <Badge tone="caution" tip={SEVERITY_DEF.moderate}>{bySeverity("moderate").length} Moderate</Badge>
+        <Badge tone="muted" tip={SEVERITY_DEF.minor}>{bySeverity("minor").length} Minor</Badge>
+        <Badge tone="verify" tip={TERM_DEF.matches}>{matches.length} Matches</Badge>
         <InfoTip label="What the severities mean">
           <span className="block">
             <strong className="text-flag">Critical</strong> — {SEVERITY_DEF.critical}

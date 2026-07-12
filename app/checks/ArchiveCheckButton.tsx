@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { track } from "@/lib/analytics";
 import { setCheckArchived } from "@/app/actions/manage-checks";
 
 export function ArchiveCheckButton({
@@ -20,7 +21,10 @@ export function ArchiveCheckButton({
         type="button"
         disabled={pending}
         onClick={() =>
-          startTransition(async () => void (await setCheckArchived(checkId, false)))
+          startTransition(async () => {
+            await setCheckArchived(checkId, false);
+            track("check_restored");
+          })
         }
         className="text-sm underline disabled:opacity-50"
       >
@@ -46,6 +50,7 @@ export function ArchiveCheckButton({
         onClick={() =>
           startTransition(async () => {
             await setCheckArchived(checkId, true);
+            track("check_archived");
             setConfirming(false);
           })
         }

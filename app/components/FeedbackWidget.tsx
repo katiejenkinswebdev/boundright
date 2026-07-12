@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useActionState } from "react";
+import { track } from "@/lib/analytics";
 import { usePathname } from "next/navigation";
 import { sendFeedback, type FeedbackState } from "@/app/actions/feedback";
 
@@ -20,7 +21,7 @@ export function FeedbackWidget() {
     );
   }
   return (
-    <form action={action} className="space-y-2 rounded border border-line bg-paper p-3">
+    <form action={action} onSubmit={() => track("feedback_sent")} className="space-y-2 rounded border border-line bg-paper p-3">
       <input type="hidden" name="page" value={pathname} />
       <select name="category" className="w-full rounded border border-line bg-card px-2 py-1 text-sm" aria-label="Feedback category">
         <option value="general">General</option>

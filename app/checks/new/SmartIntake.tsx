@@ -10,6 +10,8 @@ import {
 import type { ClassifiedDoc, ProposedPair } from "@/lib/intake";
 import { primaryButtonClass } from "@/app/components/ui";
 import { AiRating } from "@/app/components/AiRating";
+import { HoverTip } from "@/app/components/InfoTip";
+import { track } from "@/lib/analytics";
 
 type Phase = "drop" | "uploading" | "classifying" | "confirm" | "starting" | "done";
 
@@ -62,6 +64,11 @@ export function SmartIntake() {
         setPhase("drop");
         return;
       }
+      track("smart_intake_classified", {
+        files: selected.length,
+        pairs: classified.pairs.length,
+        orphans: classified.orphans.length,
+      });
       setPairs(classified.pairs);
       setOrphans(classified.orphans);
       setFailures(classified.failures);
@@ -98,6 +105,7 @@ export function SmartIntake() {
       setPhase("confirm");
       return;
     }
+    track("smart_intake_run", { checks: result.checkIds.length });
     setCheckIds(result.checkIds);
     setPhase("done");
   }
@@ -161,17 +169,19 @@ export function SmartIntake() {
                 <span className="inline-flex items-center rounded border border-line px-2.5 py-1 font-mono text-xs uppercase leading-none text-ink/60">
                   {TYPE_LABEL[p.checkType]}
                 </span>
-                <span
-                  className={`inline-flex items-center rounded border px-2.5 py-1 font-mono text-xs uppercase leading-none ${
-                    p.confidence === "high"
-                      ? "border-verify text-verify"
-                      : p.confidence === "medium"
-                        ? "border-caution text-caution"
-                        : "border-flag text-flag"
-                  }`}
-                >
-                  ✦ {p.confidence} confidence
-                </span>
+                <HoverTip tip="How sure the AI is that these two documents belong together and what type they are. Nothing runs until you confirm the pair.">
+                  <span
+                    className={`inline-flex cursor-help items-center rounded border px-2.5 py-1 font-mono text-xs uppercase leading-none ${
+                      p.confidence === "high"
+                        ? "border-verify text-verify"
+                        : p.confidence === "medium"
+                          ? "border-caution text-caution"
+                          : "border-flag text-flag"
+                    }`}
+                  >
+                    ✦ {p.confidence} confidence
+                  </span>
+                </HoverTip>
               </span>
               <span className="mt-1 block font-mono text-xs text-ink/60">
                 A: {p.a.filename} ({p.a.document_type}) · B: {p.b.filename} ({p.b.document_type})
