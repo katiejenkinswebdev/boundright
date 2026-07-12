@@ -55,7 +55,7 @@ Each failed check: shows the reason on the check page with "Try again", does NOT
 1. Range filter drives KPIs, chart, and carrier table; chart hover shows the severity breakdown; Show table headers have severity tooltips; carrier Trend column shows ▲/▼/→ (or — under 5 checks).
 2. Generate report → period PDF honors the filter, seal lockup, staff cost savings.
 
-## 6 · Ops console (system admin, /admin)
+## 6 · Ops console (system admin, /ops — linked from Admin)
 
 1. Client config table: members by role, thresholds, webhook, smart intake toggle, audit CSV per client.
 2. Correction letter prompt: set platform guidance + Coastal-specific guidance → draft a letter on a Coastal check (stub mode echoes both at the bottom); clear them and the echoes disappear.
@@ -64,14 +64,20 @@ Each failed check: shows the reason on the check page with "Try again", does NOT
 
 ## 7 · User management (as manager or admin)
 
-1. Settings → Team: each member shows login email + last sign-in; open Manage on a lower-ranked member: edit name, change login email, Send password reset (check Inbucket at localhost:55324 in local dev), Suspend (badge appears; their next sign-in fails), Restore, Remove (confirm dialog; login deleted; audit log keeps their review history).
+1. Admin → Team: each member shows login email + last sign-in; open Manage on a lower-ranked member: edit name, change login email, Send password reset (check Inbucket at localhost:55324 in local dev), Suspend (badge appears; their next sign-in fails), Restore, Remove (confirm dialog; login deleted; audit log keeps their review history).
 2. Rank rules: a manager sees Manage only on users; an admin on managers and users; nobody manages themselves (use Profile) or an equal/higher rank.
-3. As admin: pending invites list under Team with Revoke.
+3. As admin: pending invites list under Team with Revoke. Role changes live inside each member's Manage panel (admins only).
 
 ## 8 · Roles sweep
 
 user: no dashboard analytics, no delete, no admin sections in Settings. manager: + analytics + delete. admin: + team/config/billing. system_admin: + /admin. Non-admins hitting /admin get a 404.
 
-## 9 · Billing (needs Stripe test keys)
+## 9 · MFA
+
+1. Settings → Security → Set up two-factor authentication → scan the QR with any authenticator app → confirm the 6-digit code → "on" badge.
+2. Sign out, sign back in: after the password you land on /mfa; a wrong code is rejected; the right code lands on the dashboard.
+3. Settings → Security → Turn off → next sign-in is password-only.
+
+## 10 · Billing (needs Stripe test keys)
 
 Subscribe on Founding from Settings → Billing (radio prices come from `lib/pricing.ts`), test-card checkout, plan reflects on the agency, Manage billing opens the portal, cancel in one click.

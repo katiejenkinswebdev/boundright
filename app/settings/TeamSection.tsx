@@ -46,7 +46,8 @@ export type MemberRow = {
   manageable: boolean;
 };
 
-function ManageMember({ member }: { member: MemberRow }) {
+function ManageMember({ member, viewerIsAdmin }: { member: MemberRow; viewerIsAdmin: boolean }) {
+  const [roleState, roleAction] = useActionState(setMemberRole, initial);
   const [profileState, profileAction, profilePending] = useActionState(updateMemberProfile, initial);
   const [resetState, resetAction, resetPending] = useActionState(sendMemberPasswordReset, initial);
   const [accessState, accessAction, accessPending] = useActionState(setMemberAccess, initial);
@@ -73,6 +74,31 @@ function ManageMember({ member }: { member: MemberRow }) {
           </button>
           <Msg state={profileState} />
         </form>
+
+        {viewerIsAdmin && (
+          <form action={roleAction} className="flex flex-wrap items-center gap-2 border-t border-line pt-3">
+            <input type="hidden" name="member_id" value={member.id} />
+            <label className="text-sm text-ink/70" htmlFor={`role-${member.id}`}>
+              Role
+            </label>
+            <select
+              id={`role-${member.id}`}
+              name="role"
+              defaultValue={member.role}
+              className="rounded border border-line bg-card px-2 py-1 text-sm"
+            >
+              {ROLES.map(([value]) => (
+                <option key={value} value={value}>
+                  {value}
+                </option>
+              ))}
+            </select>
+            <button type="submit" className="text-sm underline">
+              Save role
+            </button>
+            <Msg state={roleState} />
+          </form>
+        )}
 
         <div className="flex flex-wrap items-center gap-3 border-t border-line pt-3">
           <form action={resetAction}>
@@ -125,7 +151,6 @@ export function TeamSection({
   pendingInvites: { id: string; email: string; role: string; created_at: string }[];
 }) {
   const [inviteState, inviteAction, invitePending] = useActionState(inviteMember, initial);
-  const [roleState, roleAction] = useActionState(setMemberRole, initial);
   const [revokeState, revokeAction] = useActionState(revokeInvite, initial);
 
   return (
@@ -151,34 +176,14 @@ export function TeamSection({
                     : " · never signed in"}
                 </span>
               </span>
-              {viewerIsAdmin ? (
-                <form action={roleAction} className="flex items-center gap-2">
-                  <input type="hidden" name="member_id" value={m.id} />
-                  <select
-                    name="role"
-                    defaultValue={m.role}
-                    className="rounded border border-line bg-card px-2 py-1 text-sm"
-                    aria-label={`Role for ${m.full_name}`}
-                  >
-                    {ROLES.map(([value]) => (
-                      <option key={value} value={value}>
-                        {value}
-                      </option>
-                    ))}
-                  </select>
-                  <button type="submit" className="text-sm underline">
-                    Save
-                  </button>
-                </form>
-              ) : (
-                <span className="font-mono text-xs uppercase text-ink/60">{m.role.replace("_", " ")}</span>
-              )}
+              <span className="font-mono text-xs uppercase text-ink/60">
+                {m.role.replace("_", " ")}
+              </span>
             </div>
-            {m.manageable && <ManageMember member={m} />}
+            {m.manageable && <ManageMember member={m} viewerIsAdmin={viewerIsAdmin} />}
           </li>
         ))}
       </ul>
-      <Msg state={roleState} />
 
       {viewerIsAdmin && pendingInvites.length > 0 && (
         <div className="border-t border-line pt-4">

@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useRef, useState } from "react";
 import { track } from "@/lib/analytics";
 import { PLANS } from "@/lib/pricing";
 import {
@@ -155,19 +155,53 @@ export function AgencyForm({
 
 export function LogoForm({ logoUrl }: { logoUrl: string | null }) {
   const [state, action, pending] = useActionState(uploadLogo, initial);
+  const [preview, setPreview] = useState<string | null>(null);
+  const [fileName, setFileName] = useState("");
+  const inputRef = useRef<HTMLInputElement>(null);
+  const shown = preview ?? logoUrl;
+
   return (
     <form action={action} className="space-y-3">
-      {logoUrl && (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img src={logoUrl} alt="Agency logo" className="h-12 w-auto rounded border border-line bg-white p-1" />
-      )}
-      <div>
-        <label htmlFor="logo" className={labelClass}>
-          Agency logo (PNG or JPEG, used on exported reports)
-        </label>
-        <input id="logo" name="logo" type="file" accept="image/png,image/jpeg" className="text-sm" />
+      <p className={labelClass}>Agency logo (PNG or JPEG, used on exported reports)</p>
+      <div className="flex items-center gap-4">
+        {shown ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={shown}
+            alt={preview ? "Selected logo preview" : "Agency logo"}
+            className="h-12 w-auto rounded border border-line bg-white p-1"
+          />
+        ) : (
+          <span className="flex h-12 w-28 items-center justify-center rounded border border-dashed border-line font-mono text-xs text-ink/40">
+            no logo
+          </span>
+        )}
+        <span className="text-sm">
+          <button
+            type="button"
+            onClick={() => inputRef.current?.click()}
+            className="underline hover:text-ink"
+          >
+            {shown ? "Choose a different file" : "Choose a file"}
+          </button>
+          {fileName && <span className="ml-2 font-mono text-xs text-ink/60">{fileName}</span>}
+        </span>
       </div>
-      <button disabled={pending} className={secondaryButtonClass}>
+      <input
+        ref={inputRef}
+        id="logo"
+        name="logo"
+        type="file"
+        accept="image/png,image/jpeg"
+        className="sr-only"
+        onChange={(e) => {
+          const file = e.target.files?.[0];
+          if (!file) return;
+          setFileName(file.name);
+          setPreview(URL.createObjectURL(file));
+        }}
+      />
+      <button disabled={pending || !preview} className={secondaryButtonClass + " w-auto"}>
         {pending ? "Uploading…" : "Upload logo"}
       </button>
       <Msg state={state} />

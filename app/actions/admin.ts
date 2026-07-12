@@ -18,7 +18,7 @@ export async function toggleSmartIntake(agencyId: string, enabled: boolean): Pro
     event_name: "smart_intake_toggled",
     metadata: { enabled },
   });
-  revalidatePath("/admin");
+  revalidatePath("/ops");
 }
 
 /** System admin only: post a platform announcement banner with an active window. */
@@ -44,7 +44,7 @@ export async function createAnnouncement(formData: FormData): Promise<void> {
     ends_at: endsAt.toISOString(),
     created_by: profile.user_id,
   });
-  revalidatePath("/admin");
+  revalidatePath("/ops");
 }
 
 /** System admin only: end an announcement now (expires it rather than deleting). */
@@ -58,7 +58,7 @@ export async function endAnnouncement(id: string): Promise<void> {
     .update({ ends_at: new Date().toISOString() })
     .eq("id", id)
     .gt("ends_at", new Date().toISOString());
-  revalidatePath("/admin");
+  revalidatePath("/ops");
 }
 
 /** System admin only: the platform-wide letter guidance, one place for all clients. */
@@ -73,7 +73,7 @@ export async function saveGlobalLetterGuidance(formData: FormData): Promise<void
     value,
     updated_at: new Date().toISOString(),
   });
-  revalidatePath("/admin");
+  revalidatePath("/ops");
 }
 
 /** System admin only: per-client letter guidance. */
@@ -93,7 +93,7 @@ export async function saveAgencyLetterGuidance(agencyId: string, formData: FormD
     event_name: "letter_guidance_updated",
     metadata: { length: value.length },
   });
-  revalidatePath("/admin");
+  revalidatePath("/ops");
 }
 
 /** System admin only: set a client's logo on their behalf (co-branding). */
@@ -123,7 +123,7 @@ export async function uploadAgencyLogoAdmin(
     event_name: "logo_set_by_operator",
     metadata: {},
   });
-  revalidatePath("/admin");
+  revalidatePath("/ops");
   return { ok: true, message: "Logo updated." };
 }
 
@@ -142,7 +142,7 @@ export async function setAgencyAllowance(agencyId: string, formData: FormData): 
     event_name: "allowance_overridden",
     metadata: { allowance: value },
   });
-  revalidatePath("/admin");
+  revalidatePath("/ops");
 }
 
 /** System admin only: edit a legal document (terms or privacy). */
@@ -157,5 +157,5 @@ export async function saveLegalDoc(formData: FormData): Promise<void> {
   await admin.from("platform_config").upsert({ key, value, updated_at: new Date().toISOString() });
   revalidatePath("/terms");
   revalidatePath("/privacy");
-  revalidatePath("/admin");
+  revalidatePath("/ops");
 }

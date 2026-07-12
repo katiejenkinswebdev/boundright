@@ -51,7 +51,7 @@ Policy discrepancy detection for independent commercial insurance agencies. A CS
 
 ### Reports (one brand system: `lib/pdf-brand.ts`)
 - Discrepancy report: agency co-brand + the BR seal lockup in the header, audit trail, document fingerprints, findings as exhibits with excerpts, dismissed-with-reason, reconciliation line, reviewer certification carrying the dated verification stamp, report ID + pagination
-- Client co-branding runs through the platform and every report: the client's logo shows at the top of the sidebar on every app page, on the discrepancy report header, and on the period report header (agency admins upload it in Settings → Branding; the system admin can also set any client's logo from the ops console config table)
+- Client co-branding runs through the platform and every report: the client's logo shows at the top of the sidebar on every app page, on the discrepancy report header, and on the period report header (agency admins upload it in Admin → Configuration with a link-style picker and instant preview; the system admin can also set any client's logo from the ops console config table)
 - Reports know their intake: the discrepancy report's audit trail records smart-intake/email arrival (with the pair-confirmed-by-human note), and the period report adds a "How checks arrived" breakdown, only for agencies with the flag on
 - Period report from the dashboard: follows the active range filter exactly (presets or custom dates), six KPIs including staff cost savings, auto-written summary; monthly version auto-emailed on the 1st
 - All PDFs share the tilted-seal lockup or stamp per brand rules, wordmark footer, metadata, and the naming convention `BoundRight - {Type} - {Client} - {ISO date(s)}.pdf`
@@ -64,9 +64,21 @@ Policy discrepancy detection for independent commercial insurance agencies. A CS
 - Every metric shows its formula with the agency's own inputs on hover; only reviewer-confirmed findings count anywhere; the trend chart's hover card breaks confirmed discrepancies down by severity
 - Severity definitions live in `lib/severity.ts` and feed every tooltip: the checks-list finding pills, the report summary explainer, and each severity group heading on the report
 
+### Security: two-factor authentication (MFA)
+- TOTP with any authenticator app (Google Authenticator, 1Password, Authy), built on Supabase Auth MFA — no SMS, no extra vendor
+- Turn on in **Settings → Security → Set up two-factor authentication**: scan the QR code (or type the manual key), confirm with the 6-digit code, done. From then on every sign-in asks password + code (the app-wide gate redirects to /mfa until the code checks out)
+- Turn off from the same place (requires a code-verified session); strongly recommended for manager, admin, and system admin accounts
+- End-user instructions to share with your team: 1) install an authenticator app on your phone, 2) BoundRight → Settings → Security → Set up two-factor authentication, 3) scan the QR code with the app, 4) type the 6-digit code it shows, 5) at every sign-in, enter your password and then the current code from the app. If you lose your phone, an agency manager or admin can send a password reset, but MFA removal for a locked-out user is an operator task (roadmap: recovery codes)
+
+### Navigation & information architecture
+- Sidebar: Dashboard · New Check · Checks · Settings, plus **Admin** for managers and above
+- **Settings** is personal only: profile, password, role, and Security (MFA)
+- **Admin** (/admin) holds every agency-level control, sectioned by role: Team (manager+); Integrations, Configuration incl. branding, Billing, Danger zone (admin); a Platform ops console card links the operator to /ops
+- The operator ops console moved from /admin to **/ops** (all client setups, allowances, logos, letter prompts, legal documents, announcements, drift, ratings, audit CSVs)
+
 ### Teams & roles
 - user → manager (adds analytics + team management) → admin (adds configuration, team invites/roles, integrations, billing, deletion) → system_admin (operator; database-granted only)
-- Team management (manager+, strictly-lower-rank targets only, never yourself): see each member's login email and last sign-in, edit their name or login email, send a password reset, suspend/restore access (sign-in blocked within the hour), and remove them entirely — review history stays attributed in the audit log (user references null on deletion, never break). Admins also see and revoke pending invites. Every action logged to events
+- Team management (manager+, in Admin → Team; strictly-lower-rank targets only, never yourself): see each member's login email and last sign-in; a per-member Manage panel consolidates everything — edit name or login email, change role (admins), send a password reset, suspend/restore access (sign-in blocked within the hour), remove entirely — review history stays attributed in the audit log (user references null on deletion, never break). Admins also see and revoke pending invites. Every action logged to events
 - Email invites with join links (labeled Email/Role fields, role capabilities in a hover tip); each user's role (and what it grants) shown in Settings; the ops console shows every client's configuration in one place
 
 ### Product analytics (PostHog)

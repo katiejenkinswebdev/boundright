@@ -48,6 +48,11 @@ export async function requireUser() {
  */
 export async function requireProfile() {
   const { supabase, user } = await requireUser();
+
+  // MFA gate: an enrolled authenticator must be satisfied every session.
+  const { data: aal } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+  if (aal?.nextLevel === "aal2" && aal.currentLevel !== "aal2") redirect("/mfa");
+
   const { data: profile } = await supabase
     .from("profiles")
     .select("*")

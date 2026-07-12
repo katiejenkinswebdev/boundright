@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { Lockup, Seal, Wordmark } from "@/app/components/brand";
 
-export type NavItem = { href: string; label: string; icon: "dashboard" | "new" | "checks" | "settings" };
+export type NavItem = { href: string; label: string; icon: "dashboard" | "new" | "checks" | "settings" | "admin" };
 
 export const NAV: NavItem[] = [
   { href: "/dashboard", label: "Dashboard", icon: "dashboard" },
@@ -12,6 +12,7 @@ export const NAV: NavItem[] = [
   { href: "/checks", label: "Checks", icon: "checks" },
   { href: "/settings", label: "Settings", icon: "settings" },
 ];
+export const ADMIN_NAV: NavItem = { href: "/admin", label: "Admin", icon: "admin" };
 
 /** Line icons per the brand system: 1.5px stroke, 2px corner radius, Ink. */
 function NavIcon({ name }: { name: NavItem["icon"] }) {
@@ -56,6 +57,13 @@ function NavIcon({ name }: { name: NavItem["icon"] }) {
           <path d="M10 2.5v2.6M10 14.9v2.6M2.5 10h2.6M14.9 10h2.6M4.7 4.7l1.9 1.9M13.4 13.4l1.9 1.9M15.3 4.7l-1.9 1.9M6.6 13.4l-1.9 1.9" />
         </svg>
       );
+    case "admin":
+      return (
+        <svg {...common}>
+          <path d="M10 2.5 16.5 5v5c0 4-2.8 6.6-6.5 7.5C6.3 16.6 3.5 14 3.5 10V5L10 2.5z" />
+          <path d="M7.5 10l1.8 1.8 3.2-3.6" />
+        </svg>
+      );
   }
 }
 
@@ -69,6 +77,7 @@ export function AppShellChrome({
   initialCollapsed,
   banner,
   coBrand,
+  showAdmin,
   sidebarFooter,
   children,
 }: {
@@ -77,6 +86,7 @@ export function AppShellChrome({
   initialCollapsed: boolean;
   banner: React.ReactNode;
   coBrand?: { logoUrl: string | null; name: string };
+  showAdmin?: boolean;
   sidebarFooter: React.ReactNode;
   children: React.ReactNode;
 }) {
@@ -155,7 +165,7 @@ export function AppShellChrome({
         </button>
 
         <nav className="flex flex-col gap-1" aria-label="Main">
-          {NAV.map((item) => {
+          {[...NAV, ...(showAdmin ? [ADMIN_NAV] : [])].map((item) => {
             const isActive = active === item.href;
             return (
               <Link
@@ -190,7 +200,7 @@ export function AppShellChrome({
             <Wordmark />
           </Link>
           <nav className="flex gap-3 text-sm" aria-label="Main">
-            {NAV.map((item) => (
+            {[...NAV, ...(showAdmin ? [ADMIN_NAV] : [])].map((item) => (
               <Link
                 key={item.href}
                 href={item.href}

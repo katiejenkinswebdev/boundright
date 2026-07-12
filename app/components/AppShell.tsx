@@ -4,6 +4,7 @@ import { createServerSupabase } from "@/lib/supabase/server";
 import { signOut } from "@/app/actions/auth";
 import type { Agency, Profile } from "@/lib/auth";
 import { agencyCap } from "@/lib/pricing";
+import { canManageUsers } from "@/lib/roles";
 import { AppShellChrome } from "./AppShellChrome";
 import { AnalyticsIdentify } from "./Analytics";
 import { FeedbackWidget } from "./FeedbackWidget";
@@ -127,6 +128,7 @@ export async function AppShell({
       initialCollapsed={initialCollapsed}
       banner={banner}
       coBrand={{ logoUrl: agency.logo_url, name: agency.name }}
+      showAdmin={canManageUsers(profile)}
       sidebarFooter={sidebarFooter}
     >
       {children}
