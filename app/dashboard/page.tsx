@@ -102,43 +102,19 @@ export default async function DashboardPage({
   // First-run checklist: derived from real state, shown until dismissed.
   let onboardingSteps: OnboardingStep[] | null = null;
   if (!agency.onboarding_dismissed_at) {
-    const [{ count: memberCount }, { count: reviewedCount }, { count: anyChecks }] =
-      await Promise.all([
-        supabase.from("profiles").select("id", { count: "exact", head: true }),
-        supabase
-          .from("checks")
-          .select("id", { count: "exact", head: true })
-          .eq("status", "reviewed"),
-        supabase.from("checks").select("id", { count: "exact", head: true }),
-      ]);
-    const thresholdsTouched =
-      Number(agency.premium_variance_threshold) !== 5 ||
-      Number(agency.renewal_premium_threshold) !== 10 ||
-      agency.manual_check_minutes !== 45;
+    const [{ count: reviewedCount }, { count: anyChecks }] = await Promise.all([
+      supabase
+        .from("checks")
+        .select("id", { count: "exact", head: true })
+        .eq("status", "reviewed"),
+      supabase.from("checks").select("id", { count: "exact", head: true }),
+    ]);
     onboardingSteps = [
       { label: "Run your first check", href: "/checks/new", done: (anyChecks ?? 0) > 0 },
       {
         label: "Review and export a report",
         href: "/checks?status=ready_for_review",
         done: (reviewedCount ?? 0) > 0,
-      },
-      {
-        label: "Invite a teammate",
-        href: "/settings",
-        done: (memberCount ?? 0) > 1,
-        adminOnly: true,
-      },
-      {
-        label: "Tune your assumptions and thresholds",
-        href: "/settings",
-        done: thresholdsTouched,
-        adminOnly: true,
-      },
-      {
-        label: "Connect Slack or Teams notices",
-        href: "/settings",
-        done: !!agency.notify_webhook_url,
-        adminOnly: true,
       },
     ];
     if (onboardingSteps.every((s2) => s2.done)) onboardingSteps = null;

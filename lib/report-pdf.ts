@@ -1,4 +1,5 @@
 import { PDFDocument, PDFFont, PDFPage, StandardFonts, degrees, rgb } from "pdf-lib";
+import { drawBrandFooter } from "./pdf-brand";
 
 // Palette (design tokens, print-friendly)
 const INK = rgb(0.106, 0.165, 0.255);
@@ -11,7 +12,7 @@ const LINE = rgb(0.847, 0.851, 0.831);
 const PAGE_W = 612;
 const PAGE_H = 792;
 const MARGIN = 54;
-const FOOTER_H = 64;
+const FOOTER_H = 84;
 
 const DISCLAIMER =
   "BoundRight is a review assistant. It does not provide insurance advice, and final determination of coverage accuracy is the responsibility of the licensed agent.";
@@ -99,14 +100,8 @@ export async function buildReportPdf(data: ReportData): Promise<Uint8Array> {
   let y = 0;
 
   const footer = (p: PDFPage) => {
-    const lines = wrap(DISCLAIMER, sans, 7.5, PAGE_W - MARGIN * 2 - 170);
-    let fy = FOOTER_H - 14;
-    p.drawLine({
-      start: { x: MARGIN, y: FOOTER_H },
-      end: { x: PAGE_W - MARGIN, y: FOOTER_H },
-      thickness: 0.5,
-      color: LINE,
-    });
+    const lines = wrap(DISCLAIMER, sans, 7.5, PAGE_W - MARGIN * 2);
+    let fy = FOOTER_H - 12;
     for (const line of lines) {
       p.drawText(line, { x: MARGIN, y: fy, size: 7.5, font: sans, color: MUTED });
       fy -= 10;
@@ -224,7 +219,7 @@ export async function buildReportPdf(data: ReportData): Promise<Uint8Array> {
   text("AUDIT TRAIL", { font: sansBold, size: 9, gap: 4 });
   text(
     `Documents received ${fmtTs(data.receivedAt)} · processed ${fmtTs(data.processedAt)} · reviewed by ${data.reviewerName} on ${data.reviewedDate} · exported ${fmtTs(new Date().toISOString())}`,
-    { size: 8.5, color: MUTED, gap: 10 }
+    { size: 8.5, color: MUTED, gap: 14 }
   );
 
   // Documents examined: fingerprints computed before deletion.
@@ -245,7 +240,7 @@ export async function buildReportPdf(data: ReportData): Promise<Uint8Array> {
     }
     text(
       "Verify a copy of either document by recomputing its SHA-256 hash; a match proves it is the exact file this report examined. The files themselves were deleted after processing.",
-      { size: 7.5, color: MUTED, gap: 10 }
+      { size: 7.5, color: MUTED, gap: 16 }
     );
   }
 
@@ -270,7 +265,7 @@ export async function buildReportPdf(data: ReportData): Promise<Uint8Array> {
   y -= 22;
   text(
     `${data.findings.length} fields compared: ${issues.length} discrepanc${issues.length === 1 ? "y" : "ies"} (${issues.filter((f) => f.reviewer_action === "confirmed").length} confirmed, ${issues.filter((f) => f.reviewer_action === "dismissed").length} dismissed by the reviewer) and ${matches.length} matches.`,
-    { size: 9, gap: 12 }
+    { size: 9, gap: 18 }
   );
 
   // Findings by severity, each an exhibit with its cited source text.
@@ -279,7 +274,7 @@ export async function buildReportPdf(data: ReportData): Promise<Uint8Array> {
     if (group.length === 0) continue;
 
     ensure(30);
-    text(`${sev.toUpperCase()} FINDINGS`, { font: sansBold, size: 11, gap: 8 });
+    text(`${sev.toUpperCase()} FINDINGS`, { font: sansBold, size: 11, gap: 10 });
 
     for (const f of group) {
       ensure(90);
@@ -290,9 +285,9 @@ export async function buildReportPdf(data: ReportData): Promise<Uint8Array> {
         thickness: 0.5,
         color: LINE,
       });
-      y -= 8;
+      y -= 10;
 
-      text(f.field_name, { font: sansBold, size: 10, gap: 3 });
+      text(f.field_name, { font: sansBold, size: 10, gap: 4 });
       const citation = [
         f.doc_a_page ? `Document A p. ${f.doc_a_page}` : null,
         f.doc_b_page ? `Document B p. ${f.doc_b_page}` : null,
@@ -324,21 +319,21 @@ export async function buildReportPdf(data: ReportData): Promise<Uint8Array> {
       if (f.reviewer_note) {
         text(`Note: ${f.reviewer_note}`, { size: 9, x: MARGIN + 12, gap: 3 });
       }
-      y -= 8;
+      y -= 12;
     }
-    y -= 6;
+    y -= 8;
   }
 
   // Matches
   ensure(30);
-  text(`MATCHED FIELDS (${matches.length})`, { font: sansBold, size: 11, gap: 8 });
+  text(`MATCHED FIELDS (${matches.length})`, { font: sansBold, size: 11, gap: 10 });
   for (const f of matches) {
     ensure(14);
     text(`${f.field_name}: ${f.expected_value ?? ""}`, {
       font: mono,
       size: 8.5,
       x: MARGIN + 12,
-      gap: 2.5,
+      gap: 3.5,
     });
   }
 
@@ -361,13 +356,9 @@ export async function buildReportPdf(data: ReportData): Promise<Uint8Array> {
   // Second pass: report ID + pagination on every page footer.
   const pages = doc.getPages();
   pages.forEach((p, i) => {
-    const tag = `${data.reportId ?? "BoundRight report"} · Page ${i + 1} of ${pages.length}`;
-    p.drawText(tag, {
-      x: PAGE_W - MARGIN - mono.widthOfTextAtSize(tag, 7.5),
-      y: FOOTER_H - 14,
-      size: 7.5,
-      font: mono,
-      color: MUTED,
+    drawBrandFooter(p, { bold: sansBold, regular: sans, mono }, {
+      pageWidth: PAGE_W,
+      rightTag: `${data.reportId ?? "BoundRight report"} · Page ${i + 1} of ${pages.length}`,
     });
   });
 

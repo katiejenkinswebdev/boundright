@@ -2,6 +2,7 @@
 // hands to whoever asks "where does our data go?" during due diligence.
 // Usage: npx tsx scripts/generate-one-pager.ts   -> public/boundright-data-processing.pdf
 import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
+import { drawBrandFooter, drawWordmark } from "../lib/pdf-brand";
 import fs from "node:fs";
 import path from "node:path";
 
@@ -54,7 +55,8 @@ function section(title: string, items: string[]) {
 }
 
 // Header
-text("BoundRight", 18, { font: bold, gap: 2 });
+drawWordmark(page, { x: M, y: y - 18, size: 18, bold, regular: sans });
+y -= 24;
 text("Data processing overview · for agency due diligence · v1.0, July 2026", 9, {
   color: MUTED,
   gap: 14,
@@ -99,19 +101,9 @@ section("Access, retention, deletion", [
 ]);
 
 text("Questions: help@boundright.app", 10, { gap: 4 });
-page.drawText("Every account. Bound right.", {
-  x: M,
-  y: 44,
-  size: 9,
-  font: bold,
-  color: INK,
-});
-page.drawText("BoundRight · Minds Eye Collective", {
-  x: 612 - M - sans.widthOfTextAtSize("BoundRight · Minds Eye Collective", 8),
-  y: 44,
-  size: 8,
-  font: sans,
-  color: MUTED,
+drawBrandFooter(page, { bold, regular: sans, mono: sans }, {
+  pageWidth: 612,
+  rightTag: "Minds Eye Collective",
 });
 
 const out = path.join(import.meta.dirname, "..", "public", "boundright-data-processing.pdf");

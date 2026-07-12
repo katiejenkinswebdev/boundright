@@ -1,4 +1,5 @@
 import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
+import { drawBrandFooter, PDF_MARGIN } from "./pdf-brand";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 const INK = rgb(0.106, 0.165, 0.255);
@@ -117,7 +118,8 @@ export async function buildMonthlyReportPdf(
   const sans = await doc.embedFont(StandardFonts.Helvetica);
   const bold = await doc.embedFont(StandardFonts.HelveticaBold);
   const page = doc.addPage([612, 792]);
-  let y = 792 - 64;
+  const M = PDF_MARGIN;
+  let y = 792 - M;
 
   const text = (
     str: string,
@@ -126,12 +128,12 @@ export async function buildMonthlyReportPdf(
   ) => {
     // naive wrap
     const font = opts.font ?? sans;
-    const maxW = 612 - 64 - (opts.x ?? 64);
+    const maxW = 612 - M - (opts.x ?? M);
     const words = str.split(" ");
     let line = "";
     const flush = () => {
-      page.drawText(line, { x: opts.x ?? 64, y, size, font, color: opts.color ?? INK });
-      y -= size + 6;
+      page.drawText(line, { x: opts.x ?? M, y, size, font, color: opts.color ?? INK });
+      y -= size + 7;
       line = "";
     };
     for (const w of words) {
@@ -147,12 +149,12 @@ export async function buildMonthlyReportPdf(
   text(`Period: ${n.periodDates}`, 9, { color: MUTED });
   y -= 12;
   page.drawLine({
-    start: { x: 64, y },
-    end: { x: 548, y },
+    start: { x: M, y },
+    end: { x: 612 - M, y },
     thickness: 1,
     color: INK,
   });
-  y -= 28;
+  y -= 34;
 
   const kpis: [string, string][] = [
     ["Checks run", String(n.checksRun)],
@@ -166,12 +168,12 @@ export async function buildMonthlyReportPdf(
   kpis.forEach(([label, value], i) => {
     const col = i % 2;
     const row = Math.floor(i / 2);
-    const x = 64 + col * 250;
-    const yy = startY - row * 72;
+    const x = M + col * 252;
+    const yy = startY - row * 78;
     page.drawText(value, { x, y: yy, size: 26, font: bold, color: i === 2 || i === 3 ? VERIFY : INK });
     page.drawText(label, { x, y: yy - 16, size: 10, font: sans, color: MUTED });
   });
-  y = startY - Math.ceil(kpis.length / 2) * 72 - 12;
+  y = startY - Math.ceil(kpis.length / 2) * 78 - 16;
 
   text("The period in one paragraph", 12, { font: bold });
   y -= 2;
@@ -184,9 +186,10 @@ export async function buildMonthlyReportPdf(
   );
 
   page.drawText(
-    "Prepared with BoundRight. Findings were reviewed and confirmed by a licensed agent. Every account, bound right, documented.",
-    { x: 64, y: 48, size: 8, font: sans, color: MUTED }
+    "Prepared with BoundRight. Findings were reviewed and confirmed by a licensed agent.",
+    { x: M, y: 64, size: 8, font: sans, color: MUTED }
   );
+  drawBrandFooter(page, { bold, regular: sans, mono: sans }, { pageWidth: 612 });
 
   return doc.save();
 }
