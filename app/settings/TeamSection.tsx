@@ -4,6 +4,7 @@ import { useActionState } from "react";
 import { inviteMember, setMemberRole, type TeamState } from "@/app/actions/team";
 import { updateIntegrations, sendTestNotice, type SettingsState } from "@/app/actions/settings";
 import { inputClass, labelClass, secondaryButtonClass } from "@/app/components/ui";
+import { InfoTip } from "@/app/components/InfoTip";
 
 const initial: TeamState = { status: "idle", message: "" };
 const settingsInitial: SettingsState = { status: "idle", message: "" };
@@ -71,25 +72,40 @@ export function TeamSection({
       <form action={inviteAction} className="space-y-3 border-t border-line pt-4">
         <p className="font-semibold">Invite a teammate</p>
         <div className="grid gap-3 sm:grid-cols-[2fr_1fr]">
-          <input
-            name="email"
-            type="email"
-            required
-            placeholder="teammate@youragency.com"
-            className={inputClass}
-            aria-label="Teammate email"
-          />
-          <select name="role" defaultValue="user" className={inputClass} aria-label="Role">
-            {ROLES.map(([value]) => (
-              <option key={value} value={value}>
-                {value}
-              </option>
-            ))}
-          </select>
+          <div>
+            <label htmlFor="invite_email" className={labelClass}>
+              Email
+            </label>
+            <input
+              id="invite_email"
+              name="email"
+              type="email"
+              required
+              placeholder="teammate@youragency.com"
+              className={inputClass}
+            />
+          </div>
+          <div>
+            <label htmlFor="invite_role" className={labelClass}>
+              Role
+              <InfoTip label="What each role can do">
+                {ROLES.map(([value, blurb]) => (
+                  <span key={value} className="mt-2 block first:mt-0">
+                    <strong>{blurb.split(" · ")[0]}</strong> —{" "}
+                    {blurb.split(" · ")[1]}.
+                  </span>
+                ))}
+              </InfoTip>
+            </label>
+            <select id="invite_role" name="role" defaultValue="user" className={inputClass}>
+              {ROLES.map(([value]) => (
+                <option key={value} value={value}>
+                  {value}
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
-        <p className="text-sm text-ink/60">
-          {ROLES.map(([, blurb]) => blurb).join(". ")}.
-        </p>
         <button disabled={invitePending} className={secondaryButtonClass}>
           {invitePending ? "Inviting…" : "Send invite"}
         </button>

@@ -56,7 +56,7 @@ Policy discrepancy detection for independent commercial insurance agencies. A CS
 
 ### Teams & roles
 - user → manager (adds analytics) → admin (adds configuration, team, integrations, billing, deletion) → system_admin (operator; database-granted only)
-- Email invites with join links; each user's role (and what it grants) shown in Settings; the ops console shows every client's configuration in one place
+- Email invites with join links (labeled Email/Role fields, role capabilities in a hover tip); each user's role (and what it grants) shown in Settings; the ops console shows every client's configuration in one place
 
 ### Configuration, feedback, transparency
 - Settings → Configuration (admins): ROI assumptions, scoring thresholds, reminder timing
