@@ -47,6 +47,15 @@ export default async function SettingsPage() {
         <Section title="Security">
           <MfaSection enrolledFactorId={enrolledFactorId} />
         </Section>
+
+        <Section title="Legal">
+          <ul className="space-y-1 text-sm">
+            <li><a href="/terms" className="underline">Terms of Service</a></li>
+            <li><a href="/privacy" className="underline">Privacy Policy</a></li>
+            <li><a href="/ai" className="underline">How we use AI (plain-language transparency page)</a></li>
+            <li><a href="/boundright-data-processing.pdf" className="underline">Data processing one-pager (PDF)</a></li>
+          </ul>
+        </Section>
       </div>
     </AppShell>
   );

@@ -62,15 +62,15 @@ export async function endAnnouncement(id: string): Promise<void> {
   revalidatePath("/ops");
 }
 
-/** System admin only: the platform-wide letter guidance, one place for all clients. */
-export async function saveGlobalLetterGuidance(formData: FormData): Promise<void> {
+/** System admin only: the platform correction-request prompt used for every client's letters. Blank reverts to the built-in versioned prompt. */
+export async function savePlatformLetterPrompt(formData: FormData): Promise<void> {
   const { profile } = await requireProfile();
   if (!isSystemAdmin(profile)) throw new Error("System admin only.");
   const admin = createAdminClient();
   if (!admin) return;
-  const value = String(formData.get("guidance") ?? "").trim().slice(0, 4000);
+  const value = String(formData.get("prompt") ?? "").trim().slice(0, 12_000);
   await admin.from("platform_config").upsert({
-    key: "letter_guidance",
+    key: "letter_prompt",
     value,
     updated_at: new Date().toISOString(),
   });
@@ -386,5 +386,24 @@ export async function setAgencyPlan(agencyId: string, formData: FormData): Promi
     event_name: "plan_set_by_operator",
     metadata: { plan },
   });
+  revalidatePath("/ops");
+}
+
+/** System admin only: delete a client agency entirely (type-to-confirm). */
+export async function deleteClientAgency(agencyId: string, formData: FormData): Promise<void> {
+  const { profile, agency: own } = await requireProfile();
+  if (!isSystemAdmin(profile)) throw new Error("System admin only.");
+  if (agencyId === own.id) throw new Error("Refusing to delete your own agency from the ops console.");
+  const admin = createAdminClient();
+  if (!admin) return;
+  const { data: target } = await admin.from("agencies").select("name").eq("id", agencyId).maybeSingle();
+  if (!target) return;
+  if (String(formData.get("confirm_name") ?? "").trim() !== target.name) return;
+  // Delete member logins first (profiles cascade with the agency).
+  const { data: members } = await admin.from("profiles").select("user_id").eq("agency_id", agencyId);
+  await admin.from("agencies").delete().eq("id", agencyId);
+  for (const m of members ?? []) {
+    await admin.auth.admin.deleteUser(m.user_id);
+  }
   revalidatePath("/ops");
 }

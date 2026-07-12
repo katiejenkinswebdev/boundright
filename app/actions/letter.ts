@@ -44,7 +44,7 @@ export async function generateCorrectionLetter(checkId: string): Promise<LetterR
         checkType: check.check_type,
         carrier: check.carrier,
         findings: confirmed as PipelineFinding[],
-        globalGuidance: guidance.global,
+        platformPrompt: guidance.platformPrompt,
         agencyGuidance: guidance.agency,
       },
       usage

@@ -177,18 +177,14 @@ export async function draftCorrectionLetter(
     checkType: string;
     carrier: string | null;
     findings: PipelineFinding[];
-    globalGuidance?: string | null;
+    platformPrompt?: string | null;
     agencyGuidance?: string | null;
   },
   usage: Usage
 ): Promise<string> {
-  // Guidance layers ride on top of the versioned base prompt: the platform
-  // layer applies to every client, the agency layer to this client only
-  // (and wins where they conflict).
-  let system = LETTER_SYSTEM;
-  if (input.globalGuidance) {
-    system += `\n\nPlatform-wide additional instructions (apply to every letter):\n${input.globalGuidance}`;
-  }
+  // One combined system prompt: the platform prompt (ops-editable; the
+  // built-in versioned prompt when unset) plus this client's fine-tuning.
+  let system = input.platformPrompt ?? LETTER_SYSTEM;
   if (input.agencyGuidance) {
     system += `\n\nAgency-specific instructions for this client (these take priority):\n${input.agencyGuidance}`;
   }
@@ -204,8 +200,8 @@ export async function draftCorrectionLetter(
       ),
       "",
       "Please issue a correcting endorsement effective inception and confirm in writing.",
-      // Stub mode echoes the guidance so wiring is visible and testable.
-      ...(input.globalGuidance ? ["", `[Platform guidance applied: ${input.globalGuidance}]`] : []),
+      // Stub mode echoes the layers so wiring is visible and testable.
+      ...(input.platformPrompt ? ["", `[Platform prompt applied: ${input.platformPrompt.slice(0, 80)}]`] : []),
       ...(input.agencyGuidance ? [`[Agency guidance applied: ${input.agencyGuidance}]`] : []),
     ].join("\n");
   }

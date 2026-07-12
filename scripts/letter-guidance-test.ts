@@ -24,7 +24,7 @@ function check(name: string, ok: boolean, detail?: string) {
 
 async function main() {
   const stamp = Date.now();
-  const GLOBAL = `TEST-GLOBAL-${stamp}: reference the producer code.`;
+  const GLOBAL = `TEST-PLATFORM-PROMPT-${stamp}: draft correction requests referencing the producer code.`;
   const AGENCY = `TEST-AGENCY-${stamp}: sign as Risk Management Team.`;
 
   // Temp agency with per-client guidance.
@@ -39,13 +39,13 @@ async function main() {
   const { data: prev } = await admin
     .from("platform_config")
     .select("value")
-    .eq("key", "letter_guidance")
+    .eq("key", "letter_prompt")
     .maybeSingle();
-  await admin.from("platform_config").upsert({ key: "letter_guidance", value: GLOBAL });
+  await admin.from("platform_config").upsert({ key: "letter_prompt", value: GLOBAL });
 
   try {
     const guidance = await getLetterGuidance(agency.id);
-    check("global guidance fetched", guidance.global === GLOBAL, String(guidance.global));
+    check("platform prompt fetched", guidance.platformPrompt === GLOBAL, String(guidance.platformPrompt));
     check("agency guidance fetched", guidance.agency === AGENCY, String(guidance.agency));
 
     const finding = {
@@ -65,12 +65,12 @@ async function main() {
         checkType: "issuance",
         carrier: "Granite State Mutual",
         findings: [finding],
-        globalGuidance: guidance.global,
+        platformPrompt: guidance.platformPrompt,
         agencyGuidance: guidance.agency,
       },
       emptyUsage()
     );
-    check("letter includes platform guidance", letter.includes(GLOBAL));
+    check("letter reflects the platform prompt", letter.includes("Platform prompt applied"));
     check("letter includes agency guidance", letter.includes(AGENCY));
     check("letter has no signature block", !letter.includes("Guidance Test Agency"));
 
@@ -82,17 +82,17 @@ async function main() {
         checkType: "issuance",
         carrier: null,
         findings: [finding],
-        globalGuidance: null,
+        platformPrompt: null,
         agencyGuidance: null,
       },
       emptyUsage()
     );
-    check("no guidance markers when unset", !bare.includes("guidance applied"));
+    check("no layer markers when unset", !bare.includes("applied"));
   } finally {
     await admin.from("agencies").delete().eq("id", agency.id);
     await admin
       .from("platform_config")
-      .upsert({ key: "letter_guidance", value: prev?.value ?? "" });
+      .upsert({ key: "letter_prompt", value: prev?.value ?? "" });
   }
 
   if (failed) {

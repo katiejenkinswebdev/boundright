@@ -8,6 +8,8 @@ import { agencyCap } from "@/lib/pricing";
 import { AdminLogoForm } from "../AdminLogoForm";
 import { AgencySettingsForm } from "./AgencySettingsForm";
 import { GuidanceForm } from "./GuidanceForm";
+import { redirect } from "next/navigation";
+import { deleteClientAgency } from "@/app/actions/admin";
 
 /** One client, everything about them: settings, branding, prompts, people. */
 export default async function OpsAgencyPage({
@@ -87,6 +89,33 @@ export default async function OpsAgencyPage({
               </li>
             ))}
           </ul>
+        </section>
+        <section className="rounded-lg border border-flag/40 bg-card p-6">
+          <h2 className="mb-4 font-semibold text-flag">Danger zone</h2>
+          <form
+            action={async (formData: FormData) => {
+              "use server";
+              await deleteClientAgency(agency.id, formData);
+              redirect("/ops");
+            }}
+            className="space-y-3"
+          >
+            <p className="text-sm text-ink/80">
+              Deletes this client entirely: agency, every member login, every
+              check and finding. Cannot be undone. Type{" "}
+              <span className="font-mono font-semibold">{agency.name}</span> to
+              confirm.
+            </p>
+            <input
+              name="confirm_name"
+              placeholder="Type the agency name"
+              autoComplete="off"
+              className="w-full max-w-sm rounded border border-line bg-paper px-3 py-2 text-sm"
+            />
+            <button className="rounded border border-flag px-4 py-2 text-sm font-semibold text-flag hover:bg-flag hover:text-white">
+              Delete this client
+            </button>
+          </form>
         </section>
       </div>
     </AppShell>

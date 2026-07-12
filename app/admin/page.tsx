@@ -2,7 +2,6 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requireProfile } from "@/lib/auth";
 import { AppShell } from "@/app/components/AppShell";
-import { AgencyForm, DangerZone } from "@/app/settings/SettingsForms";
 import { TeamSection } from "@/app/settings/TeamSection";
 import { isAdmin, isSystemAdmin, canManageUsers, roleRank } from "@/lib/roles";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -99,53 +98,6 @@ export default async function AdminHubPage() {
             pendingInvites={pendingInvites}
           />
         </Section>
-
-        {admin && (
-        <Section title="Configuration">
-          <div className="space-y-8">
-            <AgencyForm
-              name={agency.name}
-              minutes={agency.manual_check_minutes}
-              premium={Number(agency.avg_account_premium)}
-              rate={Number(agency.csr_hourly_rate)}
-              varPct={Number(agency.premium_variance_threshold)}
-              renewalPct={Number(agency.renewal_premium_threshold)}
-              reminderHours={agency.reminder_hours}
-            />
-          </div>
-        </Section>
-        )}
-
-        <Section title="Legal">
-          <ul className="space-y-1 text-sm">
-            <li>
-              <Link href="/terms" className="underline">
-                Terms of Service
-              </Link>
-            </li>
-            <li>
-              <Link href="/privacy" className="underline">
-                Privacy Policy
-              </Link>
-            </li>
-            <li>
-              <Link href="/ai" className="underline">
-                How we use AI (plain-language transparency page)
-              </Link>
-            </li>
-            <li>
-              <a href="/boundright-data-processing.pdf" className="underline">
-                Data processing one-pager (PDF, for due diligence)
-              </a>
-            </li>
-          </ul>
-        </Section>
-
-        {admin && (
-        <Section title="Danger zone">
-          <DangerZone agencyName={agency.name} />
-        </Section>
-        )}
       </div>
     </AppShell>
   );

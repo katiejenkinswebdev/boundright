@@ -8,8 +8,9 @@ import { createAnnouncement, endAnnouncement, saveLegalDoc } from "@/app/actions
 import { AppShell } from "@/app/components/AppShell";
 import { PageSizeSelect } from "@/app/checks/PageSizeSelect";
 import { agencyCap } from "@/lib/pricing";
-import { LetterGuidancePanel } from "./LetterGuidancePanel";
-import { NewClientForm } from "./NewClientForm";
+import { LETTER_SYSTEM } from "@/prompts/letter_v2";
+import { NewClientModal } from "./NewClientModal";
+import { PlatformPromptForm } from "./PlatformPromptForm";
 
 /** Ops console: system_admin role (ADMIN_EMAILS env as bootstrap fallback). */
 export default async function OpsPage({
@@ -39,7 +40,7 @@ export default async function OpsPage({
     await Promise.all([
       admin
         .from("agencies")
-        .select("id, name, plan, billing_status, checks_this_period, checks_allowance, created_at, manual_check_minutes, avg_account_premium, csr_hourly_rate, premium_variance_threshold, renewal_premium_threshold, reminder_hours, notify_webhook_url, smart_intake_enabled")
+        .select("id, name, plan, billing_status, checks_this_period, checks_allowance, created_at, smart_intake_enabled")
         .order("created_at", { ascending: false }),
       admin
         .from("checks")
@@ -78,12 +79,8 @@ export default async function OpsPage({
   const { data: letterConfig } = await admin
     .from("platform_config")
     .select("value")
-    .eq("key", "letter_guidance")
+    .eq("key", "letter_prompt")
     .maybeSingle();
-  const { data: agencyGuidance } = await admin
-    .from("agencies")
-    .select("id, name, letter_instructions, logo_url")
-    .order("name");
   const { data: announcements } = await admin
     .from("announcements")
     .select("id, message, link_url, starts_at, ends_at")
@@ -146,7 +143,7 @@ export default async function OpsPage({
     (a) => (costByAgency.get(a.id)?.month ?? 0) > 7500
   );
 
-  // Sorted + paginated clients (in memory; the whole book of clients is small).
+  // Sorted + paginated clients (in memory; the client list is small).
   const cookieStore = await cookies();
   const pageSize = [10, 25, 50, 100].includes(Number(cookieStore.get("br_rows")?.value))
     ? Number(cookieStore.get("br_rows")!.value)
@@ -183,22 +180,14 @@ export default async function OpsPage({
 
   return (
     <AppShell agency={myAgency} profile={profile} active="/admin">
-      <h1 className="mb-2 text-2xl font-semibold">Ops console</h1>
+      <div className="mb-2 flex flex-wrap items-center justify-between gap-3">
+        <h1 className="text-2xl font-semibold">Ops console</h1>
+        <NewClientModal />
+      </div>
       <p className="mb-8 text-sm text-ink/60">
         {(agencies ?? []).length} agencies · total AI spend{" "}
         {dollars([...costByAgency.values()].reduce((s, c) => s + c.total, 0))}
       </p>
-
-      <h2 className="mb-3 font-semibold">New client setup</h2>
-      <section className="mb-8 rounded-lg border border-ink bg-card p-6">
-        <p className="mb-4 text-sm text-ink/70">
-          One step: creates the agency on the chosen plan (with allowance and
-          smart intake configured) and emails the client admin their join
-          link. Their thresholds, logo, and letter guidance are editable
-          below the moment they exist.
-        </p>
-        <NewClientForm />
-      </section>
 
       {overCost.length > 0 && (
         <div className="mb-6 rounded border border-flag/50 bg-flag/10 p-4 text-sm">
@@ -277,77 +266,43 @@ export default async function OpsPage({
         <PageSizeSelect value={pageSize} baseHref={`/ops?sort=${sort}&dir=${dir}`} />
       </div>
 
-      <h2 className="mb-3 font-semibold">Recent failures</h2>
-      <section className="overflow-x-auto rounded-lg border border-line bg-card">
-        <table className="w-full text-sm">
-          <tbody>
-            {(failures ?? []).length === 0 && (
-              <tr>
-                <td className="px-4 py-3 text-ink/60">No failures this week.</td>
-              </tr>
-            )}
-            {(failures ?? []).map((f) => (
-              <tr key={f.id} className="border-b border-line/50">
-                <td className="px-4 py-2 text-ink/60">
-                  {new Date(f.created_at).toLocaleString()}
-                </td>
-                <td className="px-4 py-2 font-medium">{f.label}</td>
-                <td className="px-4 py-2 text-ink/80">{f.failure_reason}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </section>
-
-      <h2 className="mb-3 mt-8 font-semibold">Correction letter prompt</h2>
+      <h2 className="mb-3 font-semibold">Platform configuration</h2>
       <section className="mb-8 rounded-lg border border-line bg-card p-6">
-        <p className="mb-4 text-sm text-ink/70">
-          Letters are drafted from the versioned base prompt (letter_v2, in
-          the repo). The guidance below layers on top without touching it:
-          the platform layer applies to every client, a client&apos;s own
-          layer applies only to them and wins where they conflict.
-        </p>
-        <LetterGuidancePanel
-          globalValue={letterConfig?.value ?? ""}
-          agencies={(agencyGuidance ?? []).map((g) => ({
-            id: g.id,
-            name: g.name,
-            letter_instructions: g.letter_instructions,
-          }))}
-        />
-      </section>
+        <h3 className="mb-2 font-semibold">Correction request prompt (every client)</h3>
+        <PlatformPromptForm value={letterConfig?.value ?? ""} builtIn={LETTER_SYSTEM} />
 
-      <h2 className="mb-3 mt-8 font-semibold">Legal documents</h2>
-      <section className="mb-8 rounded-lg border border-line bg-card p-6">
-        <p className="mb-4 text-sm text-ink/70">
-          Live at /terms and /privacy the moment you save. Blank fields fall
-          back to the built-in documents. Plain text; blank lines separate
-          paragraphs. Run substantive changes past your attorney.
-        </p>
-        {([
-          ["legal_terms", "Terms of Service", legalTerms?.value ?? ""],
-          ["legal_privacy", "Privacy Policy", legalPrivacy?.value ?? ""],
-        ] as const).map(([key, label, value]) => (
-          <form key={key} action={saveLegalDoc} className="mb-6 last:mb-0">
-            <input type="hidden" name="doc" value={key} />
-            <label className="block">
-              <span className="mb-1 block text-sm font-semibold">{label}</span>
-              <textarea
-                name="content"
-                defaultValue={value}
-                rows={6}
-                placeholder="Blank = the built-in document ships as is."
-                className="w-full rounded border border-line bg-paper px-3 py-2 font-mono text-xs leading-relaxed"
-              />
-            </label>
-            <button
-              type="submit"
-              className="mt-2 rounded border border-ink px-4 py-1.5 text-sm font-semibold hover:bg-ink hover:text-paper"
-            >
-              Save {label}
-            </button>
-          </form>
-        ))}
+        <div className="mt-8 border-t border-line pt-6">
+          <h3 className="mb-2 font-semibold">Legal documents</h3>
+          <p className="mb-4 text-sm text-ink/70">
+            Live at /terms and /privacy the moment you save. Blank fields fall
+            back to the built-in documents. Plain text; blank lines separate
+            paragraphs. Run substantive changes past your attorney.
+          </p>
+          {([
+            ["legal_terms", "Terms of Service", legalTerms?.value ?? ""],
+            ["legal_privacy", "Privacy Policy", legalPrivacy?.value ?? ""],
+          ] as const).map(([key, label, value]) => (
+            <form key={key} action={saveLegalDoc} className="mb-6 last:mb-0">
+              <input type="hidden" name="doc" value={key} />
+              <label className="block">
+                <span className="mb-1 block text-sm font-semibold">{label}</span>
+                <textarea
+                  name="content"
+                  defaultValue={value}
+                  rows={6}
+                  placeholder="Blank = the built-in document ships as is."
+                  className="w-full rounded border border-line bg-paper px-3 py-2 font-mono text-xs leading-relaxed"
+                />
+              </label>
+              <button
+                type="submit"
+                className="mt-2 rounded border border-ink px-4 py-1.5 text-sm font-semibold hover:bg-ink hover:text-paper"
+              >
+                Save {label}
+              </button>
+            </form>
+          ))}
+        </div>
       </section>
 
       <h2 className="mb-3 mt-8 font-semibold">Announcements (banner across the app)</h2>
@@ -510,6 +465,28 @@ export default async function OpsPage({
                 </tr>
               );
             })}
+          </tbody>
+        </table>
+      </section>
+
+      <h2 className="mb-3 mt-8 font-semibold">Recent failures</h2>
+      <section className="overflow-x-auto rounded-lg border border-line bg-card">
+        <table className="w-full text-sm">
+          <tbody>
+            {(failures ?? []).length === 0 && (
+              <tr>
+                <td className="px-4 py-3 text-ink/60">No failures this week.</td>
+              </tr>
+            )}
+            {(failures ?? []).map((f) => (
+              <tr key={f.id} className="border-b border-line/50">
+                <td className="px-4 py-2 text-ink/60">
+                  {new Date(f.created_at).toLocaleString()}
+                </td>
+                <td className="px-4 py-2 font-medium">{f.label}</td>
+                <td className="px-4 py-2 text-ink/80">{f.failure_reason}</td>
+              </tr>
+            ))}
           </tbody>
         </table>
       </section>
