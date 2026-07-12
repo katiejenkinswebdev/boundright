@@ -18,7 +18,7 @@ export default async function AdminPage() {
   monthStart.setUTCDate(1);
   monthStart.setUTCHours(0, 0, 0, 0);
 
-  const [{ data: agencies }, { data: failures }, { data: costRows }, { data: feedback }] =
+  const [{ data: agencies }, { data: failures }, { data: costRows }, { data: feedback }, { data: driftChecks }, { data: driftFindings }] =
     await Promise.all([
       admin
         .from("agencies")
@@ -36,7 +36,27 @@ export default async function AdminPage() {
         .select("id, category, message, page, created_at")
         .order("created_at", { ascending: false })
         .limit(25),
+      admin.from("checks").select("id, prompt_version").not("prompt_version", "is", null),
+      admin
+        .from("findings")
+        .select("check_id, reviewer_action")
+        .not("reviewer_action", "is", null)
+        .neq("status", "match"),
     ]);
+
+  // Guardrail: reviewer agreement per prompt version. A dismiss-rate spike
+  // after a prompt change is the earliest regression signal; the runbook is
+  // to pin the previous version (see README).
+  const versionByCheck = new Map((driftChecks ?? []).map((c) => [c.id, c.prompt_version]));
+  const drift = new Map<string, { confirmed: number; dismissed: number }>();
+  for (const df of driftFindings ?? []) {
+    const v = versionByCheck.get(df.check_id);
+    if (!v) continue;
+    const entry = drift.get(v) ?? { confirmed: 0, dismissed: 0 };
+    if (df.reviewer_action === "confirmed") entry.confirmed++;
+    else entry.dismissed++;
+    drift.set(v, entry);
+  }
 
   const costByAgency = new Map<string, { total: number; month: number }>();
   const lastActivity = new Map<string, string>();
@@ -122,6 +142,36 @@ export default async function AdminPage() {
                 <td className="px-4 py-2 text-ink/80">{f.failure_reason}</td>
               </tr>
             ))}
+          </tbody>
+        </table>
+      </section>
+
+      <h2 className="mb-3 mt-8 font-semibold">Prompt-version drift (reviewer agreement)</h2>
+      <section className="mb-8 overflow-x-auto rounded-lg border border-line bg-card">
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="border-b border-line text-left">
+              <th className="px-4 py-3 font-semibold">Prompt version</th>
+              <th className="px-4 py-3 text-right font-semibold">Confirmed</th>
+              <th className="px-4 py-3 text-right font-semibold">Dismissed</th>
+              <th className="px-4 py-3 text-right font-semibold">Dismiss rate</th>
+            </tr>
+          </thead>
+          <tbody>
+            {[...drift.entries()].map(([version, v]) => {
+              const total = v.confirmed + v.dismissed;
+              const rate = total ? Math.round((v.dismissed / total) * 100) : 0;
+              return (
+                <tr key={version} className="border-b border-line/50">
+                  <td className="px-4 py-2 font-mono text-xs">{version}</td>
+                  <td className="px-4 py-2 text-right font-mono">{v.confirmed}</td>
+                  <td className="px-4 py-2 text-right font-mono">{v.dismissed}</td>
+                  <td className={`px-4 py-2 text-right font-mono ${rate > 40 ? "text-flag" : ""}`}>
+                    {rate}%
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </section>

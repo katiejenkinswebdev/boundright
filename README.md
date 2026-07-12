@@ -76,6 +76,12 @@ Policy discrepancy detection for independent commercial insurance agencies. A CS
 | Monitoring | Sentry (no document content or PII ever logged) |
 | Analytics | First-party events table in Postgres; no third-party analytics |
 
+## AI transparency
+
+How the AI is used, in one paragraph (the full plain-language version ships in-app at `/ai`): Claude extracts facts verbatim from both documents with a page citation for every value, compares them under a hardcoded severity taxonomy, and re-verifies every critical finding against source excerpts in a second pass. The AI may not guess (absent fields stay absent), may not make final calls (every finding waits for a licensed reviewer; only confirmed findings count anywhere), and may not send anything (the correction letter is a draft the reviewer edits and sends themselves). Every check records its model and prompt version; prompts are versioned files that are never edited in place; no prompt or model change ships unless the eval harness finds every seeded critical with zero false criticals; reviewer dismissals are captured with reasons as the correction dataset; and the admin console tracks reviewer agreement per prompt version so drift shows up in data, not anecdotes. Customer documents are deleted after processing (nightly-verified) and are not used to train models.
+
+**Prompt rollback runbook:** if the dismiss rate for a new prompt version spikes in the admin drift table, revert by re-importing the previous prompt version in `lib/pipeline/claude.ts` (versions are immutable files), run `npm run qa:live`, and ship. In-flight checks keep their recorded version for the audit trail.
+
 ## Privacy commitments (marketing must match behavior exactly)
 
 - Uploaded PDFs are **deleted after processing**. We keep only filenames, findings, and the short cited excerpts shown in reports.
@@ -133,6 +139,30 @@ Suites: RLS isolation (14 checks), onboarding flow (10), pipeline + deletion + f
 5. Resend domain, Sentry DSN
 6. Real Calendly URL on the landing page; real screenshot in the hero; demo video
 7. Attorney pass on Terms and Privacy before the first paid subscription
+
+## To do
+
+**Launch blockers (need Katie's accounts/keys):**
+- [ ] `ANTHROPIC_API_KEY` in `.env.local` and as a GitHub secret, then run `npm run qa:live` (activates the live model eval gate)
+- [ ] Vercel project + env vars (`CRON_SECRET`, `ADMIN_EMAILS`, ...); production Supabase (`supabase link` + `db push`)
+- [ ] Stripe: create the two prices, set price IDs + webhook secret, test-mode subscribe/cancel round trip (integration is built)
+- [ ] Resend domain; inbound email provider pointed at `/api/inbound`; Sentry DSN
+- [ ] Real Calendly URL and hero screenshot on the landing page; 3-minute demo video
+- [ ] Attorney pass on Terms/Privacy before the first paid subscription
+
+**AI guardrail roadmap (drift table shipped; remaining):**
+- [ ] Expand the golden eval set with real redacted document pairs, especially scans
+- [ ] Feed dismiss reasons back: per-agency "known intentional differences" list injected into comparison prompts
+- [ ] Publish reviewer-agreement stats on the `/ai` page once volume is meaningful
+
+**Product roadmap:**
+- [ ] Report verification endpoint (`/verify/[id]`) + QR on the PDF; IBM Plex embedding in PDFs
+- [ ] Correction tracking (requested → corrected → verified by re-check) and re-check linking
+- [ ] Renewal radar (expirations approaching without a renewal check)
+- [ ] CSV export of findings/metrics; client-facing plain-language summary letter
+- [ ] AMS integrations (HawkSoft/EZLynx first), SSO, public API
+- [ ] Analytics: events table covers funnels today; if deeper product analytics is ever needed, self-hosted PostHog only (third-party trackers would break the stated first-party-only commitment)
+- [ ] QA suites should clean up their test agencies in the local DB
 
 ## Standing rules
 

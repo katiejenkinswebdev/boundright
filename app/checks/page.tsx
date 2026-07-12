@@ -28,9 +28,21 @@ const TYPE_FILTERS = [
 export default async function ChecksPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string; status?: string; type?: string }>;
+  searchParams: Promise<{
+    q?: string;
+    status?: string;
+    type?: string;
+    sort?: string;
+    dir?: string;
+  }>;
 }) {
-  const { q, status: statusFilter = "all", type: typeFilter = "all" } = await searchParams;
+  const {
+    q,
+    status: statusFilter = "all",
+    type: typeFilter = "all",
+    sort = "date",
+    dir = "desc",
+  } = await searchParams;
   const { supabase, profile, agency } = await requireProfile();
 
   let query = supabase
@@ -43,14 +55,24 @@ export default async function ChecksPage({
   if (typeFilter !== "all") query = query.eq("check_type", typeFilter);
   const { data: checks } = await query;
 
-  const filterHref = (s: string, t: string) => {
+  const href = (over: Record<string, string>) => {
     const p = new URLSearchParams();
     if (q?.trim()) p.set("q", q.trim());
-    if (s !== "all") p.set("status", s);
-    if (t !== "all") p.set("type", t);
+    if (statusFilter !== "all") p.set("status", statusFilter);
+    if (typeFilter !== "all") p.set("type", typeFilter);
+    if (sort !== "date") p.set("sort", sort);
+    if (dir !== "desc") p.set("dir", dir);
+    for (const [k, v] of Object.entries(over)) {
+      if (v === "" || (k === "status" && v === "all") || (k === "type" && v === "all")) p.delete(k);
+      else p.set(k, v);
+    }
     const qs = p.toString();
     return `/checks${qs ? `?${qs}` : ""}`;
   };
+  const filterHref = (s: string, t: string) => href({ status: s, type: t });
+  const sortHref = (col: string) =>
+    href({ sort: col, dir: sort === col && dir === "asc" ? "desc" : "asc" });
+  const arrow = (col: string) => (sort === col ? (dir === "asc" ? " ▲" : " ▼") : "");
 
   // Severity chips per check (single query, grouped client-side).
   const ids = (checks ?? []).map((c) => c.id);
@@ -68,6 +90,24 @@ export default async function ChecksPage({
     sevByCheck.set(f.check_id, entry);
   }
 
+  const sorted = [...(checks ?? [])].sort((a, b) => {
+    const sevScore = (id: string) => {
+      const v = sevByCheck.get(id);
+      return v ? v.critical * 10_000 + v.moderate * 100 + v.minor : -1;
+    };
+    const cmp =
+      sort === "label"
+        ? a.label.localeCompare(b.label)
+        : sort === "type"
+          ? a.check_type.localeCompare(b.check_type)
+          : sort === "status"
+            ? a.status.localeCompare(b.status)
+            : sort === "findings"
+              ? sevScore(a.id) - sevScore(b.id)
+              : new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+    return dir === "asc" ? cmp : -cmp;
+  });
+
   return (
     <AppShell agency={agency} profile={profile} active="/checks">
       <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
@@ -81,6 +121,7 @@ export default async function ChecksPage({
       </div>
 
       <div className="mb-3 flex flex-wrap items-center gap-2">
+        <span className="text-sm font-semibold text-ink/60">Findings:</span>
         {STATUS_FILTERS.map(([value, label]) => (
           <Link
             key={value}
@@ -93,6 +134,7 @@ export default async function ChecksPage({
           </Link>
         ))}
         <span className="mx-1 text-line">|</span>
+        <span className="text-sm font-semibold text-ink/60">Types:</span>
         {TYPE_FILTERS.map(([value, label]) => (
           <Link
             key={value}
@@ -129,16 +171,27 @@ export default async function ChecksPage({
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-line text-left">
-                <th className="px-4 py-3 font-semibold">Client / account</th>
-                <th className="px-4 py-3 font-semibold">Type</th>
-                <th className="px-4 py-3 font-semibold">Date</th>
-                <th className="px-4 py-3 font-semibold">Status</th>
-                <th className="px-4 py-3 font-semibold">Findings</th>
+                {(
+                  [
+                    ["label", "Client / account"],
+                    ["type", "Type"],
+                    ["date", "Date"],
+                    ["status", "Status"],
+                    ["findings", "Findings"],
+                  ] as const
+                ).map(([col, colLabel]) => (
+                  <th key={col} className="px-4 py-3 font-semibold">
+                    <Link href={sortHref(col)} className="hover:underline">
+                      {colLabel}
+                      {arrow(col)}
+                    </Link>
+                  </th>
+                ))}
                 <th className="px-4 py-3 font-semibold">Actions</th>
               </tr>
             </thead>
             <tbody>
-              {(checks ?? []).map((c) => {
+              {sorted.map((c) => {
                 const sev = sevByCheck.get(c.id);
                 return (
                   <tr key={c.id} className="border-b border-line/50">
