@@ -247,6 +247,12 @@ export default async function ChecksPage({
                                 : "text-ink/60"
                         }`}
                       >
+                        {["queued", "extracting", "comparing"].includes(c.status) && (
+                          <span
+                            className="mr-1.5 inline-block h-2 w-2 animate-pulse rounded-full bg-ink/60 align-middle"
+                            aria-hidden
+                          />
+                        )}
                         {STATUS_LABEL[c.status] ?? c.status}
                       </span>
                     </td>

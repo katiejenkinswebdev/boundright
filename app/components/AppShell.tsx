@@ -3,6 +3,7 @@ import { cookies } from "next/headers";
 import { createServerSupabase } from "@/lib/supabase/server";
 import { signOut } from "@/app/actions/auth";
 import type { Agency, Profile } from "@/lib/auth";
+import { planCap } from "@/lib/pricing";
 import { AppShellChrome } from "./AppShellChrome";
 import { FeedbackWidget } from "./FeedbackWidget";
 
@@ -31,14 +32,24 @@ export async function AppShell({
   const initialCollapsed = cookieStore.get("br_sidebar")?.value === "collapsed";
 
   const supabase = await createServerSupabase();
-  const { count: awaitingCount } = await supabase
-    .from("checks")
-    .select("id", { count: "exact", head: true })
-    .eq("status", "ready_for_review")
-    .is("archived_at", null);
+  const [{ count: awaitingCount }, { data: announcement }] = await Promise.all([
+    supabase
+      .from("checks")
+      .select("id", { count: "exact", head: true })
+      .eq("status", "ready_for_review")
+      .is("archived_at", null),
+    // RLS only returns announcements inside their active window, so the
+    // banner shows and hides itself on the configured dates.
+    supabase
+      .from("announcements")
+      .select("id, message, link_url")
+      .order("starts_at", { ascending: false })
+      .limit(1)
+      .maybeSingle(),
+  ]);
 
   const trialDaysLeft = agency.trial_ends_at ? daysUntil(agency.trial_ends_at) : null;
-  const cap = agency.plan === "trial" ? 10 : 150;
+  const cap = planCap(agency.plan);
   const graceActive =
     agency.billing_status === "past_due" &&
     agency.billing_grace_until &&
@@ -46,6 +57,19 @@ export async function AppShell({
 
   const banner = (
     <>
+      {announcement && (
+        <div className="border-b border-line bg-ink px-6 py-2 text-sm text-paper">
+          {announcement.message}
+          {announcement.link_url && (
+            <>
+              {" "}
+              <a href={announcement.link_url} className="underline">
+                Learn more
+              </a>
+            </>
+          )}
+        </div>
+      )}
       {agency.plan === "trial" && trialDaysLeft !== null && (
         <div className="border-b border-line bg-card px-6 py-2 text-sm text-ink/70">
           Trial: {trialDaysLeft} day{trialDaysLeft === 1 ? "" : "s"} and{" "}

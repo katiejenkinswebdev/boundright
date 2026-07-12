@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
+import { PLANS } from "@/lib/pricing";
 import {
   updateProfile,
   updateAgency,
@@ -205,17 +206,25 @@ export function BillingSection({
             <label className="flex cursor-pointer items-start gap-3 rounded border border-line p-4">
               <input type="radio" name="plan" value="founding" defaultChecked className="mt-1" />
               <span>
-                <span className="font-semibold">Founding · $249/mo</span>
+                <span className="font-semibold">
+                  {PLANS.founding.name} · ${PLANS.founding.monthly}/mo
+                </span>
                 <br />
-                <span className="text-sm text-ink/60">150 checks/mo, founding price locked in</span>
+                <span className="text-sm text-ink/60">
+                  {PLANS.founding.checksPerMonth} checks/mo, founding price locked in
+                </span>
               </span>
             </label>
             <label className="flex cursor-pointer items-start gap-3 rounded border border-line p-4">
               <input type="radio" name="plan" value="standard" className="mt-1" />
               <span>
-                <span className="font-semibold">Standard · $349/mo</span>
+                <span className="font-semibold">
+                  {PLANS.standard.name} · ${PLANS.standard.monthly}/mo
+                </span>
                 <br />
-                <span className="text-sm text-ink/60">150 checks/mo</span>
+                <span className="text-sm text-ink/60">
+                  {PLANS.standard.checksPerMonth} checks/mo
+                </span>
               </span>
             </label>
           </div>

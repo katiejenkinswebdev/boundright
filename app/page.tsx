@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { PLANS } from "@/lib/pricing";
 import { EmailCaptureForm } from "@/app/components/EmailCaptureForm";
 import { Lockup, Wordmark } from "@/app/components/brand";
 
@@ -94,33 +95,28 @@ export default function LandingPage() {
         </p>
         <div className="mt-6 grid gap-6 sm:grid-cols-3">
           <div className="rounded-lg border border-line bg-card p-6">
-            <h3 className="font-semibold">Trial</h3>
-            <p className="mt-2 text-3xl font-semibold">$0</p>
-            <p className="mt-1 text-sm text-ink/60">14 days · 10 checks</p>
-            <p className="mt-4 text-sm text-ink/80">
-              No credit card. Every feature, including exported reports.
+            <h3 className="font-semibold">{PLANS.trial.name}</h3>
+            <p className="mt-2 text-3xl font-semibold">${PLANS.trial.monthly}</p>
+            <p className="mt-1 text-sm text-ink/60">
+              {PLANS.trial.trialDays} days · {PLANS.trial.checksPerMonth} checks
             </p>
+            <p className="mt-4 text-sm text-ink/80">{PLANS.trial.blurb}</p>
           </div>
           <div className="rounded-lg border-2 border-ink bg-card p-6">
-            <h3 className="font-semibold">Founding</h3>
+            <h3 className="font-semibold">{PLANS.founding.name}</h3>
             <p className="mt-2 text-3xl font-semibold">
-              $249<span className="text-base font-normal text-ink/60">/mo</span>
+              ${PLANS.founding.monthly}<span className="text-base font-normal text-ink/60">/mo</span>
             </p>
-            <p className="mt-1 text-sm text-ink/60">150 checks per month</p>
-            <p className="mt-4 text-sm text-ink/80">
-              For the first agencies on board. The price stays locked in.
-            </p>
+            <p className="mt-1 text-sm text-ink/60">{PLANS.founding.checksPerMonth} checks per month</p>
+            <p className="mt-4 text-sm text-ink/80">{PLANS.founding.blurb}</p>
           </div>
           <div className="rounded-lg border border-line bg-card p-6">
-            <h3 className="font-semibold">Standard</h3>
+            <h3 className="font-semibold">{PLANS.standard.name}</h3>
             <p className="mt-2 text-3xl font-semibold">
-              $349<span className="text-base font-normal text-ink/60">/mo</span>
+              ${PLANS.standard.monthly}<span className="text-base font-normal text-ink/60">/mo</span>
             </p>
-            <p className="mt-1 text-sm text-ink/60">150 checks per month</p>
-            <p className="mt-4 text-sm text-ink/80">
-              Cancel anytime in one click. When a limit is reached, checks
-              pause. We never bill overages.
-            </p>
+            <p className="mt-1 text-sm text-ink/60">{PLANS.standard.checksPerMonth} checks per month</p>
+            <p className="mt-4 text-sm text-ink/80">{PLANS.standard.blurb}</p>
           </div>
         </div>
       </section>

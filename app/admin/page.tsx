@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 import { requireProfile } from "@/lib/auth";
 import { isSystemAdmin } from "@/lib/roles";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { toggleSmartIntake } from "@/app/actions/admin";
+import { toggleSmartIntake, createAnnouncement, endAnnouncement } from "@/app/actions/admin";
 
 /** Ops console: system_admin role (ADMIN_EMAILS env as bootstrap fallback). */
 export default async function AdminPage() {
@@ -53,6 +53,11 @@ export default async function AdminPage() {
   const { data: aiRatings } = await admin
     .from("ai_feedback")
     .select("target, prompt_version, rating");
+  const { data: announcements } = await admin
+    .from("announcements")
+    .select("id, message, link_url, starts_at, ends_at")
+    .gt("ends_at", new Date().toISOString())
+    .order("starts_at", { ascending: true });
 
   // Members per agency, e.g. "1 admin · 2 user".
   const members = new Map<string, Map<string, number>>();
@@ -244,6 +249,102 @@ export default async function AdminPage() {
             ))}
           </tbody>
         </table>
+      </section>
+
+      <h2 className="mb-3 mt-8 font-semibold">Announcements (banner across the app)</h2>
+      <section className="mb-8 rounded-lg border border-line bg-card p-6">
+        <form action={createAnnouncement} className="grid gap-3 sm:grid-cols-2">
+          <label className="sm:col-span-2 block">
+            <span className="mb-1 block text-sm font-semibold">Message</span>
+            <input
+              name="message"
+              required
+              maxLength={300}
+              placeholder="Scheduled maintenance Saturday 6-7am ET. Checks queue and run afterward."
+              className="w-full rounded border border-line bg-paper px-3 py-2 text-sm"
+            />
+          </label>
+          <label className="block">
+            <span className="mb-1 block text-sm font-semibold">Shows from</span>
+            <input
+              name="starts_at"
+              type="datetime-local"
+              className="w-full rounded border border-line bg-paper px-3 py-2 text-sm"
+            />
+            <span className="mt-1 block text-xs text-ink/50">Blank = now</span>
+          </label>
+          <label className="block">
+            <span className="mb-1 block text-sm font-semibold">Hides after</span>
+            <input
+              name="ends_at"
+              type="datetime-local"
+              required
+              className="w-full rounded border border-line bg-paper px-3 py-2 text-sm"
+            />
+          </label>
+          <label className="sm:col-span-2 block">
+            <span className="mb-1 block text-sm font-semibold">Link (optional)</span>
+            <input
+              name="link_url"
+              type="url"
+              placeholder="https://…"
+              className="w-full rounded border border-line bg-paper px-3 py-2 text-sm"
+            />
+          </label>
+          <div className="sm:col-span-2">
+            <button
+              type="submit"
+              className="rounded bg-ink px-4 py-2 text-sm font-semibold text-paper hover:bg-ink/90"
+            >
+              Post announcement
+            </button>
+            <span className="ml-3 text-xs text-ink/50">
+              The banner appears and disappears on these dates by itself.
+            </span>
+          </div>
+        </form>
+
+        {(announcements ?? []).length > 0 && (
+          <table className="mt-6 w-full text-sm">
+            <thead>
+              <tr className="border-b border-line text-left">
+                <th className="py-2 font-semibold">Message</th>
+                <th className="py-2 font-semibold">Window</th>
+                <th className="py-2 font-semibold">Status</th>
+                <th className="py-2" />
+              </tr>
+            </thead>
+            <tbody>
+              {(announcements ?? []).map((an) => {
+                const live =
+                  new Date(an.starts_at) <= new Date() && new Date(an.ends_at) > new Date();
+                return (
+                  <tr key={an.id} className="border-b border-line/50 align-top">
+                    <td className="py-2 pr-4">{an.message}</td>
+                    <td className="py-2 pr-4 font-mono text-xs text-ink/60">
+                      {new Date(an.starts_at).toLocaleString()} → {new Date(an.ends_at).toLocaleString()}
+                    </td>
+                    <td className="py-2 pr-4 font-mono text-xs">
+                      {live ? <span className="text-verify">live</span> : "scheduled"}
+                    </td>
+                    <td className="py-2 text-right">
+                      <form
+                        action={async () => {
+                          "use server";
+                          await endAnnouncement(an.id);
+                        }}
+                      >
+                        <button type="submit" className="text-sm underline">
+                          End now
+                        </button>
+                      </form>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        )}
       </section>
 
       <h2 className="mb-3 mt-8 font-semibold">Prompt-version drift (reviewer agreement)</h2>

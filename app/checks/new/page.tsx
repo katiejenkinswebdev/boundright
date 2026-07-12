@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { planCap } from "@/lib/pricing";
 import { requireProfile } from "@/lib/auth";
 import { AppShell } from "@/app/components/AppShell";
 import { NewCheckForm } from "./NewCheckForm";
@@ -11,7 +12,7 @@ export default async function NewCheckPage({
 }) {
   const { classic } = await searchParams;
   const { agency, profile } = await requireProfile();
-  const cap = agency.plan === "trial" ? 10 : 150;
+  const cap = planCap(agency.plan);
   const smartIntake = agency.smart_intake_enabled && classic !== "1";
 
   return (

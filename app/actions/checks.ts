@@ -1,6 +1,7 @@
 "use server";
 
 import { after } from "next/server";
+import { PLANS } from "@/lib/pricing";
 import { requireProfile } from "@/lib/auth";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { runCheck, docPaths } from "@/lib/pipeline/run";
@@ -9,7 +10,7 @@ import { auditLog } from "@/lib/audit";
 const POLICY_TYPES = ["GL", "Property", "WC", "Auto", "Umbrella", "Package", "Other"];
 const CHECK_TYPES = ["issuance", "renewal", "coi"];
 const TRIAL_CHECK_LIMIT = 10;
-const PAID_CHECK_LIMIT = 150;
+const PAID_CHECK_LIMIT = PLANS.standard.checksPerMonth;
 
 export type CreateCheckResult =
   | {

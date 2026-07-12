@@ -34,6 +34,8 @@ Policy discrepancy detection for independent commercial insurance agencies. A CS
 - Three check types (issuance, renewal, certificate) with typed comparison prompts and per-type document labels; batch mode; certificate volume flow (one policy, many COIs); sample check demo mode; failed checks never consume quota
 - Directive validation copy, signed-URL direct uploads, staged progress with ready emails and Slack/Teams notices
 
+- Running checks show live status: a 4-stage progress checklist on the check page (polls every 2.5s, failure states explained) and a pulsing indicator on Queued/Reading/Comparing rows in the checks list
+
 ### AI pipeline
 - Claude structured extraction (verbatim values, page citations, ISO form conventions, issuing carrier); agency-configurable premium-variance thresholds injected per comparison; second-pass verification of criticals; versioned prompts + model recorded per check; token/cost logging; source-document SHA-256 fingerprints; PDFs deleted after processing with nightly verification
 
@@ -70,7 +72,9 @@ Policy discrepancy detection for independent commercial insurance agencies. A CS
 - System admin exports a per-client audit log CSV from the ops console (the export itself is logged)
 
 ### Billing, ops, platform
+- Pricing lives in one file: `lib/pricing.ts` (plan names, prices, allowances, blurbs). The landing page, Settings → Billing, and the usage caps all read it. To change pricing: edit that file, create the new price in Stripe, point the `STRIPE_PRICE_ID_*` env var at it — nothing else in the app changes
 - Stripe trial/checkout/portal/webhooks with honest caps and no overage billing; operator console (agencies, config, AI cost, failures, drift, AI output ratings, feedback); cost guardrails; crons (period reset, monthly reports, deletion verification, review reminders, weekly ops digest); Sentry with PII scrubbing; security headers; RLS everywhere; WCAG AA
+- Platform announcements: system admin posts a banner (message, optional link) with show-from and hide-after dates from the ops console; it appears across the app and expires by itself, no deploy. "End now" kills a live banner immediately
 - Ops console shows every agency's full setup in one place: plan, billing, member counts by role, signup date, every adjustable assumption/threshold, webhook status, smart intake flag, and the per-client audit CSV
 - `/api/health` uptime probe (200 when app + database respond, 503 otherwise) used by the deploy smoke tests and uptime monitors
 - Test data: `npx tsx scripts/seed-test-agencies.ts` seeds Coastal Risk Partners (founding, smart intake on), Summit Insurance Group (trial), and Heartland Agency Co (standard, past_due) with distinct configurations and weeks of activity; admin logins `admin@coastalrisk.test` / `admin@summitinsurance.test` / `admin@heartlandagency.test`, password `BoundRight-Test-2026`
