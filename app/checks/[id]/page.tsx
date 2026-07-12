@@ -84,8 +84,7 @@ export default async function CheckPage({
           accuracy is the responsibility of the licensed agent.
         </p>
         {check.model_version && (
-          <div className="mb-3 mt-1 flex items-start justify-between gap-4">
-          <details>
+          <details className="mb-3 mt-1">
             <summary className="inline-flex cursor-pointer items-center gap-1 font-mono text-xs text-ink/50 hover:text-ink">
               ✦ How AI checked this document
             </summary>
@@ -106,15 +105,6 @@ export default async function CheckPage({
               </Link>
             </div>
           </details>
-          {check.status === "reviewed" && (
-            <a
-              href={`/api/checks/${check.id}/report`}
-              className="shrink-0 rounded border border-ink px-3 py-1.5 text-sm font-semibold hover:bg-ink hover:text-paper"
-            >
-              Export report (PDF)
-            </a>
-          )}
-          </div>
         )}
         {check.status === "ready_for_review" && (
           <div className="mb-6">
