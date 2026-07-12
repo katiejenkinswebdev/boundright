@@ -242,3 +242,46 @@ export async function createClientAgency(
     message: `${name} is set up on ${PLANS[plan as keyof typeof PLANS].name}. Invite emailed to ${adminEmail} (link: ${url})`,
   };
 }
+
+/** System admin only: set a client's Slack/Teams webhook on their behalf. */
+export async function setAgencyWebhook(agencyId: string, formData: FormData): Promise<void> {
+  const { profile } = await requireProfile();
+  if (!isSystemAdmin(profile)) throw new Error("System admin only.");
+  const admin = createAdminClient();
+  if (!admin) return;
+  const raw = String(formData.get("webhook") ?? "").trim();
+  if (raw && !/^https:\/\//.test(raw)) return;
+  await admin.from("agencies").update({ notify_webhook_url: raw || null }).eq("id", agencyId);
+  await admin.from("events").insert({
+    agency_id: agencyId,
+    user_id: profile.user_id,
+    event_name: "webhook_set_by_operator",
+    metadata: { set: !!raw },
+  });
+  revalidatePath("/ops");
+}
+
+/** System admin only: set a client's plan directly (managed billing). */
+export async function setAgencyPlan(agencyId: string, formData: FormData): Promise<void> {
+  const { profile } = await requireProfile();
+  if (!isSystemAdmin(profile)) throw new Error("System admin only.");
+  const admin = createAdminClient();
+  if (!admin) return;
+  const plan = String(formData.get("plan") ?? "");
+  if (!(plan in PLANS)) return;
+  await admin
+    .from("agencies")
+    .update({
+      plan,
+      smart_intake_enabled: plan === "premium" ? true : undefined,
+      trial_ends_at: plan === "trial" ? new Date(Date.now() + 14 * 86_400_000).toISOString() : null,
+    })
+    .eq("id", agencyId);
+  await admin.from("events").insert({
+    agency_id: agencyId,
+    user_id: profile.user_id,
+    event_name: "plan_set_by_operator",
+    metadata: { plan },
+  });
+  revalidatePath("/ops");
+}

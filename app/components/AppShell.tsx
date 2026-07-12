@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { cookies } from "next/headers";
 import { createServerSupabase } from "@/lib/supabase/server";
 import { signOut } from "@/app/actions/auth";
@@ -77,9 +76,9 @@ export async function AppShell({
           Trial: {trialDaysLeft} day{trialDaysLeft === 1 ? "" : "s"} and{" "}
           {Math.max(0, cap - agency.checks_this_period)} of {cap} checks
           remaining.{" "}
-          <Link href="/settings#billing" className="underline">
-            Subscribe
-          </Link>
+          <a href="mailto:help@boundright.app?subject=BoundRight%20subscription" className="underline">
+            Talk to us about a plan
+          </a>
         </div>
       )}
       {agency.billing_status === "past_due" && (

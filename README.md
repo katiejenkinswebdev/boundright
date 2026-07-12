@@ -73,7 +73,7 @@ Policy discrepancy detection for independent commercial insurance agencies. A CS
 ### Navigation & information architecture
 - Sidebar: Dashboard · New Check · Checks · Settings, plus **Admin** for managers and above
 - **Settings** is personal only: profile (name + self-service login email change with double confirmation), password, role, and Security (MFA)
-- **Admin** (/admin) holds every agency-level control, sectioned by role: Team (manager+); Integrations, Configuration incl. branding, Billing, Danger zone (admin); a Platform ops console card links the operator to /ops
+- **Admin** (/admin) holds agency-level controls, sectioned by role: Team (manager+); Configuration (ROI assumptions, thresholds, reminders) and the Danger zone (admin); a Platform ops console card links the operator to /ops. Billing, branding/logo, and integrations are operator-managed from the ops console
 - The operator ops console moved from /admin to **/ops** (all client setups, allowances, logos, letter prompts, legal documents, announcements, drift, ratings, audit CSVs)
 
 ### Teams & roles
@@ -104,7 +104,7 @@ Policy discrepancy detection for independent commercial insurance agencies. A CS
 - Stripe trial/checkout/portal/webhooks with honest caps and no overage billing; operator console (agencies, config, AI cost, failures, drift, AI output ratings, feedback); cost guardrails; crons (period reset, monthly reports, deletion verification, review reminders, weekly ops digest); Sentry with PII scrubbing; security headers; RLS everywhere; WCAG AA
 - Platform announcements: system admin posts a banner (message, optional link) with show-from and hide-after dates from the ops console; it appears across the app and expires by itself, no deploy. "End now" kills a live banner immediately
 - New client setup in one step from the ops console: agency name + plan + optional custom allowance + smart intake, and the client admin gets an emailed join link (also shown for copy); premium (Premier) auto-enables smart intake
-- Ops console shows every agency's full setup in one place: plan, billing, member counts by role, signup date, every adjustable assumption/threshold, a per-client monthly check allowance override (blank = plan default; enforced everywhere caps are checked), client logo (one-click upload on their behalf), webhook status, smart intake flag, and the per-client audit CSV
+- Ops console shows and manages every agency's setup in one place: plan (editable select, premier auto-enables smart intake), billing status, member counts by role, signup date, every adjustable assumption/threshold, per-client monthly allowance override, client logo (one-click upload), Slack/Teams webhook (editable), smart intake flag, and the per-client audit CSV. The trial banner CTA now points to help@boundright.app since billing is operator-managed
 - Ops console Legal section: edit the Terms of Service and Privacy Policy as plain text, live at /terms and /privacy on save; blank falls back to the built-in documents
 - `/api/health` uptime probe (200 when app + database respond, 503 otherwise) used by the deploy smoke tests and uptime monitors
 - Test data: `npx tsx scripts/seed-test-agencies.ts` seeds Coastal Risk Partners (founding, smart intake on), Summit Insurance Group (trial), and Heartland Agency Co (standard, past_due) with distinct configurations and weeks of activity; admin logins `admin@coastalrisk.test` / `admin@summitinsurance.test` / `admin@heartlandagency.test`, password `BoundRight-Test-2026`

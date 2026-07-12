@@ -2,7 +2,8 @@ import { notFound } from "next/navigation";
 import { requireProfile } from "@/lib/auth";
 import { isSystemAdmin } from "@/lib/roles";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { toggleSmartIntake, createAnnouncement, endAnnouncement, setAgencyAllowance, saveLegalDoc } from "@/app/actions/admin";
+import { toggleSmartIntake, createAnnouncement, endAnnouncement, setAgencyAllowance, saveLegalDoc, setAgencyWebhook, setAgencyPlan } from "@/app/actions/admin";
+import { PLANS } from "@/lib/pricing";
 import { AdminLogoForm } from "./AdminLogoForm";
 import { planCap } from "@/lib/pricing";
 import { LetterGuidancePanel } from "./LetterGuidancePanel";
@@ -183,7 +184,31 @@ export default async function AdminPage() {
               return (
                 <tr key={a.id} className="border-b border-line/50">
                   <td className="px-4 py-2 font-medium">{a.name}</td>
-                  <td className="px-4 py-2 font-mono text-xs uppercase">{a.plan}</td>
+                  <td className="px-4 py-2">
+                    <form
+                      action={async (formData: FormData) => {
+                        "use server";
+                        await setAgencyPlan(a.id, formData);
+                      }}
+                      className="flex items-center gap-1"
+                    >
+                      <select
+                        name="plan"
+                        defaultValue={a.plan}
+                        className="rounded border border-line bg-paper px-1.5 py-0.5 font-mono text-xs uppercase"
+                        aria-label={`Plan for ${a.name}`}
+                      >
+                        {Object.entries(PLANS).map(([key, p]) => (
+                          <option key={key} value={key}>
+                            {p.name.toLowerCase()}
+                          </option>
+                        ))}
+                      </select>
+                      <button type="submit" className="font-mono text-xs underline">
+                        save
+                      </button>
+                    </form>
+                  </td>
                   <td className="px-4 py-2 font-mono text-xs">{a.billing_status}</td>
                   <td className="px-4 py-2">{a.checks_this_period}</td>
                   <td className="px-4 py-2 font-mono text-xs">
@@ -279,7 +304,27 @@ export default async function AdminPage() {
                     </button>
                   </form>
                 </td>
-                <td className="px-4 py-2 font-mono text-xs">{a.notify_webhook_url ? "connected" : "—"}</td>
+                <td className="px-4 py-2">
+                  <form
+                    action={async (formData: FormData) => {
+                      "use server";
+                      await setAgencyWebhook(a.id, formData);
+                    }}
+                    className="flex items-center gap-1"
+                  >
+                    <input
+                      name="webhook"
+                      type="url"
+                      defaultValue={a.notify_webhook_url ?? ""}
+                      placeholder="https://hooks.slack.com/…"
+                      className="w-36 rounded border border-line bg-paper px-1.5 py-0.5 font-mono text-xs"
+                      aria-label={`Webhook for ${a.name}`}
+                    />
+                    <button type="submit" className="font-mono text-xs underline">
+                      save
+                    </button>
+                  </form>
+                </td>
                 <td className="px-4 py-2">
                   <form
                     action={async () => {

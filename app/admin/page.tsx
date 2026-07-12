@@ -2,13 +2,8 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requireProfile } from "@/lib/auth";
 import { AppShell } from "@/app/components/AppShell";
-import {
-  AgencyForm,
-  LogoForm,
-  BillingSection,
-  DangerZone,
-} from "@/app/settings/SettingsForms";
-import { TeamSection, IntegrationsSection } from "@/app/settings/TeamSection";
+import { AgencyForm, DangerZone } from "@/app/settings/SettingsForms";
+import { TeamSection } from "@/app/settings/TeamSection";
 import { isAdmin, isSystemAdmin, canManageUsers, roleRank } from "@/lib/roles";
 import { createAdminClient } from "@/lib/supabase/admin";
 
@@ -106,12 +101,6 @@ export default async function AdminHubPage() {
         </Section>
 
         {admin && (
-        <Section title="Integrations">
-          <IntegrationsSection webhookUrl={agency.notify_webhook_url} />
-        </Section>
-        )}
-
-        {admin && (
         <Section title="Configuration">
           <div className="space-y-8">
             <AgencyForm
@@ -123,17 +112,7 @@ export default async function AdminHubPage() {
               renewalPct={Number(agency.renewal_premium_threshold)}
               reminderHours={agency.reminder_hours}
             />
-            <LogoForm logoUrl={agency.logo_url} />
           </div>
-        </Section>
-        )}
-
-        {admin && (
-        <Section id="billing" title="Billing">
-          <BillingSection
-            plan={agency.plan}
-            hasSubscription={!!agency.stripe_customer_id}
-          />
         </Section>
         )}
 
