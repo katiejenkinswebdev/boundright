@@ -180,10 +180,11 @@ export async function buildReportPdf(data: ReportData): Promise<Uint8Array> {
   y -= 14;
 
   text(data.label, { font: sansBold, size: 13, gap: 6 });
-  text(
-    `Policy type: ${data.policyType}   ·   Report ${data.reportId ?? ""}   ·   Engine: ${data.modelVersion} (${data.promptVersion})`,
-    { size: 9, color: MUTED, gap: 10 }
-  );
+  text(`Policy type: ${data.policyType}   ·   Report ${data.reportId ?? ""}`, {
+    size: 9,
+    color: MUTED,
+    gap: 10,
+  });
 
   // Audit timeline
   const fmtTs = (iso?: string | null) =>
@@ -225,7 +226,7 @@ export async function buildReportPdf(data: ReportData): Promise<Uint8Array> {
       }
     }
     text(
-      "Verify a copy of either document by recomputing its SHA-256 hash; a match proves it is the exact file this report examined. The files themselves were deleted after processing.",
+      "A recomputed SHA-256 that matches proves a copy is the exact file examined. Originals were deleted after processing.",
       { size: 7.5, color: MUTED, gap: 16 }
     );
   }
@@ -282,16 +283,17 @@ export async function buildReportPdf(data: ReportData): Promise<Uint8Array> {
         .join("  ·  ");
       text(
         `${f.category.replace("_", " ")} · ${f.status.replaceAll("_", " ")}${citation ? ` · ${citation}` : ""} · confidence: ${f.confidence}`,
-        { size: 8, color: MUTED, gap: 5 }
+        { size: 8, color: MUTED, gap: 8 }
       );
       text(`Source doc: ${f.expected_value ?? "(not found)"}`, { font: mono, size: 9, x: MARGIN + 12, gap: 3 });
       if (f.doc_a_excerpt) {
-        text(`"${f.doc_a_excerpt}"`, { size: 7.5, color: MUTED, x: MARGIN + 24, gap: 3 });
+        text(`"${f.doc_a_excerpt}"`, { size: 7.5, color: MUTED, x: MARGIN + 24, gap: 5 });
       }
       text(`Issued doc: ${f.found_value ?? "(not found)"}`, { font: mono, size: 9, x: MARGIN + 12, gap: 3 });
       if (f.doc_b_excerpt) {
-        text(`"${f.doc_b_excerpt}"`, { size: 7.5, color: MUTED, x: MARGIN + 24, gap: 3 });
+        text(`"${f.doc_b_excerpt}"`, { size: 7.5, color: MUTED, x: MARGIN + 24, gap: 5 });
       }
+      y -= 4;
       const decision = f.reviewer_action
         ? f.reviewer_action === "dismissed" && f.dismiss_reason
           ? `DISMISSED (${DISMISS_LABEL[f.dismiss_reason] ?? f.dismiss_reason})`
@@ -300,12 +302,12 @@ export async function buildReportPdf(data: ReportData): Promise<Uint8Array> {
       text(`Reviewer decision: ${decision}`, {
         size: 9,
         color: f.reviewer_action === "confirmed" ? color : MUTED,
-        gap: 3,
+        gap: 4,
       });
       if (f.reviewer_note) {
-        text(`Note: ${f.reviewer_note}`, { size: 9, x: MARGIN + 12, gap: 3 });
+        text(`Note: ${f.reviewer_note}`, { size: 9, x: MARGIN + 12, gap: 4 });
       }
-      y -= 12;
+      y -= 18;
     }
     y -= 8;
   }

@@ -162,7 +162,6 @@ async function main() {
     ["missing form finding", "CG 20 37"],
     ["disclaimer footer", "review assistant"],
     ["brand tagline present", "Proof it was bound right."],
-    ["engine version", "claude-sonnet-5"],
     ["matches section", "MATCHED FIELDS"],
   ] as const) {
     check(name, pdfText.includes(needle), needle);
