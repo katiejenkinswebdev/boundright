@@ -171,20 +171,27 @@ export async function buildMonthlyReportPdf(
       const img = logo.kind === "png" ? await doc.embedPng(logo.bytes) : await doc.embedJpg(logo.bytes);
       const h = 26;
       const w = Math.min((img.width / img.height) * h, 170);
+      // Generous air around the co-brand block: the logo and the agency
+      // name are the two identity anchors and never crowd each other.
+      y -= 6;
       page.drawImage(img, { x: M, y: y - h, width: w, height: h });
-      y -= h + 10;
+      y -= h + 16;
       text(agencyName, 12, { font: bold });
+      y -= 4;
     } catch {
       text(agencyName, 18, { font: bold });
     }
   } else {
     text(agencyName, 18, { font: bold });
   }
-  // Same header rhythm as the discrepancy report: air between the name,
-  // the subtitle block, and the rule.
   y -= 3;
   text(`Policy check report · ${n.monthLabel}`, 12, { color: MUTED });
   text(`Period: ${n.periodDates}`, 9, { color: MUTED });
+  text(
+    `Generated ${new Date().toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}`,
+    9,
+    { color: MUTED }
+  );
   y -= 16;
   page.drawLine({
     start: { x: M, y },
