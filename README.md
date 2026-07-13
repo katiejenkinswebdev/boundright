@@ -281,4 +281,4 @@ Two hosted environments, one pipeline (`.github/workflows/deploy.yml`), build-on
 - Buy, don't build: Claude API for AI, Supabase for auth, Stripe for billing. No custom ML, no custom auth.
 - TypeScript strict; no `any` in pipeline code.
 - Ethical design floor: no fake urgency, no shame copy, one-click cancellation, honest usage limits.
-- Brand rules (see brand guide v1.0): the stamp appears only at real verification moments; signal colors are never decorative; no em dashes or exclamation points in product copy.
+- Brand rules (see brand guide v1.0): the stamp appears only at real verification moments; signal colors are never decorative; no em dashes or exclamation points in product copy. The BR monogram seal is black with the BR optically centered (measured metrics in PDFs, central baseline in SVG) — consistent across the sidebar, favicon, and PDF lockups.

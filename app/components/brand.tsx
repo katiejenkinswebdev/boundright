@@ -34,7 +34,7 @@ export function Seal({
   tilt?: boolean;
   reverse?: boolean;
 }) {
-  const stroke = reverse ? "#FAFAF7" : "#1B2A41";
+  const stroke = reverse ? "#FAFAF7" : "#000000";
   return (
     <svg
       width={size}
@@ -53,10 +53,13 @@ export function Seal({
         stroke={stroke}
         strokeWidth="2"
       />
+      {/* x nudged +0.25 to cancel the trailing letter-space; central baseline
+          centers vertically regardless of font metrics. */}
       <text
-        x="16"
-        y="21"
+        x="16.25"
+        y="16"
         textAnchor="middle"
+        dominantBaseline="central"
         fontFamily="var(--font-plex-mono), monospace"
         fontWeight="600"
         fontSize="11.5"

@@ -6,6 +6,7 @@ export const PDF_INK = rgb(0.106, 0.165, 0.255);
 export const PDF_MUTED = rgb(0.45, 0.45, 0.45);
 export const PDF_LINE = rgb(0.847, 0.851, 0.831);
 export const PDF_VERIFY = rgb(0.122, 0.478, 0.361);
+export const PDF_BLACK = rgb(0, 0, 0);
 export const PDF_MARGIN = 54;
 
 /** The wordmark: "Bound" semibold + "Right" regular, always Ink. */
@@ -67,14 +68,18 @@ export function drawSealLockup(
   // Rounded-square seal border, tilted per the primary lockup.
   page.drawSvgPath(
     "M 5 0 h 12 a 5 5 0 0 1 5 5 v 12 a 5 5 0 0 1 -5 5 h -12 a 5 5 0 0 1 -5 -5 v -5 -7 a 5 5 0 0 1 5 -5 z",
-    { x, y: y + size, borderColor: PDF_INK, borderWidth: 1.6, color: undefined, rotate: rot }
+    { x, y: y + size, borderColor: PDF_BLACK, borderWidth: 1.6, color: undefined, rotate: rot }
   );
+  // Center the monogram from measured glyph metrics, not eyeballed offsets.
+  const brSize = 8.5;
+  const brWidth = mono.widthOfTextAtSize("BR", brSize);
+  const capHeight = mono.heightAtSize(brSize, { descender: false }) * 0.72;
   page.drawText("BR", {
-    x: x + 6,
-    y: y + 6.5,
-    size: 8.5,
+    x: x + (size - brWidth) / 2,
+    y: y + (size - capHeight) / 2,
+    size: brSize,
     font: mono,
-    color: PDF_INK,
+    color: PDF_BLACK,
     rotate: rot,
   });
   drawWordmark(page, { x: x + size + 8, y: y + 6, size: 12, bold, regular });
