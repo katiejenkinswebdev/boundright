@@ -270,6 +270,7 @@ Two hosted environments, one pipeline (`.github/workflows/deploy.yml`), build-on
 - [ ] Inline editing of client settings from the ops console (logged, on-behalf-of)
 - [ ] Email-in checks (endpoint built at /api/inbound but dormant behind EMAIL_INTAKE_ENABLED=1; validating demand with users first)
 - [ ] Mobile layout (verify need with users first); MFA for admin roles; soft-delete trash (30-day restore for deleted checks, system_admin)
+- [ ] Correction request → one-click email draft in the user's mail system (Microsoft 365 / Gmail via OAuth): opens a ready-to-send draft with the letter as body, generated subject line, the user's own signature, and the To: field pre-filled with the carrier contact on that policy (needs a per-carrier/policy contact field at intake or on the check)
 - [ ] Correction tracking (requested → corrected → verified by re-check); renewal radar; CSV export; client-facing summary letter
 - [ ] Golden eval set expanded with real redacted documents; dismiss reasons fed back into prompts; published accuracy stats on /ai
 - [ ] AMS integrations (HawkSoft/EZLynx first), SSO, public API; self-hosted PostHog only if deeper analytics is ever needed
