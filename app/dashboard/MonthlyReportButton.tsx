@@ -38,7 +38,7 @@ export function MonthlyReportButton({
         }}
         className="rounded border border-ink px-4 py-2 text-sm font-semibold hover:bg-ink hover:text-paper disabled:opacity-50"
       >
-        {pending ? "Generating…" : "Generate report"}
+        {pending ? "Exporting…" : "Export report (PDF)"}
       </button>
       {error && (
         <p role="alert" className="mt-2 text-flag text-sm">

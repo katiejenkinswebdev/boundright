@@ -53,7 +53,7 @@ Each failed check: shows the reason on the check page with "Try again", does NOT
 ## 5 · Dashboard (manager+)
 
 1. Range filter drives KPIs, chart, and carrier table; chart hover shows the severity breakdown; Show table headers have severity tooltips; carrier Trend column shows ▲/▼/→ (or — under 5 checks).
-2. Generate report → period PDF honors the filter, seal lockup, staff cost savings.
+2. Export report (PDF) → period PDF honors the filter, seal lockup, staff cost savings.
 
 ## 6 · Ops console (system admin, /ops — linked from Admin)
 
