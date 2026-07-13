@@ -16,9 +16,10 @@ import { PlatformPromptForm } from "./PlatformPromptForm";
 export default async function OpsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ sort?: string; dir?: string; page?: string }>;
+  searchParams: Promise<{ sort?: string; dir?: string; page?: string; view?: string }>;
 }) {
-  const { sort = "activity", dir = "desc", page: pageParam = "1" } = await searchParams;
+  const { sort = "activity", dir = "desc", page: pageParam = "1", view = "active" } = await searchParams;
+  const archivedView = view === "archived";
   const { user, profile, agency: myAgency } = await requireProfile();
   const adminEmails = (process.env.ADMIN_EMAILS ?? "")
     .split(",")
@@ -40,7 +41,7 @@ export default async function OpsPage({
     await Promise.all([
       admin
         .from("agencies")
-        .select("id, name, plan, billing_status, checks_this_period, checks_allowance, created_at, smart_intake_enabled")
+        .select("id, name, plan, billing_status, checks_this_period, checks_allowance, created_at, smart_intake_enabled, closed_at, archived_at")
         .order("created_at", { ascending: false }),
       admin
         .from("checks")
@@ -149,7 +150,9 @@ export default async function OpsPage({
     ? Number(cookieStore.get("br_rows")!.value)
     : 25;
   const page = Math.max(1, Number(pageParam) || 1);
-  const rows = (agencies ?? []).map((a) => ({
+  const archivedCount = (agencies ?? []).filter((a) => a.archived_at).length;
+  const visible = (agencies ?? []).filter((a) => (archivedView ? a.archived_at : !a.archived_at));
+  const rows = visible.map((a) => ({
     ...a,
     cost: costByAgency.get(a.id) ?? { total: 0, month: 0 },
     last: lastActivity.get(a.id) ?? "",
@@ -173,10 +176,11 @@ export default async function OpsPage({
   });
   const totalPages = Math.max(1, Math.ceil(rows.length / pageSize));
   const paged = rows.slice((page - 1) * pageSize, page * pageSize);
+  const viewQs = archivedView ? "&view=archived" : "";
   const sortHref = (col: string) =>
-    `/ops?sort=${col}&dir=${sort === col && dir === "asc" ? "desc" : "asc"}`;
+    `/ops?sort=${col}&dir=${sort === col && dir === "asc" ? "desc" : "asc"}${viewQs}`;
   const arrow = (col: string) => (sort === col ? (dir === "asc" ? " ▲" : " ▼") : "");
-  const pageHref = (p: number) => `/ops?sort=${sort}&dir=${dir}&page=${p}`;
+  const pageHref = (p: number) => `/ops?sort=${sort}&dir=${dir}&page=${p}${viewQs}`;
 
   return (
     <AppShell agency={myAgency} profile={profile} active="/admin">
@@ -184,10 +188,24 @@ export default async function OpsPage({
         <h1 className="text-2xl font-semibold">Ops console</h1>
         <NewClientModal />
       </div>
-      <p className="mb-8 text-sm text-ink/60">
+      <p className="mb-4 text-sm text-ink/60">
         {(agencies ?? []).length} agencies · total AI spend{" "}
         {dollars([...costByAgency.values()].reduce((s, c) => s + c.total, 0))}
       </p>
+      <div className="mb-3 flex items-center gap-2 text-sm">
+        <Link
+          href="/ops"
+          className={`rounded px-3 py-1 font-medium ${!archivedView ? "bg-ink text-paper" : "border border-line text-ink/70 hover:border-ink"}`}
+        >
+          Active clients
+        </Link>
+        <Link
+          href="/ops?view=archived"
+          className={`rounded px-3 py-1 font-medium ${archivedView ? "bg-ink text-paper" : "border border-line text-ink/70 hover:border-ink"}`}
+        >
+          Archived clients ({archivedCount})
+        </Link>
+      </div>
 
       {overCost.length > 0 && (
         <div className="mb-6 rounded border border-flag/50 bg-flag/10 p-4 text-sm">
@@ -227,6 +245,11 @@ export default async function OpsPage({
                   <Link href={`/ops/${a.id}`} className="underline decoration-line underline-offset-2 hover:decoration-ink">
                     {a.name}
                   </Link>
+                  {a.closed_at && (
+                    <span className="ml-2 inline-flex items-center rounded border border-flag px-2 py-0.5 font-mono text-xs uppercase leading-none text-flag">
+                      closed
+                    </span>
+                  )}
                 </td>
                 <td className="px-4 py-2 font-mono text-xs uppercase">{a.plan}</td>
                 <td className={`px-4 py-2 font-mono text-xs ${a.billing_status !== "ok" ? "text-caution" : ""}`}>

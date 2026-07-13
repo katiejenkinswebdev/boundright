@@ -407,3 +407,86 @@ export async function deleteClientAgency(agencyId: string, formData: FormData): 
   }
   revalidatePath("/ops");
 }
+
+/**
+ * System admin only: decommission a client. Marks the agency closed and
+ * locks every member out (auth ban + suspended marker). Data stays;
+ * reopen restores everyone.
+ */
+export async function decommissionAgency(agencyId: string, formData: FormData): Promise<void> {
+  const { profile, agency: own } = await requireProfile();
+  if (!isSystemAdmin(profile)) throw new Error("System admin only.");
+  if (agencyId === own.id) throw new Error("Refusing to decommission your own agency.");
+  const admin = createAdminClient();
+  if (!admin) return;
+  const { data: target } = await admin.from("agencies").select("name").eq("id", agencyId).maybeSingle();
+  if (!target) return;
+  if (String(formData.get("confirm_name") ?? "").trim() !== target.name) return;
+
+  await admin
+    .from("agencies")
+    .update({ closed_at: new Date().toISOString() })
+    .eq("id", agencyId);
+  const { data: members } = await admin
+    .from("profiles")
+    .select("id, user_id")
+    .eq("agency_id", agencyId);
+  for (const m of members ?? []) {
+    await admin.auth.admin.updateUserById(m.user_id, { ban_duration: "87600h" });
+    await admin.from("profiles").update({ suspended_at: new Date().toISOString() }).eq("id", m.id);
+  }
+  await admin.from("events").insert({
+    agency_id: agencyId,
+    user_id: profile.user_id,
+    event_name: "agency_decommissioned",
+    metadata: { members_locked: members?.length ?? 0 },
+  });
+  revalidatePath("/ops");
+  revalidatePath(`/ops/${agencyId}`);
+}
+
+/** System admin only: reopen a decommissioned client and restore member access. */
+export async function reopenAgency(agencyId: string): Promise<void> {
+  const { profile } = await requireProfile();
+  if (!isSystemAdmin(profile)) throw new Error("System admin only.");
+  const admin = createAdminClient();
+  if (!admin) return;
+  await admin.from("agencies").update({ closed_at: null }).eq("id", agencyId);
+  const { data: members } = await admin
+    .from("profiles")
+    .select("id, user_id")
+    .eq("agency_id", agencyId);
+  for (const m of members ?? []) {
+    await admin.auth.admin.updateUserById(m.user_id, { ban_duration: "none" });
+    await admin.from("profiles").update({ suspended_at: null }).eq("id", m.id);
+  }
+  await admin.from("events").insert({
+    agency_id: agencyId,
+    user_id: profile.user_id,
+    event_name: "agency_reopened",
+    metadata: { members_restored: members?.length ?? 0 },
+  });
+  revalidatePath("/ops");
+  revalidatePath(`/ops/${agencyId}`);
+}
+
+/** System admin only: archive/unarchive a client (hidden from the ops table, kept under Archived clients). */
+export async function setAgencyArchived(agencyId: string, archived: boolean): Promise<void> {
+  const { profile, agency: own } = await requireProfile();
+  if (!isSystemAdmin(profile)) throw new Error("System admin only.");
+  if (agencyId === own.id) throw new Error("Refusing to archive your own agency.");
+  const admin = createAdminClient();
+  if (!admin) return;
+  await admin
+    .from("agencies")
+    .update({ archived_at: archived ? new Date().toISOString() : null })
+    .eq("id", agencyId);
+  await admin.from("events").insert({
+    agency_id: agencyId,
+    user_id: profile.user_id,
+    event_name: archived ? "agency_archived" : "agency_unarchived",
+    metadata: {},
+  });
+  revalidatePath("/ops");
+  revalidatePath(`/ops/${agencyId}`);
+}

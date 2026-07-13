@@ -57,6 +57,7 @@ Each failed check: shows the reason on the check page with "Try again", does NOT
 
 ## 6 · Ops console (system admin, /ops — linked from Admin)
 
+0a. Lifecycle: on a test client's page, Decommission (type the name) → closed badge, its users can't sign in; Reopen → they can again. Archive → gone from Active clients, present under Archived clients (N); Unarchive restores.
 0. New client wizard: click New client (opens the modal), create an agency on Premier (smart intake auto-checks and locks), admin Jane Doe + default password, paste two roster lines → success lists account count. Sign in as the new admin with the default password → forced to /change-password → set a new one → lands on dashboard. Click the agency name in the clients table → detail page edits plan/allowance/thresholds/webhook/logo/letter guidance in one place.
 
 1. Client config table: members by role, thresholds, webhook, smart intake toggle, audit CSV per client.

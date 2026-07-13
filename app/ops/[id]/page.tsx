@@ -9,7 +9,7 @@ import { AdminLogoForm } from "../AdminLogoForm";
 import { AgencySettingsForm } from "./AgencySettingsForm";
 import { GuidanceForm } from "./GuidanceForm";
 import { redirect } from "next/navigation";
-import { deleteClientAgency } from "@/app/actions/admin";
+import { deleteClientAgency, decommissionAgency, reopenAgency, setAgencyArchived } from "@/app/actions/admin";
 
 /** One client, everything about them: settings, branding, prompts, people. */
 export default async function OpsAgencyPage({
@@ -43,7 +43,19 @@ export default async function OpsAgencyPage({
       </div>
       <div className="mb-8 flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold">{agency.name}</h1>
+          <h1 className="text-2xl font-semibold">
+            {agency.name}
+            {agency.closed_at && (
+              <span className="ml-3 inline-flex items-center rounded border border-flag px-2.5 py-1 align-middle font-mono text-xs uppercase leading-none text-flag">
+                closed
+              </span>
+            )}
+            {agency.archived_at && (
+              <span className="ml-2 inline-flex items-center rounded border border-line px-2.5 py-1 align-middle font-mono text-xs uppercase leading-none text-ink/60">
+                archived
+              </span>
+            )}
+          </h1>
           <p className="text-sm text-ink/60">
             {agency.checks_this_period} / {agencyCap(agency)} checks this period ·{" "}
             <span className="font-mono text-xs uppercase">{agency.plan}</span> ·{" "}
@@ -90,6 +102,76 @@ export default async function OpsAgencyPage({
             ))}
           </ul>
         </section>
+        <section className="rounded-lg border border-line bg-card p-6">
+          <h2 className="mb-4 font-semibold">Lifecycle</h2>
+          <div className="space-y-5">
+            {agency.closed_at ? (
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <p className="text-sm text-ink/80">
+                  Decommissioned{" "}
+                  {new Date(agency.closed_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                  . Every member is locked out; all data is retained.
+                </p>
+                <form
+                  action={async () => {
+                    "use server";
+                    await reopenAgency(agency.id);
+                  }}
+                >
+                  <button className="rounded border border-verify px-4 py-2 text-sm font-semibold text-verify hover:bg-verify hover:text-white">
+                    Reopen client
+                  </button>
+                </form>
+              </div>
+            ) : (
+              <form
+                action={async (formData: FormData) => {
+                  "use server";
+                  await decommissionAgency(agency.id, formData);
+                }}
+                className="space-y-2"
+              >
+                <p className="text-sm text-ink/80">
+                  Decommission marks the client closed and locks every member
+                  out of their account. Data and reports are retained, and you
+                  can reopen at any time. Type{" "}
+                  <span className="font-mono font-semibold">{agency.name}</span>{" "}
+                  to confirm.
+                </p>
+                <div className="flex flex-wrap items-center gap-2">
+                  <input
+                    name="confirm_name"
+                    placeholder="Type the agency name"
+                    autoComplete="off"
+                    className="w-full max-w-xs rounded border border-line bg-paper px-3 py-2 text-sm"
+                  />
+                  <button className="rounded border border-caution px-4 py-2 text-sm font-semibold text-caution hover:bg-caution hover:text-white">
+                    Decommission client
+                  </button>
+                </div>
+              </form>
+            )}
+
+            <div className="flex flex-wrap items-center justify-between gap-3 border-t border-line pt-4">
+              <p className="text-sm text-ink/80">
+                {agency.archived_at
+                  ? "Archived: hidden from the active clients table, visible under Archived clients."
+                  : "Archive removes this client from the active table; everything is kept under Archived clients."}
+              </p>
+              <form
+                action={async () => {
+                  "use server";
+                  await setAgencyArchived(agency.id, !agency.archived_at);
+                }}
+              >
+                <button className="rounded border border-ink px-4 py-2 text-sm font-semibold hover:bg-ink hover:text-paper">
+                  {agency.archived_at ? "Unarchive client" : "Archive client"}
+                </button>
+              </form>
+            </div>
+          </div>
+        </section>
+
         <section className="rounded-lg border border-flag/40 bg-card p-6">
           <h2 className="mb-4 font-semibold text-flag">Danger zone</h2>
           <form
