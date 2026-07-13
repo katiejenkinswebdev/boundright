@@ -16,9 +16,9 @@ import { PlatformPromptForm } from "./PlatformPromptForm";
 export default async function OpsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ sort?: string; dir?: string; page?: string; view?: string }>;
+  searchParams: Promise<{ sort?: string; dir?: string; page?: string; view?: string; q?: string }>;
 }) {
-  const { sort = "activity", dir = "desc", page: pageParam = "1", view = "active" } = await searchParams;
+  const { sort = "activity", dir = "desc", page: pageParam = "1", view = "active", q } = await searchParams;
   const archivedView = view === "archived";
   const { user, profile, agency: myAgency } = await requireProfile();
   const adminEmails = (process.env.ADMIN_EMAILS ?? "")
@@ -151,7 +151,12 @@ export default async function OpsPage({
     : 25;
   const page = Math.max(1, Number(pageParam) || 1);
   const archivedCount = (agencies ?? []).filter((a) => a.archived_at).length;
-  const visible = (agencies ?? []).filter((a) => (archivedView ? a.archived_at : !a.archived_at));
+  const query = q?.trim().toLowerCase() ?? "";
+  const visible = (agencies ?? []).filter(
+    (a) =>
+      (archivedView ? a.archived_at : !a.archived_at) &&
+      (!query || a.name.toLowerCase().includes(query))
+  );
   const rows = visible.map((a) => ({
     ...a,
     cost: costByAgency.get(a.id) ?? { total: 0, month: 0 },
@@ -176,7 +181,7 @@ export default async function OpsPage({
   });
   const totalPages = Math.max(1, Math.ceil(rows.length / pageSize));
   const paged = rows.slice((page - 1) * pageSize, page * pageSize);
-  const viewQs = archivedView ? "&view=archived" : "";
+  const viewQs = `${archivedView ? "&view=archived" : ""}${query ? `&q=${encodeURIComponent(q!.trim())}` : ""}`;
   const sortHref = (col: string) =>
     `/ops?sort=${col}&dir=${sort === col && dir === "asc" ? "desc" : "asc"}${viewQs}`;
   const arrow = (col: string) => (sort === col ? (dir === "asc" ? " ▲" : " ▼") : "");
@@ -192,19 +197,35 @@ export default async function OpsPage({
         {(agencies ?? []).length} agencies · total AI spend{" "}
         {dollars([...costByAgency.values()].reduce((s, c) => s + c.total, 0))}
       </p>
-      <div className="mb-3 flex items-center gap-2 text-sm">
+      <div className="mb-3 flex flex-wrap items-center gap-2 text-sm">
+        <form action="/ops" method="GET" className="mr-1">
+          {archivedView && <input type="hidden" name="view" value="archived" />}
+          <input
+            name="q"
+            type="search"
+            defaultValue={q ?? ""}
+            placeholder="Search clients…"
+            aria-label="Search clients by name"
+            className="w-52 rounded border border-line bg-card px-3 py-1.5 text-sm hover:border-ink"
+          />
+        </form>
         <Link
-          href="/ops"
+          href={query ? `/ops?q=${encodeURIComponent(q!.trim())}` : "/ops"}
           className={`rounded px-3 py-1 font-medium ${!archivedView ? "bg-ink text-paper" : "border border-line text-ink/70 hover:border-ink"}`}
         >
           Active clients
         </Link>
         <Link
-          href="/ops?view=archived"
+          href={query ? `/ops?view=archived&q=${encodeURIComponent(q!.trim())}` : "/ops?view=archived"}
           className={`rounded px-3 py-1 font-medium ${archivedView ? "bg-ink text-paper" : "border border-line text-ink/70 hover:border-ink"}`}
         >
           Archived clients ({archivedCount})
         </Link>
+        {query && (
+          <Link href={archivedView ? "/ops?view=archived" : "/ops"} className="text-ink/60 underline hover:text-ink">
+            Clear
+          </Link>
+        )}
       </div>
 
       {overCost.length > 0 && (
