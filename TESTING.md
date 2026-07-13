@@ -12,12 +12,12 @@ experience itself.
 | Login | Role | Password |
 |---|---|---|
 | kind2karma@gmail.com | system_admin | (yours) |
-| test-admin@mindseye.test | admin | BoundRight-Test-2026 |
-| test-manager@mindseye.test | manager | BoundRight-Test-2026 |
-| test-user@mindseye.test | user | BoundRight-Test-2026 |
-| admin@coastalrisk.test | admin, Coastal Risk (smart intake ON, logo set) | BoundRight-Test-2026 |
-| admin@summitinsurance.test | admin, Summit (trial) | BoundRight-Test-2026 |
-| admin@heartlandagency.test | admin, Heartland (past_due) | BoundRight-Test-2026 |
+| test-admin@mindseye.test | admin, Minds Eye | BoundRight-Test-2026 |
+| test-manager@mindseye.test | manager, Minds Eye | BoundRight-Test-2026 |
+| test-user@mindseye.test | user, Minds Eye | BoundRight-Test-2026 |
+| cora@coastalrisk.test / miguel@… / dana@… | admin / manager / user, Coastal Risk (Premier, smart intake, 500 allowance, custom letter guidance) | BoundRight-Test-2026 |
+| priya@summitinsurance.test / james@… / olivia@… | admin / manager / user, Summit (Founder, custom letter guidance) | BoundRight-Test-2026 |
+| hank@heartlandagency.test / grace@… / ben@… | admin / manager / user, Heartland (Core, past_due, custom letter guidance) | BoundRight-Test-2026 |
 
 ## 1 · Happy path
 

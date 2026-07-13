@@ -1,6 +1,8 @@
-// Seeds three test agencies with distinct plans, configurations, and a few
-// weeks of activity so the system admin ops console shows a realistic
-// multi-tenant view. Idempotent: reruns update in place.
+// Resets the ops console to a clean demo state: exactly three realistic
+// sample clients (plus your own agency, untouched), each with an admin, a
+// manager, and a user account, distinct plans/configurations, per-client
+// correction-letter guidance, and a few weeks of activity. Every other
+// agency (QA leftovers, old seeds) is deleted along with its logins.
 //
 // Usage: set -a && source .env.local && set +a && \
 //        npx tsx scripts/seed-test-agencies.ts
@@ -9,6 +11,7 @@ import { createClient } from "@supabase/supabase-js";
 const PASSWORD = "BoundRight-Test-2026";
 const SEED_MARK = "seed_agency.pdf";
 const DAY = 86_400_000;
+const KEEP_AGENCY = "Minds Eye"; // your own workspace: never touched
 
 const admin = createClient(
   process.env.SUPABASE_URL!,
@@ -16,50 +19,84 @@ const admin = createClient(
   { auth: { persistSession: false } }
 );
 
-const AGENCIES = [
+type Person = { first: string; last: string; email: string; role: "admin" | "manager" | "user" };
+
+const CLIENTS: {
+  name: string;
+  plan: string;
+  billing_status: string;
+  smart_intake_enabled: boolean;
+  checks_allowance: number | null;
+  premium_variance_threshold: number;
+  csr_hourly_rate: number;
+  manual_check_minutes: number;
+  reminder_hours: number;
+  letter_instructions: string;
+  people: Person[];
+  checksBack: number;
+  dailyOdds: number;
+}[] = [
   {
     name: "Coastal Risk Partners",
-    email: "admin@coastalrisk.test",
-    fullName: "Cora Coastal",
-    plan: "founding",
+    plan: "premium",
     billing_status: "ok",
     smart_intake_enabled: true,
+    checks_allowance: 500,
     premium_variance_threshold: 3,
     csr_hourly_rate: 38,
     manual_check_minutes: 75,
     reminder_hours: 24,
+    letter_instructions:
+      "Reference producer code CRP-114 on every request. Address letters to the carrier's Policy Services desk, not underwriting.",
+    people: [
+      { first: "Cora", last: "Alvarez", email: "cora@coastalrisk.test", role: "admin" },
+      { first: "Miguel", last: "Torres", email: "miguel@coastalrisk.test", role: "manager" },
+      { first: "Dana", last: "Kim", email: "dana@coastalrisk.test", role: "user" },
+    ],
     checksBack: 45,
     dailyOdds: 0.5,
   },
   {
     name: "Summit Insurance Group",
-    email: "admin@summitinsurance.test",
-    fullName: "Sam Summit",
-    plan: "trial",
+    plan: "founding",
     billing_status: "ok",
     smart_intake_enabled: false,
+    checks_allowance: null,
     premium_variance_threshold: 5,
     csr_hourly_rate: 32,
     manual_check_minutes: 60,
     reminder_hours: 48,
-    checksBack: 10,
+    letter_instructions:
+      "Close every letter with 'Summit Client Services' as the sender line. Request confirmation within 10 business days.",
+    people: [
+      { first: "Priya", last: "Natarajan", email: "priya@summitinsurance.test", role: "admin" },
+      { first: "James", last: "Whitfield", email: "james@summitinsurance.test", role: "manager" },
+      { first: "Olivia", last: "Chen", email: "olivia@summitinsurance.test", role: "user" },
+    ],
+    checksBack: 20,
     dailyOdds: 0.35,
   },
   {
     name: "Heartland Agency Co",
-    email: "admin@heartlandagency.test",
-    fullName: "Hank Heartland",
     plan: "standard",
     billing_status: "past_due",
     smart_intake_enabled: false,
+    checks_allowance: null,
     premium_variance_threshold: 10,
     csr_hourly_rate: 27,
     manual_check_minutes: 50,
     reminder_hours: 72,
+    letter_instructions:
+      "Keep letters under 250 words; Heartland pastes them into their AMS notes. Spell out form numbers in full.",
+    people: [
+      { first: "Hank", last: "Odum", email: "hank@heartlandagency.test", role: "admin" },
+      { first: "Grace", last: "Miller", email: "grace@heartlandagency.test", role: "manager" },
+      { first: "Ben", last: "Sandoval", email: "ben@heartlandagency.test", role: "user" },
+    ],
     checksBack: 30,
     dailyOdds: 0.25,
   },
-] as const;
+];
 
 let rngState = 20260712;
 const rand = () => {
@@ -74,7 +111,7 @@ const pick = <T,>(arr: readonly T[]) => arr[Math.floor(rand() * arr.length)];
 const hex = (n: number) =>
   Array.from({ length: n }, () => "0123456789abcdef"[int(0, 15)]).join("");
 
-const CLIENTS = [
+const END_CLIENTS = [
   "Bayfront Charters", "Gulfside Roofing", "Pier 9 Seafood", "Tidewater Storage",
   "Alpine Outfitters", "Basecamp Breweries", "Ridge Line Realty",
   "Prairie Equipment Rental", "Cornerstone Feed & Seed", "Windmill Dairy",
@@ -82,74 +119,90 @@ const CLIENTS = [
 const POLICY_TYPES = ["GL", "Property", "WC", "Auto", "Package"];
 
 async function main() {
+  // --- Purge everything except your own agency and the three clients ---
+  const keepNames = new Set([...CLIENTS.map((c) => c.name)]);
+  const { data: all } = await admin.from("agencies").select("id, name");
+  const doomed = (all ?? []).filter(
+    (a) => !a.name.startsWith(KEEP_AGENCY) && !keepNames.has(a.name)
+  );
+  for (const a of doomed) {
+    const { data: profs } = await admin.from("profiles").select("user_id").eq("agency_id", a.id);
+    await admin.from("agencies").delete().eq("id", a.id);
+    for (const p of profs ?? []) {
+      await admin.auth.admin.deleteUser(p.user_id).catch(() => {});
+    }
+  }
+  console.log(`purged ${doomed.length} leftover agencies`);
+
   const { data: users } = await admin.auth.admin.listUsers({ perPage: 1000 });
 
-  for (const cfg of AGENCIES) {
-    // Agency: update in place if a prior run created it.
+  for (const cfg of CLIENTS) {
     const { data: existing } = await admin
       .from("agencies")
       .select("id")
       .eq("name", cfg.name)
       .maybeSingle();
-    const agencyValues = {
+    const values = {
       name: cfg.name,
       plan: cfg.plan,
       billing_status: cfg.billing_status,
       smart_intake_enabled: cfg.smart_intake_enabled,
+      checks_allowance: cfg.checks_allowance,
       premium_variance_threshold: cfg.premium_variance_threshold,
       csr_hourly_rate: cfg.csr_hourly_rate,
       manual_check_minutes: cfg.manual_check_minutes,
       reminder_hours: cfg.reminder_hours,
+      letter_instructions: cfg.letter_instructions,
     };
     let agencyId: string;
     if (existing) {
       agencyId = existing.id;
-      await admin.from("agencies").update(agencyValues).eq("id", agencyId);
+      await admin.from("agencies").update(values).eq("id", agencyId);
     } else {
       const { data: created, error } = await admin
         .from("agencies")
-        .insert(agencyValues)
+        .insert(values)
         .select("id")
         .single();
       if (error) throw error;
       agencyId = created.id;
     }
 
-    // Admin user + profile.
-    let userId = users?.users.find(
-      (u) => u.email?.toLowerCase() === cfg.email
-    )?.id;
-    if (!userId) {
-      const { data: created, error } = await admin.auth.admin.createUser({
-        email: cfg.email,
-        password: PASSWORD,
-        email_confirm: true,
-      });
-      if (error) throw error;
-      userId = created.user.id;
+    // One account per role, real names, shared demo password, no forced
+    // change (these are for your testing, not provisioning).
+    let adminUserId = "";
+    for (const person of cfg.people) {
+      let userId = users?.users.find((u) => u.email?.toLowerCase() === person.email)?.id;
+      if (!userId) {
+        const { data: created, error } = await admin.auth.admin.createUser({
+          email: person.email,
+          password: PASSWORD,
+          email_confirm: true,
+        });
+        if (error) throw error;
+        userId = created.user.id;
+      }
+      const { error: pErr } = await admin.from("profiles").upsert(
+        {
+          user_id: userId,
+          agency_id: agencyId,
+          full_name: `${person.first} ${person.last}`,
+          role: person.role,
+          must_change_password: false,
+        },
+        { onConflict: "user_id" }
+      );
+      if (pErr) throw pErr;
+      if (person.role === "admin") adminUserId = userId;
     }
-    await admin.from("profiles").upsert(
-      {
-        user_id: userId,
-        agency_id: agencyId,
-        full_name: cfg.fullName,
-        role: "admin",
-      },
-      { onConflict: "user_id" }
-    );
 
-    // Activity: clean prior seeded checks, insert a fresh window.
-    await admin
-      .from("checks")
-      .delete()
-      .eq("agency_id", agencyId)
-      .eq("doc_a_filename", SEED_MARK);
-
+    // Fresh activity window.
+    await admin.from("checks").delete().eq("agency_id", agencyId).eq("doc_a_filename", SEED_MARK);
     const now = Date.now();
     const checks: Record<string, unknown>[] = [];
     for (let daysAgo = cfg.checksBack; daysAgo >= 1; daysAgo--) {
       if (rand() > cfg.dailyOdds) continue;
-      const client = pick(CLIENTS);
+      const client = pick(END_CLIENTS);
       const policyType = pick(POLICY_TYPES);
       const createdAt = new Date(now - daysAgo * DAY + int(14, 21) * 3_600_000 / 2);
       const status = daysAgo <= 5 && rand() < 0.5 ? "ready_for_review" : "reviewed";
@@ -161,7 +214,7 @@ async function main() {
         status,
         doc_a_filename: SEED_MARK,
         doc_b_filename: "seed_agency_policy.pdf",
-        carrier: "Granite State Mutual",
+        carrier: pick(["Granite State Mutual", "Cascade National Insurance", "Liberty Peak Insurance"]),
         model_version: "claude-sonnet-5",
         prompt_version: "extract_v2+compare_v1.1+verify_v1",
         tokens_in: int(18_000, 70_000),
@@ -177,7 +230,7 @@ async function main() {
           status === "reviewed"
             ? new Date(createdAt.getTime() + int(2, 48) * 3_600_000).toISOString()
             : null,
-        reviewed_by: status === "reviewed" ? userId : null,
+        reviewed_by: status === "reviewed" ? adminUserId : null,
       });
     }
     const { data: inserted, error: cErr } = await admin
@@ -187,10 +240,13 @@ async function main() {
     if (cErr) throw cErr;
     await admin
       .from("agencies")
-      .update({ checks_this_period: checks.filter((c) => new Date(c.created_at as string).getUTCMonth() === new Date().getUTCMonth()).length })
+      .update({
+        checks_this_period: checks.filter(
+          (c) => new Date(c.created_at as string).getUTCMonth() === new Date().getUTCMonth()
+        ).length,
+      })
       .eq("id", agencyId);
 
-    // A finding or two per check so drift/ratings have data.
     const findings: Record<string, unknown>[] = [];
     for (const c of inserted ?? []) {
       const reviewed = c.status === "reviewed";
@@ -216,10 +272,13 @@ async function main() {
     if (fErr) throw fErr;
 
     console.log(
-      `${cfg.name}: ${cfg.plan}/${cfg.billing_status}, ${checks.length} checks · login ${cfg.email} / ${PASSWORD}`
+      `${cfg.name} (${cfg.plan}/${cfg.billing_status}, ${checks.length} checks): ${cfg.people
+        .map((p) => `${p.email} [${p.role}]`)
+        .join(" · ")}`
     );
   }
-  console.log("done: open /admin as the system admin to see all agencies");
+  console.log(`\nAll accounts use password: ${PASSWORD}`);
+  console.log("done: /ops shows exactly three sample clients");
 }
 
 main().catch((err) => {
