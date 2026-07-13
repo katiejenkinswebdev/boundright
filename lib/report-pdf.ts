@@ -160,24 +160,24 @@ export async function buildReportPdf(data: ReportData): Promise<Uint8Array> {
       const h = 28;
       const w = (img.width / img.height) * h;
       page.drawImage(img, { x: MARGIN, y: y - h, width: Math.min(w, 180), height: h });
-      y -= h + 6;
-      text(data.agencyName, { font: sansBold, size: 11, gap: 2 });
+      y -= h + 10;
+      text(data.agencyName, { font: sansBold, size: 11, gap: 6 });
     } catch {
-      text(data.agencyName, { font: sansBold, size: 16, gap: 2 });
+      text(data.agencyName, { font: sansBold, size: 16, gap: 6 });
     }
   } else {
-    text(data.agencyName, { font: sansBold, size: 16, gap: 2 });
+    text(data.agencyName, { font: sansBold, size: 16, gap: 6 });
   }
   text("Policy discrepancy report · Proof it was bound right.", {
     size: 9,
     color: MUTED,
-    gap: 12,
+    gap: 16,
   });
   // Header mark is the primary lockup (brand guide 02); the verification
   // stamp lands at the certification block, where the review is attested.
   drawSealLockup(page, { x: PAGE_W - MARGIN - 122, y: PAGE_H - MARGIN - 20, bold: sansBold, regular: sans, mono: monoBold });
   page.drawLine({ start: { x: MARGIN, y }, end: { x: PAGE_W - MARGIN, y }, thickness: 1, color: INK });
-  y -= 14;
+  y -= 18;
 
   text(data.label, { font: sansBold, size: 13, gap: 6 });
   text(`Policy type: ${data.policyType}   ·   Report ${data.reportId ?? ""}`, {
