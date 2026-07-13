@@ -14,6 +14,7 @@ import {
 import { updateIntegrations, sendTestNotice, type SettingsState } from "@/app/actions/settings";
 import { inputClass, labelClass, secondaryButtonClass } from "@/app/components/ui";
 import { InfoTip } from "@/app/components/InfoTip";
+import { track } from "@/lib/analytics";
 
 const initial: TeamState = { status: "idle", message: "" };
 const settingsInitial: SettingsState = { status: "idle", message: "" };
@@ -101,13 +102,13 @@ function ManageMember({ member, viewerIsAdmin }: { member: MemberRow; viewerIsAd
         )}
 
         <div className="flex flex-wrap items-center gap-3 border-t border-line pt-3">
-          <form action={resetAction}>
+          <form action={resetAction} onSubmit={() => track("member_password_reset")}>
             <input type="hidden" name="member_id" value={member.id} />
             <button disabled={resetPending} className="text-sm underline disabled:opacity-50">
               {resetPending ? "Sending…" : "Send password reset"}
             </button>
           </form>
-          <form action={accessAction}>
+          <form action={accessAction} onSubmit={() => track("member_access_changed", { suspend: !member.suspended })}>
             <input type="hidden" name="member_id" value={member.id} />
             <input type="hidden" name="suspend" value={member.suspended ? "false" : "true"} />
             <button
@@ -122,6 +123,8 @@ function ManageMember({ member, viewerIsAdmin }: { member: MemberRow; viewerIsAd
             onSubmit={(e) => {
               if (!confirm(`Remove ${member.full_name} from the agency? Their login is deleted; their review history stays in the audit log.`)) {
                 e.preventDefault();
+              } else {
+                track("member_removed");
               }
             }}
           >

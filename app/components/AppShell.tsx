@@ -56,18 +56,40 @@ export async function AppShell({
     agency.billing_grace_until &&
     isInFuture(agency.billing_grace_until);
 
+  // Platform announcement + this client's own banner share one bar: both
+  // messages visible at a glance, the bar grows vertically as needed.
+  const noticeCount = (announcement ? 1 : 0) + (agency.banner_message ? 1 : 0);
   const banner = (
     <>
-      {announcement && (
-        <div className="border-b border-line bg-ink px-6 py-2 text-sm text-paper">
-          {announcement.message}
-          {announcement.link_url && (
-            <>
-              {" "}
-              <a href={announcement.link_url} className="underline">
-                Learn more
-              </a>
-            </>
+      {noticeCount > 0 && (
+        <div className="space-y-1.5 border-b border-line bg-ink px-6 py-2.5 text-sm text-paper">
+          {announcement && (
+            <p>
+              {noticeCount > 1 && (
+                <span className="mr-2 font-mono text-xs uppercase tracking-wide text-paper/60">
+                  BoundRight
+                </span>
+              )}
+              {announcement.message}
+              {announcement.link_url && (
+                <>
+                  {" "}
+                  <a href={announcement.link_url} className="underline">
+                    Learn more
+                  </a>
+                </>
+              )}
+            </p>
+          )}
+          {agency.banner_message && (
+            <p>
+              {noticeCount > 1 && (
+                <span className="mr-2 font-mono text-xs uppercase tracking-wide text-paper/60">
+                  {agency.name}
+                </span>
+              )}
+              {agency.banner_message}
+            </p>
           )}
         </div>
       )}

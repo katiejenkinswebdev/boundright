@@ -24,17 +24,31 @@ export async function startCheckout(
   if (!stripe) return { status: "error", message: NOT_CONFIGURED };
 
   const plan = String(formData.get("plan"));
+  // A fixed recurring charge set by the operator overrides the plan price:
+  // same amount, every month, via an inline recurring price.
+  const custom = agency.custom_monthly_cents;
   const priceId =
     plan === "founding"
       ? process.env.STRIPE_PRICE_ID_FOUNDING
       : plan === "premium"
         ? process.env.STRIPE_PRICE_ID_PREMIUM
         : process.env.STRIPE_PRICE_ID_STANDARD;
-  if (!priceId) return { status: "error", message: NOT_CONFIGURED };
+  if (!custom && !priceId) return { status: "error", message: NOT_CONFIGURED };
+  const lineItem = custom
+    ? {
+        price_data: {
+          currency: "usd",
+          unit_amount: custom,
+          recurring: { interval: "month" as const },
+          product_data: { name: `BoundRight subscription (${agency.name})` },
+        },
+        quantity: 1,
+      }
+    : { price: priceId!, quantity: 1 };
 
   const session = await stripe.checkout.sessions.create({
     mode: "subscription",
-    line_items: [{ price: priceId, quantity: 1 }],
+    line_items: [lineItem],
     customer: agency.stripe_customer_id ?? undefined,
     customer_email: agency.stripe_customer_id ? undefined : (user.email ?? undefined),
     client_reference_id: agency.id,

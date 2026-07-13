@@ -30,6 +30,8 @@ export type Agency = {
   onboarding_dismissed_at: string | null;
   smart_intake_enabled: boolean;
   notify_webhook_url: string | null;
+  custom_monthly_cents: number | null;
+  banner_message: string | null;
   inbound_token: string;
 };
 

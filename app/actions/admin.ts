@@ -319,9 +319,13 @@ export async function updateAgencySettings(
     return Number.isFinite(v) && v >= lo && v <= hi ? v : fallback;
   };
   const allowanceRaw = String(formData.get("allowance") ?? "").trim();
+  const chargeRaw = String(formData.get("monthly_charge") ?? "").trim();
   const values = {
     name: String(formData.get("name") ?? "").trim().slice(0, 120) || undefined,
     plan,
+    custom_monthly_cents:
+      chargeRaw === "" ? null : Math.max(1, Math.round(Number(chargeRaw) * 100)) || null,
+    banner_message: String(formData.get("banner_message") ?? "").trim().slice(0, 300) || null,
     checks_allowance:
       allowanceRaw === "" ? null : Math.max(1, Math.min(10_000, Number(allowanceRaw) || 0)) || null,
     smart_intake_enabled: formData.get("smart_intake") === "on" || plan === "premium",

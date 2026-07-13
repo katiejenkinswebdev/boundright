@@ -7,6 +7,7 @@ import {
   unenrollMfa,
   type MfaState,
 } from "@/app/actions/mfa";
+import { track } from "@/lib/analytics";
 
 const initial: MfaState = { status: "idle", message: "" };
 
@@ -35,8 +36,22 @@ export function MfaSection({ enrolledFactorId }: { enrolledFactorId: string | nu
   } | null>(null);
   const [error, setError] = useState("");
   const [pending, startTransition] = useTransition();
-  const [verifyState, verifyAction, verifyPending] = useActionState(verifyMfaEnrollment, initial);
-  const [offState, offAction, offPending] = useActionState(unenrollMfa, initial);
+  const [verifyState, verifyAction, verifyPending] = useActionState(
+    async (prev: MfaState, fd: FormData) => {
+      const result = await verifyMfaEnrollment(prev, fd);
+      if (result.status === "ok") track("mfa_enrolled");
+      return result;
+    },
+    initial
+  );
+  const [offState, offAction, offPending] = useActionState(
+    async (prev: MfaState, fd: FormData) => {
+      const result = await unenrollMfa(prev, fd);
+      if (result.status === "ok") track("mfa_disabled");
+      return result;
+    },
+    initial
+  );
 
   if (enrolledFactorId && verifyState.status !== "ok") {
     return (

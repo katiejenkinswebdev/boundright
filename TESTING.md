@@ -4,7 +4,7 @@ Documents live in `~/Documents/boundright-test-kit/` (regenerate any time with
 `node eval/generate-specimens.mjs`; smart-intake files are in
 `~/Documents/boundright-samples/smart-intake/`). Run the app keyless with
 `CLAUDE_STUB_DIR=eval/stubs npm run dev`. Automated coverage of all of this
-runs in `npm run qa`; this checklist is for hands-on verification of the
+runs in `npm run qa` (8 suites; see the README's release regression automation section for how every push and production promotion is gated on it); this checklist is for hands-on verification of the
 experience itself.
 
 ## Accounts
@@ -57,6 +57,7 @@ Each failed check: shows the reason on the check page with "Try again", does NOT
 
 ## 6 · Ops console (system admin, /ops — linked from Admin)
 
+0b. Client banner + fixed charge: on Coastal's page set a client banner and a fixed monthly charge ($495) → sign in as cora@coastalrisk.test: the banner shows; post a platform announcement too → one stacked bar shows both messages labeled BoundRight / Coastal Risk Partners. Clear both when done.
 0a. Lifecycle: on a test client's page, Decommission (type the name) → closed badge, its users can't sign in; Reopen → they can again. Archive → gone from Active clients, present under Archived clients (N); Unarchive restores.
 0. New client wizard: click New client (opens the modal), create an agency on Premier (smart intake auto-checks and locks), admin Jane Doe + default password, paste two roster lines → success lists account count. Sign in as the new admin with the default password → forced to /change-password → set a new one → lands on dashboard. Click the agency name in the clients table → detail page edits plan/allowance/thresholds/webhook/logo/letter guidance in one place.
 

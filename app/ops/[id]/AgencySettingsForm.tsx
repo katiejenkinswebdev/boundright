@@ -3,6 +3,7 @@
 import { useState, useActionState } from "react";
 import { updateAgencySettings, type NewClientState } from "@/app/actions/admin";
 import { PLANS } from "@/lib/pricing";
+import { Select } from "@/app/components/Select";
 
 const initial: NewClientState = { status: "idle", message: "" };
 const fieldClass = "w-full rounded border border-line bg-paper px-3 py-2 text-sm";
@@ -12,6 +13,8 @@ export type AgencySettings = {
   name: string;
   plan: string;
   checks_allowance: number | null;
+  custom_monthly_cents: number | null;
+  banner_message: string | null;
   smart_intake_enabled: boolean;
   notify_webhook_url: string | null;
   manual_check_minutes: number;
@@ -38,16 +41,16 @@ export function AgencySettingsForm({ agency }: { agency: AgencySettings }) {
         <span className="mb-1 block text-sm font-semibold">Agency name</span>
         <input name="name" defaultValue={agency.name} required className={fieldClass} />
       </label>
-      <label className="block">
+      <div>
         <span className="mb-1 block text-sm font-semibold">Plan</span>
-        <select name="plan" value={plan} onChange={(e) => setPlan(e.target.value)} className={fieldClass}>
-          {Object.entries(PLANS).map(([key, p]) => (
-            <option key={key} value={key}>
-              {p.name} · {p.checksPerMonth} checks/mo
-            </option>
-          ))}
-        </select>
-      </label>
+        <input type="hidden" name="plan" value={plan} />
+        <Select
+          value={plan}
+          options={Object.entries(PLANS).map(([key, p]) => [key, `${p.name} · ${p.checksPerMonth} checks/mo`] as const)}
+          ariaLabel="Plan"
+          onChange={setPlan}
+        />
+      </div>
       <label className="block">
         <span className="mb-1 block text-sm font-semibold">Custom allowance (blank = plan default)</span>
         <input
@@ -68,6 +71,32 @@ export function AgencySettingsForm({ agency }: { agency: AgencySettings }) {
           onChange={(e) => setSmartIntake(e.target.checked)}
         />
         Smart intake{premier && <span className="text-ink/50">(included with Premier)</span>}
+      </label>
+      <label className="block">
+        <span className="mb-1 block text-sm font-semibold">Fixed monthly charge ($, blank = plan price)</span>
+        <input
+          name="monthly_charge"
+          type="number"
+          min={1}
+          step="0.01"
+          defaultValue={agency.custom_monthly_cents ? (agency.custom_monthly_cents / 100).toFixed(2) : ""}
+          placeholder="e.g. 495"
+          className={fieldClass}
+        />
+        <span className="mt-1 block text-xs text-ink/50">
+          Billed as the same amount every month at subscription time.
+        </span>
+      </label>
+      <label className="block sm:col-span-2">
+        <span className="mb-1 block text-sm font-semibold">Client banner (their agency only, blank = off)</span>
+        <textarea
+          name="banner_message"
+          defaultValue={agency.banner_message ?? ""}
+          rows={2}
+          maxLength={300}
+          placeholder="Example: Renewal season surge pricing waived for Coastal through August."
+          className={fieldClass}
+        />
       </label>
       <label className="block sm:col-span-2">
         <span className="mb-1 block text-sm font-semibold">Slack/Teams webhook URL</span>

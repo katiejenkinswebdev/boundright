@@ -4,6 +4,8 @@ import { useState, useActionState } from "react";
 import { PasswordInput } from "@/app/components/PasswordInput";
 import { createClientAgency, type NewClientState } from "@/app/actions/admin";
 import { PLANS } from "@/lib/pricing";
+import { track } from "@/lib/analytics";
+import { Select } from "@/app/components/Select";
 
 const initial: NewClientState = { status: "idle", message: "" };
 const fieldClass = "w-full rounded border border-line bg-paper px-3 py-2 text-sm";
@@ -14,7 +16,14 @@ const fieldClass = "w-full rounded border border-line bg-paper px-3 py-2 text-sm
  * theirs at first sign-in). Premier auto-checks smart intake.
  */
 export function NewClientForm() {
-  const [state, action, pending] = useActionState(createClientAgency, initial);
+  const [state, action, pending] = useActionState(
+    async (prev: NewClientState, fd: FormData) => {
+      const result = await createClientAgency(prev, fd);
+      if (result.status === "ok") track("ops_client_created");
+      return result;
+    },
+    initial
+  );
   const [plan, setPlan] = useState("trial");
   const [smartIntake, setSmartIntake] = useState(false);
   const premier = plan === "premium";
@@ -28,21 +37,16 @@ export function NewClientForm() {
             <span className="mb-1 block text-sm font-semibold">Agency name</span>
             <input name="name" required placeholder="Lakeside Insurance Group" className={fieldClass} />
           </label>
-          <label className="block">
+          <div>
             <span className="mb-1 block text-sm font-semibold">Plan</span>
-            <select
-              name="plan"
+            <input type="hidden" name="plan" value={plan} />
+            <Select
               value={plan}
-              onChange={(e) => setPlan(e.target.value)}
-              className={fieldClass}
-            >
-              {Object.entries(PLANS).map(([key, p]) => (
-                <option key={key} value={key}>
-                  {p.name} · {p.checksPerMonth} checks/mo
-                </option>
-              ))}
-            </select>
-          </label>
+              options={Object.entries(PLANS).map(([key, p]) => [key, `${p.name} · ${p.checksPerMonth} checks/mo`] as const)}
+              ariaLabel="Plan"
+              onChange={setPlan}
+            />
+          </div>
           <label className="block">
             <span className="mb-1 block text-sm font-semibold">Custom allowance (optional)</span>
             <input name="allowance" type="number" min={1} max={10000} placeholder="plan default" className={fieldClass} />

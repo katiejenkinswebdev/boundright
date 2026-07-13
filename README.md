@@ -106,6 +106,8 @@ Policy discrepancy detection for independent commercial insurance agencies. A CS
 - New client setup wizard behind a New client button (modal) in the ops console, one submit: agency (name, plan, custom allowance, smart intake — Premier auto-checks it), the client admin (first/last/email/default password), and a bulk team roster (paste lines of First, Last, Email, Role, DefaultPassword). Every provisioned account signs in with its default password and is forced to set a new one before anything else (/change-password gate); per-line validation errors reported, partial failures never silent
 - Ops console clients table matches the checks-table pattern: name search (persists across the Active/Archived toggle, one-click Clear), sortable columns, sticky header, max-height scroll, pagination with rows-per-page; click an agency name for its detail page (/ops/[id]) editing every setting in one place — name, plan (Premier auto-enables smart intake), allowance, webhook, all thresholds/assumptions, logo, per-client letter guidance, plus the people list and audit CSV
 - The ops console renders inside the app shell (left menu present)
+- Fixed recurring charge per client (ops detail page): a dollar amount billed as the same price every month, overriding the plan price at subscription time via an inline Stripe recurring price
+- Client-specific banner per client (ops detail page): shows across that agency's app; when a platform announcement and a client banner are both live they stack in one bar (labeled BoundRight / {agency}) that grows vertically so both messages read at one glance
 - Client lifecycle from each client's ops page: **Decommission** (type-to-confirm) marks the client closed and locks every member out of their account — data and reports retained, one-click **Reopen** restores everyone; **Archive** hides the client from the active table into the Archived clients view (toggle above the table), one-click Unarchive; closed/archived badges shown; all lifecycle moves logged
 - Ops console shows and manages every agency's setup in one place: plan (editable select, premier auto-enables smart intake), billing status, member counts by role, signup date, every adjustable assumption/threshold, per-client monthly allowance override, client logo (one-click upload), Slack/Teams webhook (editable), smart intake flag, and the per-client audit CSV. The trial banner CTA now points to help@boundright.app since billing is operator-managed
 - Ops console Platform configuration section: the correction-request prompt editor and the legal document editors (Terms/Privacy live on save, blank = built-in)
@@ -199,6 +201,21 @@ Every AI output has a signal attached; this is how they become prompt improvemen
 7. **Watch** — the drift table and ratings rollup are split per prompt version, so the new version gets its own row. If its dismiss rate or down-rate is worse after a week, pin back the previous version (the rollback runbook) and return to step 3.
 8. **Close the loop** — reply to the user whose feedback started it. Beta users who see their reports acted on file more reports.
 
+## Database seeding and reseeding
+
+All against the local stack; every script is idempotent and safe to rerun.
+
+```bash
+set -a && source .env.local && set +a          # load local keys once per shell
+npx tsx scripts/seed-test-agencies.ts          # RESET to the 3 sample clients (purges QA leftovers; never touches your agency)
+npx tsx scripts/seed-demo-data.ts [email]      # a year of realistic checks/findings into that user's agency (default: yours)
+node eval/generate-specimens.mjs               # regenerate the specimen PDFs (pairs + trash set) into eval/specimens/
+```
+
+- `seed-test-agencies.ts` is also the cleanup tool: QA runs create throwaway agencies over time; rerun it whenever you want the clean three-client ops view back.
+- Full reset: `npx supabase db reset` re-runs every migration on an empty database, then run both seed scripts and re-grant your role: `update profiles set role='system_admin' where user_id = (select id from auth.users where email='kind2karma@gmail.com');`
+- Test accounts and what each demonstrates: see TESTING.md.
+
 ## QA — run on every change
 
 ```bash
@@ -214,7 +231,7 @@ The gate runs automatically in three places:
 
 **The README rule:** this file is the source of truth for what works right now. The pre-push hook fails any push that changes app code without touching README.md — every feature, setup step, or to-do change lands here in the same push, after QA passes.
 
-Suites: RLS isolation (14 checks), onboarding flow (10), pipeline + deletion + failure copy + input-quality guardrails (18), report review + PDF export + cross-agency denial (21), sample-check demo (7), letter guidance (6). Manual test plan with the specimen kit: TESTING.md (documents in ~/Documents/boundright-test-kit).
+Suites: RLS isolation (14 checks), onboarding flow (10), pipeline + deletion + failure copy + input-quality guardrails (18), report review + PDF export + cross-agency denial (21), sample-check demo (7), letter guidance layers (6), operator features — provisioning, lifecycle, banner, fixed charge, allowance (11). Manual test plan with the specimen kit: TESTING.md (documents in ~/Documents/boundright-test-kit).
 
 ## Repo layout
 
@@ -225,6 +242,16 @@ Suites: RLS isolation (14 checks), onboarding flow (10), pipeline + deletion + f
 - `scripts/` — QA gate, E2E test suites, generators (specimens, one-pager)
 - `supabase/` — SQL migrations (schema, RLS, grants, storage, billing)
 - `.github/workflows/` + `.githooks/` — the QA pipeline
+
+## Release regression automation (the plan, already wired)
+
+Every feature is end-to-end tested automatically before it can reach production, through three chained gates:
+
+1. **Pre-push (local)**: `.githooks/pre-push` blocks any push that fails the full QA gate — lint, typecheck, migrations, production build, and all 8 E2E suites (RLS isolation, onboarding, pipeline + input guardrails, report + PDF export, sample check, letter guidance layers, operator features, live model eval when keyed). It also blocks code pushes that don't update this README.
+2. **CI (GitHub Actions)**: `qa.yml` reruns the identical gate on every push and PR in a clean runner with its own Supabase stack — a pass on your machine can't hide a dirty-environment dependency.
+3. **Release (deploy.yml)**: pushing main auto-deploys to UAT only after CI passes, migrates the UAT database, and smoke-tests `/api/health`; production is the same commit, promoted only when you approve the `production` environment gate, then migrated and smoke-tested again with a Slack notification either way.
+
+**The standing rule that keeps this true:** every new feature lands with E2E coverage in the same push. Add cases to the closest existing suite in `scripts/`, or create a new `scripts/<area>-e2e-test.ts` and register it as one `step` line in `scripts/qa.sh` — it is then automatically part of all three gates forever. The stub model (`CLAUDE_STUB_DIR`) keeps every suite deterministic and keyless; prompt changes additionally require `npm run qa:live` (the eval must find every seeded critical with zero false criticals).
 
 ## Environments & release pipeline
 
@@ -267,15 +294,14 @@ Two hosted environments, one pipeline (`.github/workflows/deploy.yml`), build-on
 ## Roadmap
 
 - [ ] Report verification endpoint (`/verify/[id]`) + QR on the PDF; IBM Plex embedding in PDFs
-- [ ] Inline editing of client settings from the ops console (logged, on-behalf-of)
 - [ ] Email-in checks (endpoint built at /api/inbound but dormant behind EMAIL_INTAKE_ENABLED=1; validating demand with users first)
-- [ ] Mobile layout (verify need with users first); MFA for admin roles; soft-delete trash (30-day restore for deleted checks, system_admin)
+- [ ] Mobile layout (verify need with users first); soft-delete trash (30-day restore for deleted checks, system_admin); MFA recovery codes (self-service lockout recovery)
 - [ ] Correction request → one-click email draft in the user's mail system (Microsoft 365 / Gmail via OAuth): opens a ready-to-send draft with the letter as body, generated subject line, the user's own signature, and the To: field pre-filled with the carrier contact on that policy (needs a per-carrier/policy contact field at intake or on the check)
 - [ ] Correction tracking (requested → corrected → verified by re-check); renewal radar; CSV export; client-facing summary letter
 - [ ] Golden eval set expanded with real redacted documents; dismiss reasons fed back into prompts; published accuracy stats on /ai
 - [ ] AMS integrations (HawkSoft/EZLynx first), SSO, public API; self-hosted PostHog only if deeper analytics is ever needed
 - [ ] QA suites should clean up their test agencies in the local DB
-- [ ] System admin candidates: read-only view-as-agency impersonation (logged), agency lifecycle controls (suspend, extend trial, plan override, allowance top-up), per-agency prompt-version pinning + staged rollout, webhook delivery log with retry, announcement banner, full agency data export for offboarding, retention-policy overrides, per-agency Anthropic spend budget alerts, support notes on the agency record
+- [ ] System admin candidates: read-only view-as-agency impersonation (logged), per-agency prompt-version pinning + staged rollout, webhook delivery log with retry, full agency data export for offboarding, retention-policy overrides, per-agency Anthropic spend budget alerts, support notes on the agency record
 
 ## Standing rules
 

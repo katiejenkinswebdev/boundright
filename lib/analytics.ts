@@ -49,7 +49,13 @@ export type AnalyticsEvent =
   | "ai_rated"
   | "feedback_sent"
   | "checkout_started"
-  | "table_page_size_changed";
+  | "table_page_size_changed"
+  | "mfa_enrolled"
+  | "mfa_disabled"
+  | "member_password_reset"
+  | "member_access_changed"
+  | "member_removed"
+  | "ops_client_created";
 
 export function track(event: AnalyticsEvent, props?: Record<string, unknown>): void {
   if (!initAnalytics()) return;
