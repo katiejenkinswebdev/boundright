@@ -172,7 +172,7 @@ export async function buildMonthlyReportPdf(
       const h = 26;
       const w = Math.min((img.width / img.height) * h, 170);
       page.drawImage(img, { x: M, y: y - h, width: w, height: h });
-      y -= h + 8;
+      y -= h + 10;
       text(agencyName, 12, { font: bold });
     } catch {
       text(agencyName, 18, { font: bold });
@@ -180,12 +180,15 @@ export async function buildMonthlyReportPdf(
   } else {
     text(agencyName, 18, { font: bold });
   }
+  // Same header rhythm as the discrepancy report: air between the name,
+  // the subtitle block, and the rule.
+  y -= 3;
   text(`Policy check report · ${n.monthLabel}`, 12, { color: MUTED });
   text(`Period: ${n.periodDates}`, 9, { color: MUTED });
-  y -= 12;
+  y -= 16;
   page.drawLine({
     start: { x: M, y },
-    end: { x: 612 - M - 125, y },
+    end: { x: 612 - M, y },
     thickness: 1,
     color: INK,
   });
