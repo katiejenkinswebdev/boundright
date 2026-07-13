@@ -344,7 +344,7 @@ export default async function DashboardPage({
                     are counted only after your reviewer confirms them.
                   </span>
                   <span className="mt-2 block">
-                    <strong>Trend</strong> compares this range&apos;s critical
+                    <strong>Trend</strong>{" "}compares this range&apos;s critical
                     rate to the same-length window right before it. It only
                     shows when both windows have at least 5 checks; small
                     samples mislead.
