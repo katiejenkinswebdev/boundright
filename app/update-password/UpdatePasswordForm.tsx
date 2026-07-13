@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
+import { PasswordInput } from "@/app/components/PasswordInput";
 import { updatePassword, type AuthFormState } from "@/app/actions/auth";
 import { FormMessage } from "@/app/components/FormMessage";
 import { inputClass, labelClass, primaryButtonClass } from "@/app/components/ui";
@@ -16,10 +17,9 @@ export function UpdatePasswordForm() {
         <label htmlFor="password" className={labelClass}>
           New password
         </label>
-        <input
+        <PasswordInput
           id="password"
           name="password"
-          type="password"
           required
           minLength={8}
           autoComplete="new-password"

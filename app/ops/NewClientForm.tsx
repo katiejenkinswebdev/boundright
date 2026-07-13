@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useActionState } from "react";
+import { PasswordInput } from "@/app/components/PasswordInput";
 import { createClientAgency, type NewClientState } from "@/app/actions/admin";
 import { PLANS } from "@/lib/pricing";
 
@@ -76,7 +77,7 @@ export function NewClientForm() {
           </label>
           <label className="block">
             <span className="mb-1 block text-sm font-semibold">Default password</span>
-            <input name="admin_password" required minLength={8} placeholder="They change it at first sign-in" className={fieldClass} />
+            <PasswordInput name="admin_password" required minLength={8} placeholder="They change it at first sign-in" className={fieldClass} />
           </label>
         </div>
       </div>

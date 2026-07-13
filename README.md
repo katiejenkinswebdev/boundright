@@ -72,7 +72,7 @@ Policy discrepancy detection for independent commercial insurance agencies. A CS
 
 ### Navigation & information architecture
 - Sidebar: Dashboard · New Check · Checks · Settings, plus **Admin** for managers and above
-- **Settings** is personal only: profile (name + self-service login email change with double confirmation), password, role, and Security (MFA)
+- **Settings** is personal only: profile (name + self-service login email change with double confirmation), password, role, and Security (MFA); every password field app-wide has a show/hide toggle
 - **Admin** (/admin) is user management only: the Team section (manager+) plus the operator's ops-console card. All agency configuration (assumptions, thresholds, billing, branding, integrations, deletion) is operator-managed from /ops and each client's detail page
 - The operator ops console moved from /admin to **/ops** (all client setups, allowances, logos, letter prompts, legal documents, announcements, drift, ratings, audit CSVs)
 

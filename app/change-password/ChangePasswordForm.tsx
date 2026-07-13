@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
+import { PasswordInput } from "@/app/components/PasswordInput";
 import { completePasswordChange, type AuthFormState } from "@/app/actions/auth";
 
 const initial: AuthFormState = { status: "idle", message: "" };
@@ -11,9 +12,8 @@ export function ChangePasswordForm() {
     <form action={action} className="mt-6 space-y-3">
       <label className="block">
         <span className="mb-1 block text-sm font-semibold">New password</span>
-        <input
+        <PasswordInput
           name="password"
-          type="password"
           required
           minLength={8}
           autoComplete="new-password"
@@ -22,9 +22,8 @@ export function ChangePasswordForm() {
       </label>
       <label className="block">
         <span className="mb-1 block text-sm font-semibold">Repeat it</span>
-        <input
+        <PasswordInput
           name="confirm"
-          type="password"
           required
           minLength={8}
           autoComplete="new-password"

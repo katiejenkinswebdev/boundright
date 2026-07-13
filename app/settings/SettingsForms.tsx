@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState, useRef, useState } from "react";
+import { PasswordInput } from "@/app/components/PasswordInput";
 import { track } from "@/lib/analytics";
 import { PLANS } from "@/lib/pricing";
 import {
@@ -71,10 +72,9 @@ export function PasswordForm() {
         <label htmlFor="password" className={labelClass}>
           New password
         </label>
-        <input
+        <PasswordInput
           id="password"
           name="password"
-          type="password"
           minLength={8}
           required
           autoComplete="new-password"

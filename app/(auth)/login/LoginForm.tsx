@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState, useState } from "react";
+import { PasswordInput } from "@/app/components/PasswordInput";
 import Link from "next/link";
 import { signIn, sendMagicLink, type AuthFormState } from "@/app/actions/auth";
 import { FormMessage } from "@/app/components/FormMessage";
@@ -51,7 +52,7 @@ export function LoginForm({ next }: { next: string }) {
         <label htmlFor="password" className={labelClass}>
           Password
         </label>
-        <input id="password" name="password" type="password" required autoComplete="current-password" className={inputClass} />
+        <PasswordInput id="password" name="password" required autoComplete="current-password" className={inputClass} />
       </div>
       <button type="submit" disabled={signInPending} className={primaryButtonClass}>
         {signInPending ? "Signing in…" : "Sign in"}

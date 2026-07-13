@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
+import { PasswordInput } from "@/app/components/PasswordInput";
 import { signUp, type AuthFormState } from "@/app/actions/auth";
 import { FormMessage } from "@/app/components/FormMessage";
 import { inputClass, labelClass, primaryButtonClass } from "@/app/components/ui";
@@ -29,10 +30,9 @@ export function SignupForm({ next = "" }: { next?: string }) {
         <label htmlFor="password" className={labelClass}>
           Password
         </label>
-        <input
+        <PasswordInput
           id="password"
           name="password"
-          type="password"
           required
           minLength={8}
           autoComplete="new-password"
