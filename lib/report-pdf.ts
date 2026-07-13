@@ -331,7 +331,7 @@ export async function buildReportPdf(data: ReportData): Promise<Uint8Array> {
   y -= 10;
   page.drawLine({ start: { x: MARGIN, y }, end: { x: PAGE_W - MARGIN, y }, thickness: 0.75, color: INK });
   y -= 12;
-  drawVerificationStamp(page, monoBold, { x: PAGE_W - MARGIN - 100, topY: y + 4, dateLine: data.stampDateLine });
+  drawVerificationStamp(page, monoBold, { rightX: PAGE_W - MARGIN, topY: y + 4, dateLine: data.stampDateLine });
   text("REVIEWER CERTIFICATION", { font: sansBold, size: 9, gap: 4 });
   text(
     "I have reviewed each finding above against the source documents, and the decisions recorded in this report are mine.",

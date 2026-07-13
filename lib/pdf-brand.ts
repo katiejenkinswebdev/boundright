@@ -29,29 +29,40 @@ export function drawWordmark(
 export function drawVerificationStamp(
   page: PDFPage,
   monoBold: PDFFont,
-  opts: { x: number; topY: number; dateLine: string }
+  opts: { rightX: number; topY: number; dateLine: string }
 ): void {
-  const { x, topY, dateLine } = opts;
+  const { rightX, topY, dateLine } = opts;
   const rot = degrees(-3);
+  const PAD = 12;
+
+  // Measure every tracked line so the box hugs the widest one and each
+  // line centers — equal padding left and right, not a fixed inset.
+  const lineWidth = (t: string, size: number, spacing: number) =>
+    [...t].reduce((w, ch) => w + monoBold.widthOfTextAtSize(ch, size) + spacing, -spacing);
+  const lines: [string, number, number, number][] = [
+    ["BOUND", 20, 11, 3],
+    ["RIGHT", 33, 11, 3],
+    [dateLine, 45, 6.5, 1.5],
+  ];
+  const boxW = Math.max(...lines.map(([t, , size, sp]) => lineWidth(t, size, sp))) + PAD * 2;
+  const x = rightX - boxW;
+
   page.drawRectangle({
     x,
     y: topY - 54,
-    width: 92,
+    width: boxW,
     height: 54,
     borderColor: PDF_VERIFY,
     borderWidth: 1.6,
     rotate: rot,
   });
-  const line = (t: string, dy: number, size: number, spacing = 3) => {
-    let cx = x + 13;
+  for (const [t, dy, size, spacing] of lines) {
+    let cx = x + (boxW - lineWidth(t, size, spacing)) / 2;
     for (const ch of t) {
       page.drawText(ch, { x: cx, y: topY - dy, size, font: monoBold, color: PDF_VERIFY, rotate: rot });
       cx += monoBold.widthOfTextAtSize(ch, size) + spacing;
     }
-  };
-  line("BOUND", 20, 11);
-  line("RIGHT", 33, 11);
-  line(dateLine, 45, 6.5, 1.5);
+  }
 }
 
 /**
